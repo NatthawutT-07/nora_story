@@ -4,13 +4,13 @@ import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDmScXPt7-BPuW2Jvq_ep1s5-Dh2hBeWEA",
-    authDomain: "nora-dev-ea18d.firebaseapp.com",
-    projectId: "nora-dev-ea18d",
-    storageBucket: "nora-dev-ea18d.firebasestorage.app",
-    messagingSenderId: "661654756419",
-    appId: "1:661654756419:web:3c8affb9ae38b30e36c8f6",
-    measurementId: "G-V0X8Z7B0XZ"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
