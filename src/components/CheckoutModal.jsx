@@ -1,12 +1,46 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, CheckCircle, Copy, Loader2, AlertCircle } from 'lucide-react';
+import TemplateSelector from './TemplateSelector';
 import { useState } from 'react';
 import { db, storage } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Generate random 15-character alphanumeric ID for story URLs
+const generateRandomId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 15; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+};
+
+// Generate unique story ID (checks for duplicates in Firestore)
+const generateUniqueStoryId = async () => {
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+        const newId = generateRandomId();
+        const docRef = doc(db, 'orders', newId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            return newId; // ID is unique, use it
+        }
+
+        attempts++;
+        console.log(`ID collision detected (${newId}), generating new ID... Attempt ${attempts}`);
+    }
+
+    // Fallback: add timestamp suffix to ensure uniqueness
+    return generateRandomId() + Date.now().toString(36).slice(-3);
+};
+
 const CheckoutModal = ({ isOpen, onClose, tier }) => {
-    const [step, setStep] = useState(1); // 1: Info, 2: Content (Images), 3: Payment, 4: Success
+    const [step, setStep] = useState(1); // 1: Info, 2: Template, 3: Content (Images), 4: Payment, 5: Success
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [slipFile, setSlipFile] = useState(null);
     const [slipPreview, setSlipPreview] = useState(null);
     const [contentFiles, setContentFiles] = useState([]);
@@ -41,6 +75,7 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
         setLoading(false);
         setError('');
         setFormData({ name: '', contact: '', message: '', customDomain: '' });
+        setSelectedTemplate(null);
         onClose();
     };
 
@@ -96,9 +131,15 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                 setError('กรุณาระบุชื่อโดเมนที่ต้องการ');
                 return;
             }
-            setStep(2);
+            setStep(2); // Go to Template Selection
         } else if (step === 2) {
-            setStep(3);
+            if (!selectedTemplate) {
+                setError('กรุณาเลือกธีมที่ชอบ');
+                return;
+            }
+            setStep(3); // Go to Images
+        } else if (step === 3) {
+            setStep(4); // Go to Payment
         }
         setError('');
     };
@@ -135,8 +176,11 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                 }
             }
 
-            // 3. Save Order
-            await addDoc(collection(db, 'orders'), {
+            // 3. Generate unique Story ID (checks for duplicates) and Save Order
+            const storyId = await generateUniqueStoryId();
+            const orderRef = doc(db, 'orders', storyId);
+
+            await setDoc(orderRef, {
                 tier_id: tier.id,
                 tier_name: tier.name,
                 price: tier.price,
@@ -144,14 +188,17 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                 customer_contact: formData.contact,
                 message: formData.message,
                 custom_domain: tier.id === 4 ? formData.customDomain : null,
+                selected_template_id: selectedTemplate, // Customer's choice
+                template_id: null, // Admin will finalize this
                 slip_url: slipUrl,
                 content_images: contentUrls,
                 status: 'pending',
                 created_at: serverTimestamp(),
-                platform: 'web'
+                platform: 'web',
+                story_url: `https://norastory.com/${storyId}`
             });
 
-            setStep(4); // Success
+            setStep(5); // Success
 
         } catch (err) {
             console.error("Error creating order:", err);
@@ -180,30 +227,31 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl flex flex-col"
                 >
-                    <button onClick={handleClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-10">
+                    <button onClick={handleClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-20 bg-white shadow-sm">
                         <X size={20} className="text-gray-500" />
                     </button>
 
                     {/* Progress Bar */}
-                    {step < 4 && (
+                    {step < 5 && (
                         <div className="px-8 pt-8 pb-4">
                             <div className="flex justify-between items-center mb-2">
                                 <span className={`text-xs font-bold ${step >= 1 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>ข้อมูล</span>
-                                <span className={`text-xs font-bold ${step >= 2 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>รูปภาพ</span>
-                                <span className={`text-xs font-bold ${step >= 3 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>ชำระเงิน</span>
+                                <span className={`text-xs font-bold ${step >= 2 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>ธีม</span>
+                                <span className={`text-xs font-bold ${step >= 3 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>รูปภาพ</span>
+                                <span className={`text-xs font-bold ${step >= 4 ? 'text-[#1A3C40]' : 'text-gray-300'}`}>ชำระเงิน</span>
                             </div>
                             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                 <motion.div
                                     className="h-full bg-[#E8A08A]"
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${(step / 3) * 100}%` }}
+                                    animate={{ width: `${(step / 4) * 100}%` }}
                                 />
                             </div>
                         </div>
                     )}
 
                     <div className="p-6 md:p-8 pt-2">
-                        {step === 4 ? (
+                        {step === 5 ? (
                             <div className="text-center flex flex-col items-center justify-center min-h-[300px]">
                                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6">
                                     <CheckCircle size={40} />
@@ -218,7 +266,7 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                             <>
                                 <div className="text-center mb-6">
                                     <h3 className="text-2xl font-playfair font-bold text-[#1A3C40] mb-1">
-                                        {step === 1 ? 'ข้อมูลเบื้องต้น' : step === 2 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
+                                        {step === 1 ? 'ข้อมูลเบื้องต้น' : step === 2 ? 'เลือกธีม' : step === 3 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
                                     </h3>
                                     <p className="text-gray-500 text-sm">แพ็คเกจ: <span className="text-[#E8A08A] font-medium">{tier.name}</span></p>
                                 </div>
@@ -253,8 +301,19 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                                         </motion.div>
                                     )}
 
-                                    {/* Step 2: Images */}
+                                    {/* Step 2: Template Selection */}
                                     {step === 2 && (
+                                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                            <TemplateSelector
+                                                tierId={tier.id}
+                                                selectedTemplate={selectedTemplate}
+                                                onSelect={setSelectedTemplate}
+                                            />
+                                        </motion.div>
+                                    )}
+
+                                    {/* Step 3: Images */}
+                                    {step === 3 && (
                                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                             <div className="text-center mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
                                                 <p className="text-sm text-blue-800">แพ็คเกจนี้อัปโหลดได้สูงสุด <span className="font-bold">{getMaxImages()}</span> รูป</p>
@@ -280,8 +339,8 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                                         </motion.div>
                                     )}
 
-                                    {/* Step 3: Payment */}
-                                    {step === 3 && (
+                                    {/* Step 4: Payment */}
+                                    {step === 4 && (
                                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                             <div className="bg-[#1A3C40]/5 rounded-xl p-5 mb-6 border border-[#1A3C40]/10 text-center">
                                                 <p className="text-sm text-[#4E6E81] font-medium mb-2">ยอดชำระเงิน</p>
@@ -313,7 +372,7 @@ const CheckoutModal = ({ isOpen, onClose, tier }) => {
                                         {step > 1 && (
                                             <button onClick={() => setStep(step - 1)} className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition-colors">ย้อนกลับ</button>
                                         )}
-                                        {step < 3 ? (
+                                        {step < 4 ? (
                                             <button onClick={handleNextStep} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg">ถัดไป</button>
                                         ) : (
                                             <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2">

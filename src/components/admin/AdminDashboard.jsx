@@ -17,15 +17,58 @@ import {
     Calendar,
     RefreshCw,
     Search,
-    Filter
+    Filter,
+    Copy,
+    Link,
+    Timer,
+    ExternalLink
 } from 'lucide-react';
+
+// Tier duration in days (for calculating expires_at)
+const TIER_DURATIONS = {
+    1: 3,   // 3 days
+    2: 7,   // 7 days
+    3: 15,  // 15 days
+    4: 30   // 30 days
+};
+
+// All available templates
+const ALL_TEMPLATES = [
+    { id: 't1-1', name: 'Tier 1 - Sunrise Glow' },
+    { id: 't1-2', name: 'Tier 1 - Moonlight' },
+    { id: 't1-3', name: 'Tier 1 - Cherry Blossom' },
+    { id: 't1-4', name: 'Tier 1 - Ocean Breeze' },
+    { id: 't1-5', name: 'Tier 1 - Golden Hour' },
+    { id: 't1-6', name: 'Tier 1 - Starry Night' },
+    { id: 't1-7', name: 'Tier 1 - Rose Garden' },
+    { id: 't2-1', name: 'Tier 2 - Love Letter' },
+    { id: 't2-2', name: 'Tier 2 - Vintage Romance' },
+    { id: 't2-3', name: 'Tier 2 - Neon Love' },
+    { id: 't2-4', name: 'Tier 2 - Eternal Flame' },
+    { id: 't2-5', name: 'Tier 2 - Spring Garden' },
+    { id: 't2-6', name: 'Tier 2 - Winter Snow' },
+    { id: 't3-1', name: 'Tier 3 - Luxury Gold' },
+    { id: 't3-2', name: 'Tier 3 - Crystal Clear' },
+    { id: 't3-3', name: 'Tier 3 - Velvet Night' },
+    { id: 't3-4', name: 'Tier 3 - Rose Petal' },
+    { id: 't3-5', name: 'Tier 3 - Aurora' },
+    { id: 't3-6', name: 'Tier 3 - Twilight' },
+    { id: 't4-1', name: 'Tier 4 - Eternal Love' },
+    { id: 't4-2', name: 'Tier 4 - Paradise' },
+    { id: 't4-3', name: 'Tier 4 - Infinity' },
+    { id: 't4-4', name: 'Tier 4 - Royal' },
+    { id: 't4-5', name: 'Tier 4 - Timeless' },
+    { id: 't4-6', name: 'Tier 4 - Forever' },
+];
 
 const AdminDashboard = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [modifiedTemplateId, setModifiedTemplateId] = useState(null);
     const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
     const [searchTerm, setSearchTerm] = useState('');
+    const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
 
     // Check auth on mount
@@ -47,7 +90,9 @@ const AdminDashboard = () => {
             const ordersList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-                created_at: doc.data().created_at?.toDate?.() || new Date()
+                created_at: doc.data().created_at?.toDate?.() || new Date(),
+                approved_at: doc.data().approved_at?.toDate?.() || null,
+                expires_at: doc.data().expires_at?.toDate?.() || null
             }));
 
             setOrders(ordersList);
@@ -62,23 +107,142 @@ const AdminDashboard = () => {
         fetchOrders();
     }, []);
 
-    // Update order status
-    const updateOrderStatus = async (orderId, status) => {
+    // Approve order with expiration calculation
+    const handleApprove = async (order) => {
+        const templateId = modifiedTemplateId || order.selected_template_id;
+        if (!templateId) {
+            alert('กรุณาเลือก Template ก่อนอนุมัติ');
+            return;
+        }
+
+        const tierId = order.tier_id || 1;
+        const durationDays = TIER_DURATIONS[tierId] || 3;
+        const approvedAt = new Date();
+        const expiresAt = new Date(approvedAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
         try {
-            const orderRef = doc(db, 'orders', orderId);
-            await updateDoc(orderRef, { status, updatedAt: new Date() });
+            const orderRef = doc(db, 'orders', order.id);
+            await updateDoc(orderRef, {
+                status: 'approved',
+                template_id: templateId,
+                approved_at: approvedAt,
+                expires_at: expiresAt,
+                updatedAt: new Date()
+            });
 
             // Update local state
+            const updatedOrder = {
+                ...order,
+                status: 'approved',
+                template_id: templateId,
+                approved_at: approvedAt,
+                expires_at: expiresAt
+            };
+
+            setOrders(prev => prev.map(o => o.id === order.id ? updatedOrder : o));
+            setSelectedOrder(updatedOrder);
+            setModifiedTemplateId(null);
+        } catch (error) {
+            console.error('Error approving order:', error);
+            alert('เกิดข้อผิดพลาดในการอนุมัติ');
+        }
+    };
+
+    // Reject order
+    const handleReject = async (orderId) => {
+        try {
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { status: 'rejected', updatedAt: new Date() });
+
             setOrders(prev => prev.map(order =>
-                order.id === orderId ? { ...order, status } : order
+                order.id === orderId ? { ...order, status: 'rejected' } : order
             ));
 
             if (selectedOrder?.id === orderId) {
-                setSelectedOrder(prev => ({ ...prev, status }));
+                setSelectedOrder(prev => ({ ...prev, status: 'rejected' }));
             }
         } catch (error) {
-            console.error('Error updating order:', error);
+            console.error('Error rejecting order:', error);
         }
+    };
+
+    const [newExpiresAt, setNewExpiresAt] = useState(null);
+
+    // Initial load of expires_at into state when modal opens
+    useEffect(() => {
+        if (selectedOrder) {
+            setNewExpiresAt(selectedOrder.expires_at ? new Date(selectedOrder.expires_at) : null);
+            setModifiedTemplateId(selectedOrder.template_id);
+        }
+    }, [selectedOrder]);
+
+    const handleApproveExtension = async (order) => {
+        if (!confirm(`ยืนยันการต่ออายุ ${order.extension_requested_days} วัน?`)) return;
+
+        try {
+            const currentExpire = order.expires_at ? new Date(order.expires_at) : new Date();
+            // If expired, start from now. If not, add to current expiry.
+            const baseDate = currentExpire < new Date() ? new Date() : currentExpire;
+            const newDate = new Date(baseDate);
+            newDate.setDate(newDate.getDate() + parseInt(order.extension_requested_days));
+
+            const orderRef = doc(db, 'orders', order.id);
+            await updateDoc(orderRef, {
+                expires_at: newDate,
+                extension_status: 'approved',
+                extension_approved_at: new Date()
+            });
+
+            // Update local state
+            setOrders(prev => prev.map(o => o.id === order.id ? {
+                ...o,
+                expires_at: newDate,
+                extension_status: 'approved'
+            } : o));
+            setSelectedOrder(prev => ({ ...prev, expires_at: newDate, extension_status: 'approved' }));
+            alert('ต่ออายุเรียบร้อยแล้ว');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    const handleUpdateExpiry = async (orderId) => {
+        if (!newExpiresAt) return;
+        try {
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { expires_at: newExpiresAt });
+
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, expires_at: newExpiresAt } : o));
+            setSelectedOrder(prev => ({ ...prev, expires_at: newExpiresAt }));
+            alert('อัปเดตวันหมดอายุแล้ว');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    // Copy story URL
+    const copyStoryUrl = (orderId) => {
+        const url = `https://norastory.com/${orderId}`;
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // Calculate remaining time (days, hours, minutes)
+    const getRemainingTime = (expiresAt) => {
+        if (!expiresAt) return null;
+        const now = new Date();
+        const diffMs = expiresAt - now;
+
+        if (diffMs <= 0) return { expired: true, days: 0, hours: 0, minutes: 0 };
+
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        return { expired: false, days, hours, minutes };
     };
 
     // Logout
@@ -89,7 +253,13 @@ const AdminDashboard = () => {
 
     // Filter orders
     const filteredOrders = orders.filter(order => {
-        const matchesFilter = filter === 'all' || order.status === filter;
+        let matchesFilter = true;
+        if (filter === 'extension_pending') {
+            matchesFilter = order.extension_status === 'pending';
+        } else if (filter !== 'all') {
+            matchesFilter = order.status === filter;
+        }
+
         const matchesSearch =
             order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.customer_contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -205,16 +375,22 @@ const AdminDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <Filter size={18} className="text-gray-400" />
-                            {['all', 'pending', 'approved', 'rejected'].map((f) => (
+                            {['all', 'pending', 'approved', 'rejected', 'extension_pending'].map((f) => (
                                 <button
                                     key={f}
                                     onClick={() => setFilter(f)}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
                                         ? 'bg-[#1A3C40] text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        : f === 'extension_pending'
+                                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
-                                    {f === 'all' ? 'ทั้งหมด' : f === 'pending' ? 'รอตรวจสอบ' : f === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'}
+                                    {f === 'all' ? 'ทั้งหมด' :
+                                        f === 'pending' ? 'รอตรวจสอบ' :
+                                            f === 'approved' ? 'อนุมัติ' :
+                                                f === 'rejected' ? 'ปฏิเสธ' :
+                                                    'คำขอต่ออายุ'}
                                 </button>
                             ))}
                         </div>
@@ -266,7 +442,14 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <StatusBadge status={order.status} />
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <StatusBadge status={order.status} />
+                                                    {order.extension_status === 'pending' && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                                            <RefreshCw size={10} /> ขอต่ออายุ
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
                                                 {order.created_at?.toLocaleDateString?.('th-TH') || '-'}
@@ -313,27 +496,125 @@ const AdminDashboard = () => {
                         {/* Modal Content */}
                         <div className="p-6 space-y-6">
                             {/* Status & Actions */}
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-500">สถานะ:</span>
-                                    <StatusBadge status={selectedOrder.status} />
+                            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm text-gray-500">สถานะ:</span>
+                                        <StatusBadge status={selectedOrder.status} />
+                                    </div>
+
+                                    {/* Expiration Info */}
+                                    {selectedOrder.status === 'approved' && selectedOrder.expires_at && (
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg">
+                                                <Timer size={14} className="text-gray-500" />
+                                                {(() => {
+                                                    const time = getRemainingTime(selectedOrder.expires_at);
+                                                    if (!time || time.expired) {
+                                                        return <span className="text-xs text-red-500 font-medium">หมดอายุแล้ว</span>;
+                                                    } else if (time.days <= 1) {
+                                                        return <span className="text-xs text-orange-500 font-medium">{time.days}วัน {time.hours}ชม. {time.minutes}นาที</span>;
+                                                    } else if (time.days <= 3) {
+                                                        return <span className="text-xs text-orange-500 font-medium">{time.days}วัน {time.hours}ชม.</span>;
+                                                    } else {
+                                                        return <span className="text-xs text-green-600 font-medium">{time.days}วัน {time.hours}ชม.</span>;
+                                                    }
+                                                })()}
+                                            </div>
+                                            <span className="text-xs text-gray-400">
+                                                สิ้นสุด: {selectedOrder.expires_at?.toLocaleDateString?.('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) || '-'}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => updateOrderStatus(selectedOrder.id, 'approved')}
-                                        className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                                    >
-                                        <CheckCircle size={16} />
-                                        อนุมัติ
-                                    </button>
-                                    <button
-                                        onClick={() => updateOrderStatus(selectedOrder.id, 'rejected')}
-                                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                                    >
-                                        <XCircle size={16} />
-                                        ปฏิเสธ
-                                    </button>
+
+                                {/* Template Selector (for pending orders or to change) */}
+                                {selectedOrder.status === 'pending' && (
+                                    <div className="pt-3 border-t border-gray-200">
+                                        <label className="block text-xs font-medium text-gray-600 mb-2">
+                                            เลือก Template
+                                            {selectedOrder.selected_template_id && (
+                                                <span className="text-gray-400 ml-2">(ลูกค้าเลือก: {selectedOrder.selected_template_id})</span>
+                                            )}
+                                        </label>
+                                        <select
+                                            value={modifiedTemplateId || selectedOrder.selected_template_id || ''}
+                                            onChange={(e) => setModifiedTemplateId(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50"
+                                        >
+                                            <option value="">-- เลือก Template --</option>
+                                            {ALL_TEMPLATES.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 pt-3 border-t border-gray-200">
+                                    {selectedOrder.status === 'pending' && (
+                                        <>
+                                            <button
+                                                onClick={() => handleApprove(selectedOrder)}
+                                                className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <CheckCircle size={16} />
+                                                อนุมัติ
+                                            </button>
+                                            <button
+                                                onClick={() => handleReject(selectedOrder.id)}
+                                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                                            >
+                                                <XCircle size={16} />
+                                                ปฏิเสธ
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Copy Link (always show for approved) */}
+                                    {selectedOrder.status === 'approved' && (
+                                        <button
+                                            onClick={() => copyStoryUrl(selectedOrder.id)}
+                                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-[#1A3C40] hover:bg-[#2a4c50] text-white'
+                                                }`}
+                                        >
+                                            {copied ? (
+                                                <>
+                                                    <CheckCircle size={16} />
+                                                    คัดลอกแล้ว!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy size={16} />
+                                                    คัดลอกลิงก์
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+
+                                    {/* Open Link (for approved) */}
+                                    {selectedOrder.status === 'approved' && (
+                                        <a
+                                            href={`https://norastory.com/${selectedOrder.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <ExternalLink size={16} />
+                                            เปิดดู
+                                        </a>
+                                    )}
                                 </div>
+
+                                {/* Template Info for Approved */}
+                                {selectedOrder.status === 'approved' && selectedOrder.template_id && (
+                                    <div className="pt-3 border-t border-gray-200 flex items-center gap-2">
+                                        <span className="text-xs text-gray-500">Template:</span>
+                                        <span className="text-xs font-medium text-[#1A3C40] bg-[#E8A08A]/10 px-2 py-1 rounded">
+                                            {ALL_TEMPLATES.find(t => t.id === selectedOrder.template_id)?.name || selectedOrder.template_id}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Customer Info */}
@@ -438,6 +719,76 @@ const AdminDashboard = () => {
                                                 />
                                             </a>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Extension Request Section */}
+                            {selectedOrder.extension_status === 'pending' && (
+                                <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                                    <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                        <RefreshCw size={18} /> คำขอต่ออายุ
+                                    </h3>
+                                    <div className="flex gap-4 mb-4">
+                                        <div className="flex-1">
+                                            <p className="text-sm text-amber-900">
+                                                ขอต่อเพิ่ม: <span className="font-bold">{selectedOrder.extension_requested_days} วัน</span>
+                                            </p>
+                                            <p className="text-sm text-amber-900">
+                                                ยอดโอน: <span className="font-bold">{selectedOrder.extension_requested_price} บาท</span>
+                                            </p>
+                                        </div>
+                                        {selectedOrder.extension_slip_url && (
+                                            <a href={selectedOrder.extension_slip_url} target="_blank" rel="noreferrer" className="block w-24 h-24 flex-shrink-0">
+                                                <img src={selectedOrder.extension_slip_url} alt="Extension Slip" className="w-full h-full object-cover rounded-lg border border-amber-200" />
+                                            </a>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => handleApproveExtension(selectedOrder)}
+                                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shadow-sm"
+                                    >
+                                        อนุมัติการต่ออายุ (+{selectedOrder.extension_requested_days} วัน)
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Manual Expiration Edit (Only for approved orders) */}
+                            {selectedOrder.status === 'approved' && (
+                                <div className="mt-6 p-4 bg-gray-100 rounded-xl">
+                                    <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                        <Timer size={18} /> แก้ไขวันหมดอายุ
+                                    </h3>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="datetime-local"
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                            value={newExpiresAt ? new Date(newExpiresAt.getTime() - (newExpiresAt.getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+                                            onChange={(e) => setNewExpiresAt(new Date(e.target.value))}
+                                        />
+                                        <button
+                                            onClick={() => handleUpdateExpiry(selectedOrder.id)}
+                                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm"
+                                        >
+                                            บันทึก
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                        <button onClick={() => {
+                                            const d = new Date(selectedOrder.expires_at || new Date());
+                                            d.setDate(d.getDate() + 7);
+                                            setNewExpiresAt(d);
+                                        }} className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">+7 วัน</button>
+                                        <button onClick={() => {
+                                            const d = new Date(selectedOrder.expires_at || new Date());
+                                            d.setDate(d.getDate() + 30);
+                                            setNewExpiresAt(d);
+                                        }} className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">+30 วัน</button>
+                                        <button onClick={() => {
+                                            const d = new Date(selectedOrder.expires_at || new Date());
+                                            d.setDate(d.getDate() + 365);
+                                            setNewExpiresAt(d);
+                                        }} className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">+1 ปี</button>
                                     </div>
                                 </div>
                             )}
