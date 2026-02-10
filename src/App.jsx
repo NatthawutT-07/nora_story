@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import Hero from './components/Hero';
 import Pricing from './components/Pricing';
-import CheckoutModal from './components/CheckoutModal';
+import CheckoutModal from './components/checkout/CheckoutModal';
 import InteractiveDemos from './components/InteractiveDemos';
 import DigitalCover from './components/DigitalCover';
+import QRCodeDemo from './components/QRCodeDemo';
 import TierGallery from './components/TierGallery';
-import TemplatePlayground from './components/TemplatePlayground';
 import StoryPage from './components/StoryPage';
 
 // Admin
@@ -44,6 +44,28 @@ import Tier4Template4 from './components/templates/tier4/Tier4Template4';
 import Tier4Template5 from './components/templates/tier4/Tier4Template5';
 import Tier4Template6 from './components/templates/tier4/Tier4Template6';
 import ExtensionPage from './components/ExtensionPage';
+
+// Demo Wrapper Component
+const DemoWrapper = ({ children }) => {
+  const navigate = useNavigate();
+  return (
+    <div className="relative min-h-screen">
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-4 left-4 z-[100] bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium transition-all flex items-center gap-2"
+      >
+        ← กลับ
+      </button>
+      <button
+        onClick={() => navigate('/')}
+        className="fixed top-4 right-4 z-[100] bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium transition-all"
+      >
+        ✕ ปิด
+      </button>
+      {children}
+    </div>
+  );
+};
 
 function MainPage() {
   const [selectedTier, setSelectedTier] = useState(null);
@@ -108,7 +130,7 @@ function MainPage() {
       <TierGallery
         tierIdProp={galleryTierId}
         onBack={() => setGalleryTierId(null)}
-        onSelectDemo={(demoId) => setSelectedDemo({ tier: galleryTierId, id: demoId })}
+        onSelectDemo={(tierId, demoId) => setSelectedDemo({ tier: tierId, id: demoId })}
       />
     );
   }
@@ -118,6 +140,7 @@ function MainPage() {
       <Hero />
       <InteractiveDemos />
       <DigitalCover />
+      <QRCodeDemo />
       <Pricing onSelectTier={handleSelectTier} onViewDemos={handleViewDemos} />
       <CheckoutModal
         isOpen={isModalOpen}
@@ -180,40 +203,39 @@ function App() {
     <Routes>
       <Route path="/" element={<MainPage />} />
       <Route path="/gallery/:tierId" element={<TierGallery />} />
-      <Route path="/create" element={<TemplatePlayground />} />
 
       {/* Tier 1 Demos */}
-      <Route path="/demo/t1/1" element={<Tier1Template1 />} />
-      <Route path="/demo/t1/2" element={<Tier1Template2 />} />
-      <Route path="/demo/t1/3" element={<Tier1Template3 />} />
-      <Route path="/demo/t1/4" element={<Tier1Template4 />} />
-      <Route path="/demo/t1/5" element={<Tier1Template5 />} />
-      <Route path="/demo/t1/6" element={<Tier1Template6 />} />
-      <Route path="/demo/t1/7" element={<Tier1Template7 />} />
+      <Route path="/demo/t1/1" element={<DemoWrapper><Tier1Template1 /></DemoWrapper>} />
+      <Route path="/demo/t1/2" element={<DemoWrapper><Tier1Template2 /></DemoWrapper>} />
+      <Route path="/demo/t1/3" element={<DemoWrapper><Tier1Template3 /></DemoWrapper>} />
+      <Route path="/demo/t1/4" element={<DemoWrapper><Tier1Template4 /></DemoWrapper>} />
+      <Route path="/demo/t1/5" element={<DemoWrapper><Tier1Template5 /></DemoWrapper>} />
+      <Route path="/demo/t1/6" element={<DemoWrapper><Tier1Template6 /></DemoWrapper>} />
+      <Route path="/demo/t1/7" element={<DemoWrapper><Tier1Template7 /></DemoWrapper>} />
 
       {/* Tier 2 Demos */}
-      <Route path="/demo/t2/1" element={<Tier2Template1 />} />
-      <Route path="/demo/t2/2" element={<Tier2Template2 />} />
-      <Route path="/demo/t2/3" element={<Tier2Template3 />} />
-      <Route path="/demo/t2/4" element={<Tier2Template4 />} />
-      <Route path="/demo/t2/5" element={<Tier2Template5 />} />
-      <Route path="/demo/t2/6" element={<Tier2Template6 />} />
+      <Route path="/demo/t2/1" element={<DemoWrapper><Tier2Template1 /></DemoWrapper>} />
+      <Route path="/demo/t2/2" element={<DemoWrapper><Tier2Template2 /></DemoWrapper>} />
+      <Route path="/demo/t2/3" element={<DemoWrapper><Tier2Template3 /></DemoWrapper>} />
+      <Route path="/demo/t2/4" element={<DemoWrapper><Tier2Template4 /></DemoWrapper>} />
+      <Route path="/demo/t2/5" element={<DemoWrapper><Tier2Template5 /></DemoWrapper>} />
+      <Route path="/demo/t2/6" element={<DemoWrapper><Tier2Template6 /></DemoWrapper>} />
 
       {/* Tier 3 Demos */}
-      <Route path="/demo/t3/1" element={<Tier3Template1 />} />
-      <Route path="/demo/t3/2" element={<Tier3Template2 />} />
-      <Route path="/demo/t3/3" element={<Tier3Template3 />} />
-      <Route path="/demo/t3/4" element={<Tier3Template4 />} />
-      <Route path="/demo/t3/5" element={<Tier3Template5 />} />
-      <Route path="/demo/t3/6" element={<Tier3Template6 />} />
+      <Route path="/demo/t3/1" element={<DemoWrapper><Tier3Template1 /></DemoWrapper>} />
+      <Route path="/demo/t3/2" element={<DemoWrapper><Tier3Template2 /></DemoWrapper>} />
+      <Route path="/demo/t3/3" element={<DemoWrapper><Tier3Template3 /></DemoWrapper>} />
+      <Route path="/demo/t3/4" element={<DemoWrapper><Tier3Template4 /></DemoWrapper>} />
+      <Route path="/demo/t3/5" element={<DemoWrapper><Tier3Template5 /></DemoWrapper>} />
+      <Route path="/demo/t3/6" element={<DemoWrapper><Tier3Template6 /></DemoWrapper>} />
 
       {/* Tier 4 Demos */}
-      <Route path="/demo/t4/1" element={<Tier4Template1 />} />
-      <Route path="/demo/t4/2" element={<Tier4Template2 />} />
-      <Route path="/demo/t4/3" element={<Tier4Template3 />} />
-      <Route path="/demo/t4/4" element={<Tier4Template4 />} />
-      <Route path="/demo/t4/5" element={<Tier4Template5 />} />
-      <Route path="/demo/t4/6" element={<Tier4Template6 />} />
+      <Route path="/demo/t4/1" element={<DemoWrapper><Tier4Template1 /></DemoWrapper>} />
+      <Route path="/demo/t4/2" element={<DemoWrapper><Tier4Template2 /></DemoWrapper>} />
+      <Route path="/demo/t4/3" element={<DemoWrapper><Tier4Template3 /></DemoWrapper>} />
+      <Route path="/demo/t4/4" element={<DemoWrapper><Tier4Template4 /></DemoWrapper>} />
+      <Route path="/demo/t4/5" element={<DemoWrapper><Tier4Template5 /></DemoWrapper>} />
+      <Route path="/demo/t4/6" element={<DemoWrapper><Tier4Template6 /></DemoWrapper>} />
 
       {/* Admin Routes */}
       <Route path="/jimdev" element={<AdminLogin />} />

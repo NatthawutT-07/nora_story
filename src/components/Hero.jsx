@@ -9,6 +9,14 @@ const Hero = () => {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+    const scrollToSection = (id) => {
+        setIsMenuOpen(false);
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     return (
         <section className="relative min-h-screen flex flex-col overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#1A3C40] to-[#0F2A2E]">
             {/* Animated Background Elements */}
@@ -51,16 +59,22 @@ const Hero = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="flex items-center gap-2 sm:gap-3"
+                        className="flex items-center gap-2 sm:gap-3 cursor-pointer"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
                         <img
                             src={logo}
                             alt="NoraStory"
-                            className="w-9 h-9 sm:w-11 sm:h-11 object-contain bg-white/10 rounded-xl p-1.5 backdrop-blur-sm"
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
                         />
-                        <span className="text-white font-playfair text-lg sm:text-xl tracking-wide font-semibold">
-                            Nora Story
-                        </span>
+                        <div className="flex flex-col">
+                            <span className="text-white font-playfair text-lg sm:text-xl tracking-wide font-semibold leading-none">
+                                Nora Story
+                            </span>
+                            <span className="text-white/70 text-[10px] sm:text-xs tracking-wider">
+                                Online Love Delivery
+                            </span>
+                        </div>
                     </motion.div>
 
                     {/* Desktop Navigation */}
@@ -70,21 +84,21 @@ const Hero = () => {
                         transition={{ duration: 0.6, delay: 0.1 }}
                         className="hidden md:flex items-center gap-1"
                     >
-                        <a href="#experience" className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
+                        <button onClick={() => scrollToSection('experience')} className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
                             ฟีเจอร์
-                        </a>
-                        <a href="#pricing" className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
+                        </button>
+                        <button onClick={() => scrollToSection('pricing')} className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
                             แพ็คเกจ
-                        </a>
-                        <a href="#contact" className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
+                        </button>
+                        <button onClick={() => scrollToSection('contact')} className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
                             ติดต่อ
-                        </a>
-                        <a
-                            href="#pricing"
+                        </button>
+                        <button
+                            onClick={() => scrollToSection('pricing')}
                             className="ml-2 px-5 py-2.5 bg-[#E8A08A] hover:bg-[#d89279] text-[#1A3C40] rounded-full text-sm font-semibold transition-all shadow-lg shadow-[#E8A08A]/25"
                         >
                             เริ่มสร้างเลย
-                        </a>
+                        </button>
                     </motion.nav>
 
                     {/* Mobile Menu Button */}
@@ -110,22 +124,21 @@ const Hero = () => {
                         className="md:hidden absolute top-full left-0 right-0 bg-[#0F2A2E]/95 backdrop-blur-xl border-t border-white/10 px-4 py-4"
                     >
                         <div className="flex flex-col gap-2">
-                            <a href="#experience" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
+                            <button onClick={() => scrollToSection('experience')} className="text-left px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
                                 ฟีเจอร์
-                            </a>
-                            <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
+                            </button>
+                            <button onClick={() => scrollToSection('pricing')} className="text-left px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
                                 แพ็คเกจ
-                            </a>
-                            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
+                            </button>
+                            <button onClick={() => scrollToSection('contact')} className="text-left px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all font-medium">
                                 ติดต่อ
-                            </a>
-                            <a
-                                href="#pricing"
-                                onClick={() => setIsMenuOpen(false)}
-                                className="mt-2 px-4 py-3 bg-[#E8A08A] text-[#1A3C40] rounded-xl text-center font-semibold"
+                            </button>
+                            <button
+                                onClick={() => scrollToSection('pricing')}
+                                className="mt-2 px-4 py-3 bg-[#E8A08A] text-[#1A3C40] rounded-xl text-center font-semibold w-full"
                             >
                                 เริ่มสร้างเลย
-                            </a>
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -163,7 +176,7 @@ const Hero = () => {
                     transition={{ duration: 0.8, delay: 0.4 }}
                     className="text-base sm:text-lg md:text-xl text-white/70 max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed px-4"
                 >
-                    บอกรักแฟน อวยพรวันเกิด ครบรอบ งานบวช หรือส่งการ์ดให้คนพิเศษ ด้วยเทมเพลตสุดพรีเมียมกว่า 20 แบบ!
+                    บอกรักแฟน อวยพรวันเกิด ครบรอบ งานบวช หรือส่งการ์ดให้คนพิเศษ ด้วยเทมเพลตสุดพรีเมียม
                 </motion.p>
 
                 {/* CTA Buttons */}
@@ -174,7 +187,7 @@ const Hero = () => {
                     className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0"
                 >
                     <button
-                        onClick={() => document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' })}
+                        onClick={() => scrollToSection('pricing')}
                         className="group flex items-center justify-center gap-2 bg-[#E8A08A] hover:bg-[#d89279] text-[#1A3C40] px-6 sm:px-8 py-4 rounded-2xl text-base sm:text-lg font-semibold shadow-lg shadow-[#E8A08A]/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#E8A08A]/40"
                     >
                         <Heart className="w-5 h-5" fill="currentColor" />
@@ -198,15 +211,15 @@ const Hero = () => {
                     className="grid grid-cols-3 gap-4 sm:gap-8 mt-12 sm:mt-16 pt-8 border-t border-white/10 w-full max-w-lg"
                 >
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">20+</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">-</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">เทมเพลต</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">1K+</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">-</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">ผู้ใช้งาน</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">99฿</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">79฿</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">เริ่มต้นเพียง</p>
                     </div>
                 </motion.div>

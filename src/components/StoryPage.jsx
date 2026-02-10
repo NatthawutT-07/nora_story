@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
+// Add-ons
+import { mergeConfig } from '../lib/templateConfig';
+
 // Import all templates
 import Tier1Template1 from './templates/tier1/Tier1Template1';
 import Tier1Template2 from './templates/tier1/Tier1Template2';
@@ -35,14 +38,15 @@ import Tier4Template6 from './templates/tier4/Tier4Template6';
 
 // Template mapping
 const TEMPLATES = {
-    't1-1': Tier1Template1, 't1-2': Tier1Template2, 't1-3': Tier1Template3,
-    't1-4': Tier1Template4, 't1-5': Tier1Template5, 't1-6': Tier1Template6, 't1-7': Tier1Template7,
+    't1-1': Tier1Template1,
+    't1-2': Tier1Template2, 't1-3': Tier1Template3,
+    // 't1-4': Tier1Template4, 't1-5': Tier1Template5, 't1-6': Tier1Template6, 't1-7': Tier1Template7,
     't2-1': Tier2Template1, 't2-2': Tier2Template2, 't2-3': Tier2Template3,
-    't2-4': Tier2Template4, 't2-5': Tier2Template5, 't2-6': Tier2Template6,
+    // 't2-4': Tier2Template4, 't2-5': Tier2Template5, 't2-6': Tier2Template6,
     't3-1': Tier3Template1, 't3-2': Tier3Template2, 't3-3': Tier3Template3,
-    't3-4': Tier3Template4, 't3-5': Tier3Template5, 't3-6': Tier3Template6,
+    // 't3-4': Tier3Template4, 't3-5': Tier3Template5, 't3-6': Tier3Template6,
     't4-1': Tier4Template1, 't4-2': Tier4Template2, 't4-3': Tier4Template3,
-    't4-4': Tier4Template4, 't4-5': Tier4Template5, 't4-6': Tier4Template6,
+    // 't4-4': Tier4Template4, 't4-5': Tier4Template5, 't4-6': Tier4Template6,
 };
 
 /**
@@ -200,8 +204,8 @@ const StoryPage = () => {
 
         return (
             <div className={`fixed top-4 left-4 z-50 px-3 py-2 rounded-lg backdrop-blur-md text-xs font-medium flex items-center gap-2 shadow-lg ${isUrgent ? 'bg-red-500/90 text-white' :
-                    isWarning ? 'bg-orange-500/90 text-white' :
-                        'bg-white/20 text-white'
+                isWarning ? 'bg-orange-500/90 text-white' :
+                    'bg-white/20 text-white'
                 }`}>
                 <span className="text-lg">⏳</span>
                 <span>
@@ -217,19 +221,31 @@ const StoryPage = () => {
         const TemplateComponent = TEMPLATES[storyData.template_id];
 
         if (TemplateComponent) {
-            return (
+            // Merge config from DB with defaults
+            const config = mergeConfig(storyData.config);
+
+            // Template content with effects and features
+            const templateContent = (
                 <div className="relative">
+                    {/* Countdown Badge */}
                     {storyData.expires_at && (
                         <CountdownBadge expiresAt={storyData.expires_at} />
                     )}
+
+                    {/* Main Template */}
                     <TemplateComponent
                         customTitle={storyData.customer_name}
                         customMessage={storyData.message}
                         customSignOff={storyData.customer_name}
                         images={storyData.content_images || []}
+                        config={config} // Pass config for dynamic styling
                     />
                 </div>
             );
+
+            return templateContent;
+
+            return templateContent;
         }
     }
 

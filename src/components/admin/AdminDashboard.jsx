@@ -21,8 +21,16 @@ import {
     Copy,
     Link,
     Timer,
-    ExternalLink
+    ExternalLink,
+    Settings,
+    Snowflake,
+    Heart,
+    Sparkles,
+    Lock,
+    Gift
 } from 'lucide-react';
+
+import { DEFAULT_CONFIG, EFFECT_OPTIONS, FEATURE_OPTIONS } from '../../lib/templateConfig';
 
 // Tier duration in days (for calculating expires_at)
 const TIER_DURATIONS = {
@@ -69,6 +77,8 @@ const AdminDashboard = () => {
     const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
     const [searchTerm, setSearchTerm] = useState('');
     const [copied, setCopied] = useState(false);
+    const [orderConfig, setOrderConfig] = useState(null); // Config for selected order
+    const [configSaving, setConfigSaving] = useState(false);
     const navigate = useNavigate();
 
     // Check auth on mount
@@ -173,6 +183,8 @@ const AdminDashboard = () => {
         if (selectedOrder) {
             setNewExpiresAt(selectedOrder.expires_at ? new Date(selectedOrder.expires_at) : null);
             setModifiedTemplateId(selectedOrder.template_id);
+            // Load config from order, or use defaults
+            setOrderConfig(selectedOrder.config || JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
         }
     }, [selectedOrder]);
 
@@ -220,6 +232,36 @@ const AdminDashboard = () => {
             console.error(error);
             alert('เกิดข้อผิดพลาด');
         }
+    };
+
+    // Save config to Firestore
+    const handleSaveConfig = async (orderId) => {
+        if (!orderConfig) return;
+        setConfigSaving(true);
+        try {
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { config: orderConfig });
+
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, config: orderConfig } : o));
+            setSelectedOrder(prev => ({ ...prev, config: orderConfig }));
+            alert('บันทึกการตั้งค่าแล้ว');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        } finally {
+            setConfigSaving(false);
+        }
+    };
+
+    // Update config helper
+    const updateConfig = (category, key, value) => {
+        setOrderConfig(prev => ({
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [key]: value
+            }
+        }));
     };
 
     // Copy story URL
@@ -790,6 +832,98 @@ const AdminDashboard = () => {
                                             setNewExpiresAt(d);
                                         }} className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">+1 ปี</button>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Config Editor (For approved orders) */}
+                            {selectedOrder.status === 'approved' && orderConfig && (
+                                <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                                    <h3 className="font-semibold text-purple-800 mb-4 flex items-center gap-2">
+                                        <Settings size={18} /> ตั้งค่าการแสดงผล (Mix & Match)
+                                    </h3>
+
+                                    {/* Effects Toggles */}
+                                    <div className="mb-4">
+                                        <p className="text-xs font-medium text-purple-700 mb-2">🎨 Effects</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {EFFECT_OPTIONS.map((effect) => (
+                                                <label
+                                                    key={effect.key}
+                                                    className={`flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all ${orderConfig.effects?.[effect.key]
+                                                            ? 'border-purple-500 bg-purple-100'
+                                                            : 'border-gray-200 bg-white hover:border-purple-300'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="sr-only"
+                                                        checked={orderConfig.effects?.[effect.key] || false}
+                                                        onChange={(e) => updateConfig('effects', effect.key, e.target.checked)}
+                                                    />
+                                                    <span className="text-lg mb-1">{effect.label.split(' ')[0]}</span>
+                                                    <span className="text-[10px] text-gray-500">{effect.label.split(' ').slice(1).join(' ')}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Features Toggles */}
+                                    <div className="mb-4">
+                                        <p className="text-xs font-medium text-purple-700 mb-2">✨ Features</p>
+                                        <div className="space-y-3">
+                                            {FEATURE_OPTIONS.map((feature) => (
+                                                <div key={feature.key} className="p-3 bg-white rounded-lg border border-gray-200">
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 accent-purple-500"
+                                                            checked={orderConfig.features?.[feature.key] || false}
+                                                            onChange={(e) => updateConfig('features', feature.key, e.target.checked)}
+                                                        />
+                                                        <span className="text-sm font-medium">{feature.label}</span>
+                                                    </label>
+                                                    {orderConfig.features?.[feature.key] && feature.hasInput && (
+                                                        <div className="mt-2">
+                                                            {feature.inputType === 'textarea' ? (
+                                                                <textarea
+                                                                    placeholder={feature.inputLabel}
+                                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                                                    rows={2}
+                                                                    value={orderConfig.features?.[feature.inputKey] || ''}
+                                                                    onChange={(e) => updateConfig('features', feature.inputKey, e.target.value)}
+                                                                />
+                                                            ) : (
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder={feature.inputLabel}
+                                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                                                    value={orderConfig.features?.[feature.inputKey] || ''}
+                                                                    onChange={(e) => updateConfig('features', feature.inputKey, e.target.value)}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <button
+                                        onClick={() => handleSaveConfig(selectedOrder.id)}
+                                        disabled={configSaving}
+                                        className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                                    >
+                                        {configSaving ? (
+                                            <>
+                                                <RefreshCw size={16} className="animate-spin" /> กำลังบันทึก...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle size={16} /> บันทึกการตั้งค่า
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             )}
                         </div>

@@ -13,28 +13,17 @@ const TEMPLATE_PREVIEWS = {
         { id: 't2-1', name: 'Standard Love', preview: '💌', description: 'อนิเมชั่นพื้นฐาน' },
         { id: 't2-2', name: 'Golden Merit', preview: '✨', description: 'งานบวชพรีเมียม' },
         { id: 't2-3', name: 'Rose Wedding', preview: '🌹', description: 'งานแต่งพรีเมียม' },
-        { id: 't2-1', name: 'Love Letter', preview: '💌', description: 'จดหมายรัก' },
-        { id: 't2-2', name: 'Vintage Romance', preview: '📷', description: 'ความทรงจำ' },
-        { id: 't2-3', name: 'Neon Love', preview: '💜', description: 'สไตล์นีออน' },
-        // { id: 't2-4', name: 'Eternal Flame', preview: '🔥', description: 'ความรักร้อนแรง' },
-        // { id: 't2-5', name: 'Spring Garden', preview: '🌷', description: 'สวนดอกไม้' },
-        // { id: 't2-6', name: 'Winter Snow', preview: '❄️', description: 'หิมะโรแมนติก' },
+
     ],
     3: [
         { id: 't3-1', name: 'Luxury Gold', preview: '👑', description: 'หรูหราอลังการ' },
         { id: 't3-2', name: 'Crystal Clear', preview: '💎', description: 'เพชรพราว' },
         { id: 't3-3', name: 'Velvet Night', preview: '🌌', description: 'ราตรีสุดโรแมนติก' },
-        // { id: 't3-4', name: 'Rose Petal', preview: '🥀', description: 'กลีบกุหลาบ' },
-        // { id: 't3-5', name: 'Aurora', preview: '🌈', description: 'แสงเหนือ' },
-        // { id: 't3-6', name: 'Twilight', preview: '🌆', description: 'พระอาทิตย์ตก' },
     ],
     4: [
         { id: 't4-1', name: 'Eternal Love', preview: '💕', description: 'ความรักนิรันดร์' },
         { id: 't4-2', name: 'Paradise', preview: '🏝️', description: 'สวรรค์บนดิน' },
         { id: 't4-3', name: 'Infinity', preview: '♾️', description: 'ไม่มีวันจบ' },
-        // { id: 't4-4', name: 'Royal', preview: '🏰', description: 'ราชวงศ์' },
-        // { id: 't4-5', name: 'Timeless', preview: '⏳', description: 'ไร้กาลเวลา' },
-        // { id: 't4-6', name: 'Forever', preview: '💍', description: 'ตลอดไป' },
     ],
 };
 
@@ -151,12 +140,7 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
     // Multiple Templates UI (Tier 2-4) with Carousel
     return (
         <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">
-                เลือกธีมที่ชอบ
-            </h3>
-            <p className="text-xs text-gray-400 text-center mb-4">
-                {templates.length} ธีมให้เลือก • เลื่อนเพื่อดูเพิ่มเติม
-            </p>
+
 
             {/* Carousel */}
             <div className="relative px-8">

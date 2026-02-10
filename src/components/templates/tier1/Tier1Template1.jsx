@@ -1,21 +1,453 @@
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
+import { Delete, Heart, Sparkles } from 'lucide-react';
 
-const Tier1Template1 = ({ customMessage, customSignOff }) => {
+// Floating Hearts Component
+const FloatingHearts = () => {
     return (
-        <div className="min-h-screen bg-[#F5F5F0] flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-[#333]">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1 }}
-                className="max-w-md w-full bg-white p-6 md:p-12 shadow-sm border border-gray-200"
-            >
-                <p className="text-xs md:text-sm tracking-[0.2em] uppercase text-gray-400 mb-4 md:mb-8">For You</p>
-                <h1 className="text-2xl md:text-4xl italic mb-4 md:mb-6 leading-relaxed">
-                    "{customMessage || "Every moment with you is a gift I never want to lose."}"
-                </h1>
-                <p className="text-xs text-gray-400 mt-8 md:mt-12">- {customSignOff || "Yours, Always"}</p>
-            </motion.div>
-            <div className="mt-6 md:mt-8 text-xs text-gray-300">Nora.dev Tier 1 Template</div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(15)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    initial={{
+                        x: Math.random() * 100 + '%',
+                        y: '100%',
+                        opacity: 0,
+                        scale: 0.5 + Math.random() * 0.5
+                    }}
+                    animate={{
+                        y: '-20%',
+                        opacity: [0, 1, 1, 0],
+                        rotate: Math.random() * 360
+                    }}
+                    transition={{
+                        duration: 8 + Math.random() * 4,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: 'linear'
+                    }}
+                    className="absolute text-rose-300/40"
+                >
+                    <Heart size={16 + Math.random() * 16} fill="currentColor" />
+                </motion.div>
+            ))}
+        </div>
+    );
+};
+
+// Animated Background Gradient
+const AnimatedBackground = ({ variant = 'default' }) => {
+    const gradients = {
+        default: 'from-rose-50 via-pink-50 to-amber-50',
+        question: 'from-pink-100 via-rose-50 to-red-50',
+        content: 'from-amber-50 via-rose-50 to-pink-50'
+    };
+
+    return (
+        <motion.div
+            className={`absolute inset-0 bg-gradient-to-br ${gradients[variant]}`}
+            animate={{
+                background: [
+                    'linear-gradient(135deg, #fdf2f8 0%, #fff1f2 50%, #fef3c7 100%)',
+                    'linear-gradient(135deg, #fff1f2 0%, #fef3c7 50%, #fdf2f8 100%)',
+                    'linear-gradient(135deg, #fef3c7 0%, #fdf2f8 50%, #fff1f2 100%)',
+                    'linear-gradient(135deg, #fdf2f8 0%, #fff1f2 50%, #fef3c7 100%)'
+                ]
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+        />
+    );
+};
+
+const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ', pinCode = '1234' }) => {
+    const [viewState, setViewState] = useState('LOCKED');
+    const [pin, setPin] = useState("");
+    const [showError, setShowError] = useState(false);
+    const [noCount, setNoCount] = useState(0);
+
+    const CORRECT_PIN = pinCode;
+
+    useEffect(() => {
+        if (pin.length === 4) {
+            if (pin === CORRECT_PIN) {
+                handleUnlock();
+            } else {
+                handleError();
+            }
+        }
+    }, [pin]);
+
+    const handleUnlock = () => setViewState('QUESTION');
+
+    const handleError = () => {
+        setShowError(true);
+        setTimeout(() => {
+            setPin("");
+            setShowError(false);
+        }, 500);
+    };
+
+    const handleKeyPress = (num) => {
+        if (pin.length < 4) {
+            setPin(prev => prev + num);
+        }
+    };
+
+    const handleBackspace = () => setPin(prev => prev.slice(0, -1));
+
+    const handleLoveAnswer = (answer) => {
+        if (answer) {
+            setViewState('CONTENT');
+            triggerConfetti();
+        } else {
+            setNoCount(prev => prev + 1);
+        }
+    };
+
+    const [canSendLove, setCanSendLove] = useState(true);
+
+    const getNoButtonText = () => {
+        if (noCount === 0) return "ไม่รักหรอก 💔";
+        if (noCount === 1) return "คิดอีกทีสิ~ 🤔";
+        if (noCount === 2) return "ยังอีก?! 😤";
+        if (noCount === 3) return "จริงดิ?! 😭";
+        return "ไม่มีทาง! 🙈";
+    };
+
+    const triggerConfetti = () => {
+        if (!canSendLove) return;
+
+        setCanSendLove(false);
+        setTimeout(() => setCanSendLove(true), 5000);
+
+        // Heart-shaped confetti
+        const heart = confetti.shapeFromPath({
+            path: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
+        });
+
+        const duration = 4 * 1000;
+        const animationEnd = Date.now() + duration;
+        const colors = ['#f43f5e', '#ec4899', '#f97316', '#fbbf24'];
+
+        const interval = setInterval(() => {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+
+            const particleCount = 4 * (timeLeft / duration);
+
+            confetti({
+                particleCount,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0, y: 0.6 },
+                colors,
+                shapes: [heart, 'circle'],
+                scalar: 1.2
+            });
+            confetti({
+                particleCount,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1, y: 0.6 },
+                colors,
+                shapes: [heart, 'circle'],
+                scalar: 1.2
+            });
+        }, 200);
+    };
+
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden relative">
+            <AnimatePresence mode="wait">
+                {/* LOCKED STATE - PIN Entry */}
+                {viewState === 'LOCKED' && (
+                    <motion.div
+                        key="lock-screen"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+                        transition={{ duration: 0.6 }}
+                        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+                    >
+                        <AnimatedBackground variant="default" />
+                        <FloatingHearts />
+
+                        <motion.div
+                            animate={showError ? { x: [-10, 10, -10, 10, 0] } : {}}
+                            transition={{ duration: 0.4 }}
+                            className="relative z-10 w-full max-w-sm px-8"
+                        >
+                            {/* Lock Icon */}
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                className="mb-6 flex justify-center"
+                            >
+                                <div className="w-20 h-20 rounded-full bg-white/80 backdrop-blur-sm shadow-lg flex items-center justify-center border border-rose-100">
+                                    <Heart size={36} className="text-rose-400" fill="currentColor" />
+                                </div>
+                            </motion.div>
+
+                            <motion.h2
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="text-2xl md:text-3xl text-gray-700 mb-5 font-light"
+                            >
+                                ข้อความลับ 💌
+                            </motion.h2>
+
+
+                            {/* PIN Dots */}
+                            <div className="flex justify-center gap-4 mb-10">
+                                {[...Array(4)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ scale: 0 }}
+                                        animate={{
+                                            scale: 1,
+                                            backgroundColor: i < pin.length ? '#f43f5e' : '#e5e7eb'
+                                        }}
+                                        transition={{ delay: i * 0.05, type: "spring" }}
+                                        className={`w-4 h-4 rounded-full shadow-inner ${i < pin.length ? 'shadow-rose-200' : ''
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Keypad */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="grid grid-cols-3 gap-4 max-w-[260px] mx-auto"
+                            >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num, idx) => (
+                                    <motion.button
+                                        key={num}
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.5 + idx * 0.03 }}
+                                        whileHover={{ scale: 1.1, backgroundColor: '#fff1f2' }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => handleKeyPress(num.toString())}
+                                        className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border border-rose-100 shadow-md text-xl font-medium text-gray-700 hover:text-rose-500 hover:border-rose-300 transition-colors duration-200 flex items-center justify-center"
+                                    >
+                                        {num}
+                                    </motion.button>
+                                ))}
+                                <div className="w-16 h-16" />
+                                <motion.button
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.8 }}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => handleKeyPress("0")}
+                                    className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border border-rose-100 shadow-md text-xl font-medium text-gray-700 hover:text-rose-500 hover:border-rose-300 transition-colors duration-200 flex items-center justify-center"
+                                >
+                                    0
+                                </motion.button>
+                                <motion.button
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.85 }}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleBackspace}
+                                    className="w-16 h-16 rounded-2xl bg-white/60 backdrop-blur-sm text-gray-400 hover:text-rose-500 transition-colors duration-200 flex items-center justify-center"
+                                >
+                                    <Delete size={22} />
+                                </motion.button>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* QUESTION STATE - Do you love me? */}
+                {viewState === 'QUESTION' && (
+                    <motion.div
+                        key="question-screen"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, y: -50, filter: "blur(10px)" }}
+                        transition={{ duration: 0.5 }}
+                        className="fixed inset-0 z-40 flex flex-col items-center justify-center p-4"
+                    >
+                        <AnimatedBackground variant="question" />
+                        <FloatingHearts />
+
+                        <div className="relative z-10 flex flex-col items-center">
+                            {/* Animated Heart */}
+                            <motion.div
+                                initial={{ scale: 0, rotate: -30 }}
+                                animate={{
+                                    scale: [1, 1.1, 1],
+                                    rotate: 0
+                                }}
+                                transition={{
+                                    scale: { duration: 0.8, repeat: Infinity, repeatDelay: 0.5 },
+                                    rotate: { type: "spring", stiffness: 200 }
+                                }}
+                                className="mb-8"
+                            >
+                                <div className="relative">
+                                    <Heart size={80} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
+                                    <motion.div
+                                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                        className="absolute inset-0 flex items-center justify-center"
+                                    >
+                                        <Heart size={80} className="text-rose-400" fill="currentColor" />
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+
+                            <motion.h2
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-3xl md:text-5xl font-serif text-gray-800 mb-4"
+                            >
+                                {targetName}รักเค้าไหม? 💕
+                            </motion.h2>
+
+                            <div className="flex flex-col items-center gap-6 relative min-h-[150px] w-full max-w-md justify-center">
+                                <motion.button
+                                    onClick={() => handleLoveAnswer(true)}
+                                    initial={{ scale: 1 }}
+                                    animate={{
+                                        scale: 1 + (noCount * 0.25),
+                                        boxShadow: noCount > 2 ? '0 0 40px rgba(244, 63, 94, 0.5)' : '0 10px 40px rgba(244, 63, 94, 0.3)'
+                                    }}
+                                    whileHover={{ scale: 1.1 + (noCount * 0.25) }}
+                                    whileTap={{ scale: 0.95 + (noCount * 0.25) }}
+                                    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-10 py-4 rounded-full text-xl font-medium shadow-xl hover:from-rose-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2"
+                                    style={{ zIndex: 10 }}
+                                >
+                                    <Sparkles size={20} />
+                                    รักที่สุดเลย
+                                    <Heart size={20} fill="currentColor" />
+                                </motion.button>
+
+                                {noCount < 5 && (
+                                    <motion.button
+                                        onClick={() => handleLoveAnswer(false)}
+                                        initial={{ opacity: 0 }}
+                                        animate={{
+                                            opacity: 1 - (noCount * 0.15),
+                                            scale: 1 - (noCount * 0.1)
+                                        }}
+                                        whileHover={{ scale: 0.95 - (noCount * 0.1) }}
+                                        className="text-gray-400 hover:text-gray-500 text-base px-6 py-3 rounded-full bg-white/50 backdrop-blur-sm border border-gray-200"
+                                    >
+                                        {getNoButtonText()}
+                                    </motion.button>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* CONTENT STATE - Greeting Card */}
+                {viewState === 'CONTENT' && (
+                    <motion.div
+                        key="content"
+                        initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                        transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+                        className="relative z-10 max-w-lg w-full"
+                    >
+                        <AnimatedBackground variant="content" />
+                        <FloatingHearts />
+
+                        {/* Card */}
+                        <div className="relative bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border border-rose-100 overflow-hidden">
+                            {/* Decorative corner */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-100 to-transparent rounded-bl-full opacity-50" />
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-100 to-transparent rounded-tr-full opacity-50" />
+
+                            {/* Top decorative line */}
+                            <motion.div
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1 }}
+                                transition={{ delay: 0.5, duration: 0.8 }}
+                                className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-400 to-transparent"
+                            />
+
+                            {/* Content */}
+                            <div className="relative z-10">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.3, type: "spring" }}
+                                    className="flex justify-center mb-6"
+                                >
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-lg">
+                                        <Heart size={28} className="text-white" fill="currentColor" />
+                                    </div>
+                                </motion.div>
+
+                                <motion.p
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="text-sm tracking-[0.3em] uppercase text-rose-400 mb-6 font-medium"
+                                >
+                                    ✨ For You ✨
+                                </motion.p>
+
+                                <motion.h1
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="text-2xl md:text-4xl italic leading-relaxed text-gray-800 mb-8"
+                                >
+                                    "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
+                                </motion.h1>
+
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.7 }}
+                                    className="flex items-center justify-center gap-2 text-gray-500"
+                                >
+                                    <div className="w-8 h-px bg-gray-300" />
+                                    <span className="text-sm tracking-wide">{customSignOff || "รักเธอเสมอ"}</span>
+                                    <div className="w-8 h-px bg-gray-300" />
+                                </motion.div>
+
+                                <motion.button
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 1 }}
+                                    onClick={triggerConfetti}
+                                    disabled={!canSendLove}
+                                    whileHover={canSendLove ? { scale: 1.05 } : {}}
+                                    whileTap={canSendLove ? { scale: 0.95 } : {}}
+                                    className={`mt-10 text-sm text-rose-400 flex items-center gap-2 mx-auto bg-rose-50 px-6 py-3 rounded-full transition-all duration-300 uppercase tracking-widest ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:text-rose-500'}`}
+                                >
+                                    <Sparkles size={16} />
+                                    {canSendLove ? "ส่งความรักอีกครั้ง" : "รอสักครู่..."}
+                                </motion.button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {viewState === 'CONTENT' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5 }}
+                    className="absolute bottom-4 text-xs text-gray-300"
+                >
+                    Made with 💕 by Nora.dev
+                </motion.div>
+            )}
         </div>
     );
 };

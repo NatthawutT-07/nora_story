@@ -1,0 +1,297 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Smartphone, Link2, Globe, Sparkles, Copy, Check, RefreshCw, QrCode } from 'lucide-react';
+
+// Random ID generator for demo
+const generateRandomId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+};
+
+const LINK_TYPES = [
+    {
+        id: 'random',
+        name: 'Random Link',
+        description: 'ระบบสร้างลิงก์อัตโนมัติ',
+        icon: RefreshCw,
+        tier: 'Tier 1-2',
+        color: 'from-blue-500 to-cyan-500',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        getUrl: (randomId) => `norastory.com/${randomId}`,
+    },
+    {
+        id: 'custom',
+        name: 'Custom Link',
+        description: 'เลือกชื่อลิงก์ได้',
+        icon: Link2,
+        tier: 'Tier 3',
+        color: 'from-purple-500 to-pink-500',
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200',
+        getUrl: () => 'norastory.com/HappyNewYear2026',
+    },
+    {
+        id: 'subdomain',
+        name: 'Special Link',
+        description: 'ชื่อพิเศษไม่ซ้ำใคร',
+        icon: Globe,
+        tier: 'Tier 4',
+        color: 'from-amber-500 to-orange-500',
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        getUrl: () => 'somsri.norastory.com',
+    },
+];
+
+// Simple QR code using external API
+const QRCodeImage = ({ value, size = 200 }) => {
+    const encodedUrl = encodeURIComponent(value);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedUrl}&bgcolor=fff0f5&color=1A3C40`;
+
+    return (
+        <img
+            src={qrUrl}
+            alt="QR Code"
+            width={size}
+            height={size}
+            className="rounded-lg"
+        />
+    );
+};
+
+const QRCodeDemo = () => {
+    const [selectedType, setSelectedType] = useState('random');
+    const [randomId, setRandomId] = useState(generateRandomId());
+    const [copied, setCopied] = useState(false);
+
+    const currentType = LINK_TYPES.find(t => t.id === selectedType);
+    const currentUrl = currentType.getUrl(randomId);
+    const fullUrl = `https://${currentUrl}`;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(fullUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleRefresh = () => {
+        setRandomId(generateRandomId());
+    };
+
+    return (
+        <section className="py-20 bg-gradient-to-b from-white to-rose-50/30">
+            <div className="max-w-6xl mx-auto px-4">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-center mb-12"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-100 rounded-full text-rose-600 text-sm font-medium mb-4">
+                        <Smartphone size={16} />
+                        ลองสแกนเลย!
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-playfair font-bold text-[#1A3C40] mb-4">
+                        แชร์ลิงก์ง่ายๆ ด้วย QR Code
+                    </h2>
+                    <p className="text-gray-500 max-w-xl mx-auto">
+                        สแกน QR Code หรือส่งลิงก์ให้คนที่คุณรัก เปิดได้ทันทีผ่านมือถือ
+                    </p>
+                </motion.div>
+
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                    {/* Left: QR Code Display */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="flex flex-col items-center"
+                    >
+                        <div className="relative">
+                            {/* QR Code Card */}
+                            <motion.div
+                                key={currentUrl}
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100"
+                            >
+                                <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-4 rounded-2xl mb-4 flex items-center justify-center">
+                                    <QRCodeImage value={fullUrl} size={200} />
+                                </div>
+
+                                {/* URL Display with Highlights */}
+                                <div className={`${currentType.bgColor} ${currentType.borderColor} border rounded-xl p-3 mb-3`}>
+                                    <p className="text-xs text-gray-500 mb-2">ลิงก์ตัวอย่าง:</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-mono font-medium flex-1 overflow-hidden">
+                                            {selectedType === 'subdomain' ? (
+                                                // Subdomain format - highlight the subdomain part
+                                                <div className="flex items-center flex-wrap">
+                                                    <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-l-md font-bold animate-pulse">
+                                                        somsri
+                                                    </span>
+                                                    <span className="bg-[#1A3C40] text-white px-2 py-0.5 rounded-r-md">
+                                                        .norastory.com
+                                                    </span>
+                                                    <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                                        ✨ โดเมนส่วนตัว
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                // Path-based format - path is gray
+                                                <div className="flex items-center flex-wrap">
+                                                    <span className="text-[#1A3C40] font-semibold">
+                                                        norastory.com
+                                                    </span>
+                                                    <span className="text-gray-400">/</span>
+                                                    <span className="text-gray-400">
+                                                        {selectedType === 'random' ? randomId : 'HappyNewYear2026'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {selectedType === 'random' && (
+                                            <button
+                                                onClick={handleRefresh}
+                                                className="p-1.5 hover:bg-white/50 rounded-lg transition-colors"
+                                                title="สุ่มใหม่"
+                                            >
+                                                <RefreshCw size={14} className="text-gray-500" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Explanation text */}
+                                    <p className="text-[10px] mt-2 text-gray-400">
+                                        {selectedType === 'subdomain'
+                                            ? '🌟 ชื่อของคุณอยู่ข้างหน้า ดูพิเศษสุดๆ!'
+                                            : '📝 ลิงก์ต่อท้ายโดเมนหลัก'}
+                                    </p>
+                                </div>
+
+                                {/* Copy Button */}
+                                <button
+                                    onClick={handleCopy}
+                                    className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${copied
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-[#1A3C40] text-white hover:bg-[#1A3C40]/90'
+                                        }`}
+                                >
+                                    {copied ? (
+                                        <>
+                                            <Check size={18} />
+                                            คัดลอกแล้ว!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={18} />
+                                            คัดลอกลิงก์
+                                        </>
+                                    )}
+                                </button>
+                            </motion.div>
+
+                            {/* Decorative Elements */}
+                            <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-rose-200 to-pink-200 rounded-full blur-2xl opacity-60" />
+                            <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-amber-200 to-orange-200 rounded-full blur-2xl opacity-60" />
+                        </div>
+
+                        {/* Scan Hint */}
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            className="mt-6 text-sm text-gray-400 flex items-center gap-2"
+                        >
+                            <Sparkles size={14} className="text-amber-500" />
+                            ใช้กล้องมือถือสแกน QR Code ด้านบน
+                        </motion.p>
+                    </motion.div>
+
+                    {/* Right: Link Type Selection */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 30 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="space-y-4"
+                    >
+                        <h3 className="text-lg font-semibold text-[#1A3C40] mb-4">
+                            รูปแบบลิงก์ที่เลือกได้
+                        </h3>
+
+                        {LINK_TYPES.map((type) => {
+                            const Icon = type.icon;
+                            const isSelected = selectedType === type.id;
+
+                            return (
+                                <motion.button
+                                    key={type.id}
+                                    onClick={() => setSelectedType(type.id)}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${isSelected
+                                        ? `${type.bgColor} ${type.borderColor} shadow-lg`
+                                        : 'bg-white border-gray-100 hover:border-gray-200'
+                                        }`}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className={`p-3 rounded-xl bg-gradient-to-br ${type.color} text-white`}>
+                                            <Icon size={24} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="font-semibold text-gray-800">{type.name}</h4>
+                                                <span className="px-2 py-0.5 bg-gray-100 rounded-full text-[10px] font-medium text-gray-500">
+                                                    {type.tier}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mb-2">{type.description}</p>
+                                            <AnimatePresence>
+                                                {isSelected && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        className="mt-2 pt-2 border-t border-gray-200"
+                                                    >
+                                                        <p className="text-xs font-mono text-gray-600 bg-white/70 px-2 py-1 rounded-lg inline-block">
+                                                            {type.getUrl(randomId)}
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                        {isSelected && (
+                                            <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                                            >
+                                                <Check size={14} className="text-white" />
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                </motion.button>
+                            );
+                        })}
+
+                        {/* Info Note */}
+                        <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-xl border border-rose-100">
+                            <p className="text-sm text-gray-600">
+                                <span className="font-medium text-[#1A3C40]">💡 Tip:</span> เลือกแพ็คเกจที่สูงขึ้นเพื่อปรับแต่งลิงก์ได้มากขึ้น!
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default QRCodeDemo;
