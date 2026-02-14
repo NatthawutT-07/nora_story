@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence, useTransform, useMotionValue, useScroll } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Heart, Sparkles, Play, Pause, ChevronRight, Volume2, VolumeX, Music, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Play, Pause, Volume2, VolumeX, Music, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 // --- Utility Components ---
 
@@ -73,29 +73,7 @@ const ShootingStar = ({ delay }) => {
     );
 };
 
-const TiltCard = ({ children, className = "" }) => {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const rotateX = useTransform(y, [-100, 100], [5, -5]);
-    const rotateY = useTransform(x, [-100, 100], [-5, 5]);
 
-    function handleMouseMove({ currentTarget, clientX, clientY }) {
-        const { left, top, width, height } = currentTarget.getBoundingClientRect();
-        x.set(clientX - left - width / 2);
-        y.set(clientY - top - height / 2);
-    }
-
-    return (
-        <motion.div
-            style={{ perspective: 1000, rotateX, rotateY }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => { x.set(0); y.set(0); }}
-            className={`transition-all duration-200 ease-out ${className}`}
-        >
-            {children}
-        </motion.div>
-    );
-};
 
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
@@ -128,9 +106,46 @@ const MusicPlayer = ({ musicUrl }) => {
     );
 };
 
+const ScrollIndicator = () => {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 100) {
+                setVisible(false);
+            } else {
+                setVisible(true);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    return (
+        <AnimatePresence>
+            {visible && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none"
+                >
+                    <span className="text-white/50 text-[10px] uppercase tracking-[0.2em] mb-2 animate-pulse">Scroll</span>
+                    <motion.div
+                        animate={{ y: [0, 10, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-px h-12 bg-gradient-to-b from-rose-500 to-transparent"
+                    />
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 const TimelineNav = ({ items, activeIndex, onSelect }) => {
     return (
-        <div className="fixed top-1/2 right-4 md:right-8 transform -translate-y-1/2 z-40 hidden md:flex flex-col gap-6 items-end">
+        <div className="fixed top-1/2 right-2 md:right-8 transform -translate-y-1/2 z-40 flex flex-col gap-4 md:gap-6 items-end">
             <div className="absolute top-0 bottom-0 right-[5px] w-px bg-white/10 -z-10" />
             {items.map((item, idx) => (
                 <button
@@ -139,15 +154,15 @@ const TimelineNav = ({ items, activeIndex, onSelect }) => {
                     className="group relative flex items-center justify-end"
                 >
                     <span
-                        className={`mr-4 text-xs font-bold uppercase tracking-widest transition-all duration-300 transform ${activeIndex === idx
+                        className={`mr-4 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 transform ${activeIndex === idx
                             ? 'text-rose-400 opacity-100 translate-x-0'
                             : 'text-white/30 opacity-0 group-hover:opacity-100 translate-x-2'
-                            }`}
+                            } hidden md:block`} // Keep text hidden on mobile to save space, or show if valid? Let's hide text on mobile for cleanliness
                     >
                         {item.label}
                     </span>
                     <div
-                        className={`w-3 h-3 rounded-full transition-all duration-500 border border-white/20 relative z-10 ${activeIndex === idx
+                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-500 border border-white/20 relative z-10 ${activeIndex === idx
                             ? 'bg-rose-500 scale-125 shadow-[0_0_15px_rgba(244,63,94,0.6)] border-rose-400'
                             : 'bg-[#050510] group-hover:bg-white/20'
                             }`}
@@ -161,7 +176,7 @@ const TimelineNav = ({ items, activeIndex, onSelect }) => {
 // --- Layout Sub-Components ---
 
 const SingleLayout = ({ chapter }) => (
-    <div className="relative w-full h-[500px] md:h-[600px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 group">
+    <div className="relative w-full h-[400px] md:h-[600px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 group">
         <img src={chapter.images[0]} alt="" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[20s] ease-linear" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-transparent to-transparent opacity-90" />
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-12">
@@ -225,35 +240,132 @@ const DualLayout = ({ chapter, customMessage, customSignOff, onConfetti, canSend
 );
 
 const CollageLayout = ({ chapter }) => (
-    <div className="relative w-full h-full p-4 flex flex-col justify-center min-h-[700px]">
-        <div className="text-center mb-8">
-            <div className="inline-block bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-widest border border-rose-500/30">
-                {chapter.label}
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">{chapter.title}</h2>
+    <div className="relative w-full h-full p-6 flex flex-col justify-center min-h-[500px] md:min-h-[800px]">
+        {/* Elegant Title Section */}
+        <div className="relative text-center mb-4 md:mb-8">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="inline-block"
+            >
+                <div className="flex items-center justify-center gap-3 mb-4">
+                    <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-rose-400/50" />
+                    <span className="text-xs font-serif italic text-rose-300 tracking-[0.2em] uppercase opacity-80">
+                        {chapter.label}
+                    </span>
+                    <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-rose-400/50" />
+                </div>
+                <h2 className="text-4xl md:text-5xl font-serif text-white/90 tracking-wide">
+                    {chapter.title}
+                </h2>
+                {chapter.desc && (
+                    <p className="mt-3 text-white/50 font-light text-sm tracking-wide max-w-md mx-auto">
+                        {chapter.desc}
+                    </p>
+                )}
+            </motion.div>
         </div>
 
-        <div className="grid grid-cols-6 grid-rows-6 gap-3 h-[600px] w-full max-w-5xl mx-auto">
-            {/* Main Feature */}
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }} className="col-span-4 row-span-4 rounded-[2rem] overflow-hidden relative shadow-lg border border-white/10">
-                <img src={chapter.images[0]} alt="" className="w-full h-full object-cover" />
+        {/* Premium Bento Grid - Unified Layout for Mobile & Desktop */}
+        <div className="grid grid-cols-4 grid-rows-3 gap-2 md:gap-4 w-full max-w-6xl mx-auto aspect-[4/3]">
+
+            {/* Main Featured Photo (Large Left) */}
+            <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="col-span-2 row-span-3 relative group rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl"
+            >
+                <div className="absolute inset-0 bg-gray-900/20 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                <img
+                    src={chapter.images[0]}
+                    alt=""
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+
+                {/* Overlay Text */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 translate-y-4 group-hover:translate-y-0">
+                    <span className="text-white/90 font-serif italic text-sm md:text-lg">Pure Elegance</span>
+                </div>
             </motion.div>
 
-            {/* Smaller Shots */}
-            <motion.div initial={{ y: -20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[1]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-            <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[2]} alt="" className="w-full h-full object-cover" />
+            {/* Top Right (Wide) */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="col-span-2 row-span-1 relative group rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-white/5 shadow-lg"
+            >
+                <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                <img
+                    src={chapter.images[1]}
+                    alt=""
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
             </motion.div>
 
-            {/* Bottom Row */}
-            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[3]} alt="" className="w-full h-full object-cover" />
+            {/* Middle Right Split 1 */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="col-span-1 row-span-1 relative group rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-white/5 shadow-lg"
+            >
+                <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                <img
+                    src={chapter.images[2]}
+                    alt=""
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
             </motion.div>
-            <motion.div initial={{ x: -20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[4]} alt="" className="w-full h-full object-cover" />
+
+            {/* Middle Right Split 2 */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="col-span-1 row-span-1 relative group rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-white/5 shadow-lg"
+            >
+                <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                <img
+                    src={chapter.images[3]}
+                    alt=""
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
             </motion.div>
+
+            {/* Bottom Right (Wide) */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="col-span-2 row-span-1 relative group rounded-[1rem] md:rounded-[2rem] overflow-hidden border border-white/5 shadow-lg"
+            >
+                <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
+                <img
+                    src={chapter.images[4]}
+                    alt=""
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+            </motion.div>
+
+        </div>
+    </div>
+);
+
+const Watermark = () => (
+    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
+            {Array.from({ length: 400 }).map((_, i) => (
+                <span key={i} className="text-lg font-black text-white whitespace-nowrap select-none">
+                    SAMPLE WEB • ตัวอย่างเว็บไซต์
+                </span>
+            ))}
         </div>
     </div>
 );
@@ -261,43 +373,53 @@ const CollageLayout = ({ chapter }) => (
 const Tier3Template1 = ({
     customMessage,
     customSignOff,
-    targetName = 'คนดี',
-    pinCode = '1234',
     images = [],
     musicUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 }) => {
-    const [viewState, setViewState] = useState('LOCKED');
-    const [pin, setPin] = useState("");
     const [activeSection, setActiveSection] = useState(0);
     const [canSendLove, setCanSendLove] = useState(true);
     const sectionRefs = useRef([]);
 
-    useEffect(() => {
-        if (pin === pinCode) setTimeout(() => setViewState('MAIN'), 500);
-        else if (pin.length === 4) setPin("");
-    }, [pin, pinCode]);
+    const getPlaceholder = (width, height, text) => {
+        const svg = `
+            <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#2a2a2a"/>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="36" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
+            </svg>
+        `;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
+    };
 
-    const handleKeyPress = (n) => { if (pin.length < 4) setPin(prev => prev + n); };
+    // Standardized default images with strict ratios (4:3, 1:1, 16:9)
+    const defaultImages = {
+        single: [getPlaceholder(800, 600, "4:3")],
+        collage: [
+            getPlaceholder(600, 800, "3:4"),   // Main Left (Portrait 4:3)
+            getPlaceholder(800, 450, "16:9"),   // Top Right (Wide)
+            getPlaceholder(500, 500, "1:1"),    // Mid R1 (Square)
+            getPlaceholder(500, 500, "1:1"),    // Mid R2 (Square)
+            getPlaceholder(800, 450, "16:9"),   // Bot Right (Wide)
+        ],
+        dual: [
+            getPlaceholder(600, 800, "3:4"),
+            getPlaceholder(600, 800, "3:4"),
+        ]
+    };
 
-
-
-    const getImages = (count, startIndex = 0) => {
-        const placeholders = [
-            'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800',
-            'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800',
-            'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800',
-            'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800',
-            'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800'
-        ];
-        return Array(count).fill(0).map((_, i) => images[startIndex + i] || placeholders[i % placeholders.length]);
+    // Helper to merge user provided images with defaults
+    const getSectionImages = (startIndex, count, defaults) => {
+        // Handle case where images might be undefined or empty
+        const currentImages = images || [];
+        const sectionUserImages = currentImages.slice(startIndex, startIndex + count);
+        return [...sectionUserImages, ...defaults].slice(0, count);
     };
 
     const listItems = [
-        { type: 'single', label: "Day 1", title: "The Beginning", desc: "จุดเริ่มต้นของการเดินทาง", images: getImages(1, 0) },
-        { type: 'single', label: "Day 30", title: "First Month", desc: "ความทรงจำที่งดงามในเดือนแรก", images: getImages(1, 1) },
-        { type: 'single', label: "Day 60", title: "Growing Closer", desc: "ยิ่งนานยิ่งผูกพัน", images: getImages(1, 2) },
-        { type: 'collage', label: "Memories", title: "Our Collection", desc: "ทุกช่วงเวลาพิเศษของเรา", images: getImages(5, 3) },
-        { type: 'finale', label: "Forever", title: "To Infinity", desc: "", images: getImages(2, 8) },
+        { type: 'single', label: "Day 1", title: "The Beginning", desc: "จุดเริ่มต้นของการเดินทาง", images: getSectionImages(0, 1, defaultImages.single) },
+        { type: 'single', label: "Day 30", title: "First Month", desc: "ความทรงจำที่งดงามในเดือนแรก", images: getSectionImages(1, 1, defaultImages.single) },
+        { type: 'single', label: "Day 60", title: "Growing Closer", desc: "ยิ่งนานยิ่งผูกพัน", images: getSectionImages(2, 1, defaultImages.single) },
+        { type: 'collage', label: "Memories", title: "Our Collection", desc: "ทุกช่วงเวลาพิเศษของเรา", images: getSectionImages(3, 5, defaultImages.collage) },
+        { type: 'finale', label: "Forever", title: "To Infinity", desc: "", images: getSectionImages(8, 2, defaultImages.dual) },
     ];
 
     const scrollToSection = (index) => {
@@ -326,66 +448,39 @@ const Tier3Template1 = ({
 
     return (
         <div className="relative min-h-screen w-full bg-[#050510] text-white overflow-x-hidden font-sans selection:bg-rose-500/30">
+            <Watermark />
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
             <Starfield speed={0.5} />
             <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay" />
-            {viewState !== 'LOCKED' && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+            {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+            <ScrollIndicator />
 
-            <AnimatePresence mode="wait">
-                {viewState === 'LOCKED' && (
-                    <motion.div key="locked" exit={{ opacity: 0, scale: 1.5, filter: "blur(20px)" }} transition={{ duration: 1 }} className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-                        <TiltCard className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl max-w-sm w-full">
-                            <div className="text-center">
-                                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-tr from-rose-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30">
-                                    <Heart className="w-8 h-8 text-white fill-white" />
-                                </div>
-                                <h1 className="text-2xl font-light mb-2 text-white/90">Welcome Home</h1>
-                                <p className="text-sm text-white/50 mb-8">Enter the cosmic code</p>
-                                <div className="flex justify-center gap-4 mb-8">
-                                    {[0, 1, 2, 3].map(i => <div key={i} className={`w-3 h-3 rounded-full transition-all duration-300 ${i < pin.length ? 'bg-rose-400 scale-125 shadow-[0_0_10px_rgba(251,113,133,0.8)]' : 'bg-white/20'}`} />)}
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => (
-                                        <button key={n} onClick={() => handleKeyPress(n.toString())} className={`w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-lg font-medium border border-white/5 hover:border-white/20 ${n === 0 ? 'col-start-2' : ''}`}>
-                                            {n}
-                                        </button>
-                                    ))}
-                                    <button onClick={() => setPin(p => p.slice(0, -1))} className="w-14 h-14 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors col-start-3"><ChevronRight className="rotate-180" /></button>
-                                </div>
-                            </div>
-                        </TiltCard>
-                    </motion.div>
-                )}
+            <div className="relative z-10 w-full min-h-screen py-10 px-4 md:px-8">
 
-                {viewState === 'MAIN' && (
-                    <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="relative z-10 w-full min-h-screen py-20 px-4 md:px-8">
+                <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
 
-                        <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
+                <div className="max-w-4xl mx-auto flex flex-col gap-6 pb-10">
+                    {listItems.map((item, index) => (
+                        <motion.div
+                            key={index}
+                            ref={el => sectionRefs.current[index] = el}
+                            initial={{ opacity: 0, y: 50 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            onViewportEnter={() => setActiveSection(index)}
+                            transition={{ duration: 0.8 }}
+                        >
+                            {item.type === 'single' && <SingleLayout chapter={item} />}
+                            {item.type === 'collage' && <CollageLayout chapter={item} />}
+                            {item.type === 'finale' && <DualLayout chapter={item} customMessage={customMessage} customSignOff={customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
+                        </motion.div>
+                    ))}
 
-                        <div className="max-w-4xl mx-auto flex flex-col gap-32 pb-32">
-                            {listItems.map((item, index) => (
-                                <motion.div
-                                    key={index}
-                                    ref={el => sectionRefs.current[index] = el}
-                                    initial={{ opacity: 0, y: 50 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, margin: "-20%" }}
-                                    onViewportEnter={() => setActiveSection(index)}
-                                    transition={{ duration: 0.8 }}
-                                >
-                                    {item.type === 'single' && <SingleLayout chapter={item} />}
-                                    {item.type === 'collage' && <CollageLayout chapter={item} />}
-                                    {item.type === 'finale' && <DualLayout chapter={item} customMessage={customMessage} customSignOff={customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
-                                </motion.div>
-                            ))}
-
-                            <div className="text-center text-white/30 text-sm mt-10">
-                                End of your story... for now.
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <div className="text-center text-white/30 text-sm mt-6">
+                        Made with by Nora Story
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

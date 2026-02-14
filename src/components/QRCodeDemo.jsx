@@ -84,28 +84,28 @@ const QRCodeDemo = () => {
     };
 
     return (
-        <section className="py-20 bg-gradient-to-b from-white to-rose-50/30">
+        <section className="py-8 bg-gradient-to-b from-white to-rose-50/30">
             <div className="max-w-6xl mx-auto px-4">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-center mb-12"
+                    className="text-center mb-4"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-100 rounded-full text-rose-600 text-sm font-medium mb-4">
-                        <Smartphone size={16} />
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 rounded-full text-rose-600 text-xs md:text-sm font-medium mb-3 md:mb-4">
+                        <Smartphone size={14} className="md:w-4 md:h-4" />
                         ลองสแกนเลย!
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-playfair font-bold text-[#1A3C40] mb-4">
+                    <h2 className="text-xl md:text-2xl font-playfair font-bold text-[#1A3C40] mb-2 md:mb-4">
                         แชร์ลิงก์ง่ายๆ ด้วย QR Code
                     </h2>
-                    <p className="text-gray-500 max-w-xl mx-auto">
+                    <p className="text-xs md:text-base text-gray-500 max-w-xl mx-auto px-4">
                         สแกน QR Code หรือส่งลิงก์ให้คนที่คุณรัก เปิดได้ทันทีผ่านมือถือ
                     </p>
                 </motion.div>
 
-                <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="grid md:grid-cols-2 gap-6 items-center">
                     {/* Left: QR Code Display */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
@@ -210,7 +210,7 @@ const QRCodeDemo = () => {
                             className="mt-6 text-sm text-gray-400 flex items-center gap-2"
                         >
                             <Sparkles size={14} className="text-amber-500" />
-                            ใช้กล้องมือถือสแกน QR Code ด้านบน
+                            สามารถใช้กล้องมือถือสแกน QR Code
                         </motion.p>
                     </motion.div>
 
@@ -240,18 +240,18 @@ const QRCodeDemo = () => {
                                         : 'bg-white border-gray-100 hover:border-gray-200'
                                         }`}
                                 >
-                                    <div className="flex items-start gap-4">
-                                        <div className={`p-3 rounded-xl bg-gradient-to-br ${type.color} text-white`}>
-                                            <Icon size={24} />
+                                    <div className="flex items-start gap-3 md:gap-4">
+                                        <div className={`p-2 md:p-3 rounded-xl bg-gradient-to-br ${type.color} text-white`}>
+                                            <Icon size={18} className="md:w-6 md:h-6" />
                                         </div>
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-gray-800">{type.name}</h4>
-                                                <span className="px-2 py-0.5 bg-gray-100 rounded-full text-[10px] font-medium text-gray-500">
+                                            <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+                                                <h4 className="font-semibold text-sm md:text-base text-gray-800">{type.name}</h4>
+                                                <span className="px-1.5 py-0.5 bg-gray-100 rounded-full text-[9px] md:text-[10px] font-medium text-gray-500">
                                                     {type.tier}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-2">{type.description}</p>
+                                            <p className="text-xs md:text-sm text-gray-500 mb-1 md:mb-2">{type.description}</p>
                                             <AnimatePresence>
                                                 {isSelected && (
                                                     <motion.div
@@ -282,9 +282,9 @@ const QRCodeDemo = () => {
                         })}
 
                         {/* Info Note */}
-                        <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-xl border border-rose-100">
+                        <div className="mt-2 p-4 bg-gradient-to-r from-rose-50 to-amber-50 rounded-xl border border-rose-100">
                             <p className="text-sm text-gray-600">
-                                <span className="font-medium text-[#1A3C40]">💡 Tip:</span> เลือกแพ็คเกจที่สูงขึ้นเพื่อปรับแต่งลิงก์ได้มากขึ้น!
+                                <span className="font-medium text-[#1A3C40]">💡 </span> เลือกแพ็คเกจที่สูงขึ้นเพื่อปรับแต่งลิงก์ได้มากขึ้น!
                             </p>
                         </div>
                     </motion.div>

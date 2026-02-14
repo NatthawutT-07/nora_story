@@ -1,45 +1,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronLeft, ChevronRight, Heart, Sparkles } from 'lucide-react';
-
-// Template preview data
-const TEMPLATE_PREVIEWS = {
-    1: [
-        { id: 't1-1', name: 'Love Lock 💕', preview: '🔐', description: 'ข้อความลับพร้อม PIN' },
-        { id: 't1-2', name: 'Ordination 🙏', preview: '🪷', description: 'การ์ดงานบวช' },
-        { id: 't1-3', name: 'Wedding 💍', preview: '👰', description: 'การ์ดงานแต่ง' },
-    ],
-    2: [
-        { id: 't2-1', name: 'Standard Love', preview: '💌', description: 'อนิเมชั่นพื้นฐาน' },
-        { id: 't2-2', name: 'Golden Merit', preview: '✨', description: 'งานบวชพรีเมียม' },
-        { id: 't2-3', name: 'Rose Wedding', preview: '🌹', description: 'งานแต่งพรีเมียม' },
-        { id: 't2-1', name: 'Love Letter', preview: '💌', description: 'จดหมายรัก' },
-        { id: 't2-2', name: 'Vintage Romance', preview: '📷', description: 'ความทรงจำ' },
-        { id: 't2-3', name: 'Neon Love', preview: '💜', description: 'สไตล์นีออน' },
-        // { id: 't2-4', name: 'Eternal Flame', preview: '🔥', description: 'ความรักร้อนแรง' },
-        // { id: 't2-5', name: 'Spring Garden', preview: '🌷', description: 'สวนดอกไม้' },
-        // { id: 't2-6', name: 'Winter Snow', preview: '❄️', description: 'หิมะโรแมนติก' },
-    ],
-    3: [
-        { id: 't3-1', name: 'Luxury Gold', preview: '👑', description: 'หรูหราอลังการ' },
-        { id: 't3-2', name: 'Crystal Clear', preview: '💎', description: 'เพชรพราว' },
-        { id: 't3-3', name: 'Velvet Night', preview: '🌌', description: 'ราตรีสุดโรแมนติก' },
-        // { id: 't3-4', name: 'Rose Petal', preview: '🥀', description: 'กลีบกุหลาบ' },
-        // { id: 't3-5', name: 'Aurora', preview: '🌈', description: 'แสงเหนือ' },
-        // { id: 't3-6', name: 'Twilight', preview: '🌆', description: 'พระอาทิตย์ตก' },
-    ],
-    4: [
-        { id: 't4-1', name: 'Eternal Love', preview: '💕', description: 'ความรักนิรันดร์' },
-        { id: 't4-2', name: 'Paradise', preview: '🏝️', description: 'สวรรค์บนดิน' },
-        { id: 't4-3', name: 'Infinity', preview: '♾️', description: 'ไม่มีวันจบ' },
-        // { id: 't4-4', name: 'Royal', preview: '🏰', description: 'ราชวงศ์' },
-        // { id: 't4-5', name: 'Timeless', preview: '⏳', description: 'ไร้กาลเวลา' },
-        // { id: 't4-6', name: 'Forever', preview: '💍', description: 'ตลอดไป' },
-    ],
-};
+import { TEMPLATE_DATA } from '../data/templateData';
 
 const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
-    const templates = TEMPLATE_PREVIEWS[tierId] || TEMPLATE_PREVIEWS[1];
+    // Filter templates for current tier
+    const templates = Object.values(TEMPLATE_DATA).filter(t => {
+        // Parse tier from ID (e.g., 't1-1' -> 1)
+        const tId = parseInt(t.id.split('-')[0].replace('t', ''));
+        return tId === (tierId || 1);
+    });
+
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // For single template (Tier 1), auto-select and show special UI
@@ -175,7 +146,7 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                 </button>
 
                 {/* Template Cards */}
-                <div className="overflow-hidden rounded-xl">
+                <div className="overflow-hidden rounded-xl p-4 -mx-4">
                     <motion.div
                         className="flex gap-3"
                         animate={{ x: -currentIndex * 108 }}

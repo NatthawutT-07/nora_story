@@ -10,31 +10,16 @@ import { mergeConfig } from '../lib/templateConfig';
 import Tier1Template1 from './templates/tier1/Tier1Template1';
 import Tier1Template2 from './templates/tier1/Tier1Template2';
 import Tier1Template3 from './templates/tier1/Tier1Template3';
-import Tier1Template4 from './templates/tier1/Tier1Template4';
-import Tier1Template5 from './templates/tier1/Tier1Template5';
-import Tier1Template6 from './templates/tier1/Tier1Template6';
-import Tier1Template7 from './templates/tier1/Tier1Template7';
 
 import Tier2Template1 from './templates/tier2/Tier2Template1';
 import Tier2Template2 from './templates/tier2/Tier2Template2';
 import Tier2Template3 from './templates/tier2/Tier2Template3';
-import Tier2Template4 from './templates/tier2/Tier2Template4';
-import Tier2Template5 from './templates/tier2/Tier2Template5';
-import Tier2Template6 from './templates/tier2/Tier2Template6';
 
 import Tier3Template1 from './templates/tier3/Tier3Template1';
 import Tier3Template2 from './templates/tier3/Tier3Template2';
 import Tier3Template3 from './templates/tier3/Tier3Template3';
-import Tier3Template4 from './templates/tier3/Tier3Template4';
-import Tier3Template5 from './templates/tier3/Tier3Template5';
-import Tier3Template6 from './templates/tier3/Tier3Template6';
 
 import Tier4Template1 from './templates/tier4/Tier4Template1';
-import Tier4Template2 from './templates/tier4/Tier4Template2';
-import Tier4Template3 from './templates/tier4/Tier4Template3';
-import Tier4Template4 from './templates/tier4/Tier4Template4';
-import Tier4Template5 from './templates/tier4/Tier4Template5';
-import Tier4Template6 from './templates/tier4/Tier4Template6';
 
 // Template mapping
 const TEMPLATES = {
@@ -45,7 +30,7 @@ const TEMPLATES = {
     // 't2-4': Tier2Template4, 't2-5': Tier2Template5, 't2-6': Tier2Template6,
     't3-1': Tier3Template1, 't3-2': Tier3Template2, 't3-3': Tier3Template3,
     // 't3-4': Tier3Template4, 't3-5': Tier3Template5, 't3-6': Tier3Template6,
-    't4-1': Tier4Template1, 't4-2': Tier4Template2, 't4-3': Tier4Template3,
+    't4-1': Tier4Template1,
     // 't4-4': Tier4Template4, 't4-5': Tier4Template5, 't4-6': Tier4Template6,
 };
 

@@ -138,10 +138,10 @@ const FeatureCard = ({ icon: Icon, title, description, delay }) => (
 
 const InteractiveDemos = () => {
     return (
-        <section className="py-16 sm:py-24 px-4 bg-gray-50" id="experience">
+        <section className="py-8 sm:py-24 px-4 bg-gray-50" id="experience">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-12 sm:mb-16">
+                <div className="text-center mb-4 sm:mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -161,19 +161,10 @@ const InteractiveDemos = () => {
                     >
                         Interactive<span className="text-[#E8A08A] italic">Features</span>
                     </motion.h2>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                        className="text-gray-500 text-base sm:text-lg max-w-md mx-auto"
-                    >
-                        ลองเล่นกับ Demo ด้านล่าง
-                    </motion.p>
                 </div>
 
                 {/* Interactive Demos */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-16">
                     <CountdownDemo />
                     <UnlockDemo />
                 </div>

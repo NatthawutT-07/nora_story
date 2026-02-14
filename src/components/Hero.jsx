@@ -195,7 +195,7 @@ const Hero = () => {
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <button
-                        onClick={() => navigate('/create')}
+                        onClick={() => navigate('/gallery')}
                         className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-6 sm:px-8 py-4 rounded-2xl text-base sm:text-lg font-medium transition-all"
                     >
                         <Play className="w-5 h-5" />

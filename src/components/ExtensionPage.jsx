@@ -145,7 +145,7 @@ const ExtensionPage = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-500 text-sm">วันหมดอายุ</span>
                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${!order.expires_at ? 'bg-gray-100 text-gray-500' :
-                                        new Date(order.expires_at.seconds * 1000) < new Date() ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                                    new Date(order.expires_at.seconds * 1000) < new Date() ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
                                     }`}>
                                     {!order.expires_at ? 'ไม่มีวันหมดอายุ' :
                                         new Date(order.expires_at.seconds * 1000) < new Date() ? 'หมดอายุแล้ว' : 'ใช้งานได้ปกติ'}
@@ -167,8 +167,8 @@ const ExtensionPage = () => {
                                         key={pkg.days}
                                         onClick={() => setSelectedPackage(pkg)}
                                         className={`cursor-pointer rounded-xl p-4 border-2 transition-all relative flex justify-between items-center ${selectedPackage.days === pkg.days
-                                                ? 'border-[#E8A08A] bg-[#E8A08A]/5 shadow-md'
-                                                : 'border-gray-100 bg-white hover:border-gray-200'
+                                            ? 'border-[#E8A08A] bg-[#E8A08A]/5 shadow-md'
+                                            : 'border-gray-100 bg-white hover:border-gray-200'
                                             }`}
                                     >
                                         {pkg.recommended && (
@@ -197,7 +197,7 @@ const ExtensionPage = () => {
                                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PlaceholderPromptPay" alt="QR Code" className="w-full h-full object-contain" />
                             </div>
                             <p className="text-[#1A3C40] font-bold">ธนาคารกสิกรไทย</p>
-                            <p className="text-gray-500 text-sm mb-2">123-4-56789-0 (NoraStory)</p>
+                            <p className="text-gray-500 text-sm mb-2">123-4-56789-0 (Nora Story)</p>
                             <div className="bg-[#1A3C40] text-white px-4 py-2 rounded-lg w-full">
                                 <span className="text-sm opacity-80 block">ยอดชำระ</span>
                                 <span className="text-xl font-bold">{selectedPackage.price} บาท</span>
@@ -231,8 +231,8 @@ const ExtensionPage = () => {
                             onClick={handleSubmit}
                             disabled={isSubmitting || !slipFile}
                             className={`w-full py-3 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${isSubmitting || !slipFile
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279] shadow-lg hover:shadow-xl hover:-translate-y-1'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279] shadow-lg hover:shadow-xl hover:-translate-y-1'
                                 }`}
                         >
                             {isSubmitting ? (

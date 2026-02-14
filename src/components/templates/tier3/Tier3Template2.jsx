@@ -1,109 +1,82 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence, useTransform, useMotionValue, useScroll } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Heart, Sparkles, Play, Pause, ChevronRight, Volume2, VolumeX, Music, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Flower, Sparkles, Clock, MapPin, Calendar, Play, Pause, Volume2, VolumeX, Music, Sun } from 'lucide-react';
 
-// --- Utility Components ---
-
-const Starfield = ({ speed = 1 }) => {
-    const stars = useMemo(() => [...Array(50)].map(() => ({
-        x: Math.random() * 100 + "%",
-        y: Math.random() * 100 + "%",
-        scale: Math.random() * 0.5 + 0.5,
-        opacity: Math.random() * 0.5 + 0.2,
-        duration: (Math.random() * 10 + 20),
-        delay: Math.random() * -20
-    })), []);
-
+// --- Background Effects ---
+const GoldenDust = () => {
     return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            {stars.map((star, i) => (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(30)].map((_, i) => (
                 <motion.div
                     key={i}
                     initial={{
-                        x: star.x,
-                        y: star.y,
-                        scale: star.scale,
-                        opacity: star.opacity,
+                        x: Math.random() * 100 + '%',
+                        y: Math.random() * 100 + '%',
+                        opacity: 0,
+                        scale: 0
                     }}
                     animate={{
-                        y: ["0%", "100%"],
-                        opacity: [0.2, 1, 0.2],
+                        y: [null, Math.random() * 100 + '%'],
+                        opacity: [0, 0.8, 0],
+                        scale: [0, 1.5, 0]
                     }}
                     transition={{
-                        duration: star.duration / speed,
+                        duration: 5 + Math.random() * 10,
                         repeat: Infinity,
-                        ease: "linear",
-                        delay: star.delay,
+                        delay: Math.random() * 5,
+                        ease: "easeInOut"
                     }}
-                    className="absolute w-1 h-1 bg-white rounded-full lg:w-0.5 lg:h-0.5"
+                    className="absolute w-1 h-1 bg-amber-200 rounded-full blur-[1px]"
                 />
             ))}
-            <ShootingStar delay={2} />
-            <ShootingStar delay={7} />
-            <ShootingStar delay={15} />
         </div>
     );
 };
 
-const ShootingStar = ({ delay }) => {
-    const style = useMemo(() => ({
-        top: `${Math.random() * 50}%`,
-        left: `${Math.random() * 50}%`
-    }), []);
-
+// --- Timeline Components ---
+const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
     return (
         <motion.div
-            initial={{ x: "0%", y: "0%", opacity: 0, scale: 0 }}
-            animate={{
-                x: ["0%", "100%"],
-                y: ["0%", "100%"],
-                opacity: [0, 1, 0, 0],
-                scale: [0, 1, 0.5, 0]
-            }}
-            transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                repeatDelay: delay,
-                ease: "easeInOut"
-            }}
-            className="absolute top-0 left-0 w-[150px] h-[2px] bg-gradient-to-r from-transparent via-white to-transparent transform -rotate-45 origin-top-left"
-            style={style}
-        />
-    );
-};
-
-const TiltCard = ({ children, className = "" }) => {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const rotateX = useTransform(y, [-100, 100], [5, -5]);
-    const rotateY = useTransform(x, [-100, 100], [-5, 5]);
-
-    function handleMouseMove({ currentTarget, clientX, clientY }) {
-        const { left, top, width, height } = currentTarget.getBoundingClientRect();
-        x.set(clientX - left - width / 2);
-        y.set(clientY - top - height / 2);
-    }
-
-    return (
-        <motion.div
-            style={{ perspective: 1000, rotateX, rotateY }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => { x.set(0); y.set(0); }}
-            className={`transition-all duration-200 ease-out ${className}`}
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ delay: index * 0.2 }}
+            className="relative flex gap-6 md:gap-10 mb-6 md:mb-12 last:mb-0 group"
         >
-            {children}
+            {/* Time Column */}
+            <div className="flex flex-col items-end w-24 md:w-32 pt-2 flex-shrink-0">
+                <span className="text-xl md:text-2xl font-bold text-amber-600 font-serif">{time}</span>
+                <span className="text-xs text-amber-800/60 uppercase tracking-widest mt-1">Time</span>
+            </div>
+
+            {/* Timeline Line & Dot */}
+            <div className="relative flex flex-col items-center">
+                <div className="w-4 h-4 rounded-full bg-amber-400 border-4 border-white shadow-lg z-10 group-hover:scale-125 transition-transform duration-300" />
+                <div className="w-0.5 flex-1 bg-gradient-to-b from-amber-200 to-transparent my-2" />
+            </div>
+
+            {/* Content Card */}
+            <div className="flex-1 pb-8">
+                <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl border border-white/50 shadow-lg group-hover:-translate-y-1 transition-all duration-300 hover:shadow-xl hover:bg-white/80">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                            <Icon size={18} />
+                        </div>
+                        <h3 className="text-lg md:text-xl font-bold text-gray-800">{title}</h3>
+                    </div>
+                    <p className="text-gray-600 font-light leading-relaxed">{desc}</p>
+                </div>
+            </div>
         </motion.div>
     );
 };
 
+// --- Music Player ---
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
-
-    useEffect(() => {
-        if (audioRef.current) audioRef.current.volume = 0.4;
-    }, []);
+    const [isMuted, setIsMuted] = useState(false);
 
     const togglePlay = () => {
         if (audioRef.current) {
@@ -114,245 +87,145 @@ const MusicPlayer = ({ musicUrl }) => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="fixed bottom-6 right-6 z-50"
+        >
             <audio ref={audioRef} src={musicUrl} loop />
             <button
                 onClick={togglePlay}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-500 ${isPlaying ? "bg-rose-500/20 text-rose-300" : "bg-white/5 text-white/50"
-                    }`}
+                className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-amber-200 shadow-xl transition-all duration-300 ${isPlaying ? 'bg-amber-500 text-white animate-spin-slow' : 'bg-white/80 text-amber-600'}`}
             >
-                {isPlaying && <span className="absolute inset-0 rounded-full animate-ping bg-rose-500/20" />}
                 {isPlaying ? <Pause size={20} /> : <Music size={20} />}
             </button>
-        </div>
+        </motion.div>
     );
 };
 
-// --- Layout Sub-Components ---
-
-const SingleLayout = ({ chapter }) => (
-    <div className="relative w-full h-[500px] md:h-[600px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 group">
-        <img src={chapter.images[0]} alt="" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[20s] ease-linear" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-transparent to-transparent opacity-90" />
-        <div className="absolute bottom-0 left-0 w-full p-8 md:p-12">
-            <motion.h2 initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="text-3xl md:text-5xl font-bold mb-4 text-white leading-tight">{chapter.title}</motion.h2>
-            <motion.p initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-white/70 text-lg md:text-xl max-w-xl leading-relaxed">{chapter.desc}</motion.p>
-        </div>
-    </div>
-);
-
-const DualLayout = ({ chapter, customMessage, customSignOff, onConfetti, canSendLove }) => (
-    <div className="relative w-full min-h-[600px] p-6 flex flex-col items-center justify-center">
-        <div className="relative w-full md:w-[90%] h-[500px]">
-            {/* Photo 1: Large Left */}
-            <motion.div
-                initial={{ x: -50, opacity: 0, rotate: -5 }}
-                whileInView={{ x: 0, opacity: 1, rotate: -3 }}
-                viewport={{ once: true }}
-                className="absolute top-0 left-0 w-[60%] h-[70%] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white/10 z-10"
-            >
-                <img src={chapter.images[0]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-
-            {/* Photo 2: Large Right */}
-            <motion.div
-                initial={{ x: 50, opacity: 0, rotate: 5 }}
-                whileInView={{ x: 0, opacity: 1, rotate: 3 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="absolute bottom-10 right-0 w-[55%] h-[65%] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white/10 z-20"
-            >
-                <img src={chapter.images[1]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-        </div>
-
-        {/* Finale Message Section if needed */}
-        {onConfetti && (
-            <div className="relative z-30 max-w-2xl w-full bg-black/60 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[3rem] text-center shadow-2xl mt-8">
-                <h2 className="text-3xl font-bold mb-4 text-white">{chapter.title}</h2>
-                <p className="text-lg text-white/90 leading-relaxed font-light italic mb-6">
-                    "{customMessage || "ทุกเรื่องราวของเรา คือความทรงจำที่ฉันอยากเก็บรักษาไว้ตลอดไป"}"
-                </p>
-                <div className="flex flex-col items-center gap-2 mb-6">
-                    <span className="text-rose-300 font-medium">{customSignOff || "รักเสมอนะ"}</span>
-                </div>
-                <button
-                    onClick={onConfetti}
-                    disabled={!canSendLove}
-                    className={`px-8 py-3 bg-gradient-to-r from-rose-600 to-indigo-600 rounded-full text-white font-bold tracking-wide shadow-lg shadow-rose-900/50 flex items-center gap-2 mx-auto transition-all ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:scale-105'
-                        }`}
-                >
-                    <Sparkles size={18} />
-                    {canSendLove ? "Send My Love" : "Wait a moment..."}
-                </button>
-            </div>
-        )}
-    </div>
-);
-
-const CollageLayout = ({ chapter }) => (
-    <div className="relative w-full h-full p-4 flex flex-col justify-center min-h-[700px]">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center">{chapter.title}</h2>
-        <div className="grid grid-cols-6 grid-rows-6 gap-3 h-[600px] w-full max-w-5xl mx-auto">
-            {/* Main Feature */}
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }} className="col-span-4 row-span-4 rounded-[2rem] overflow-hidden relative shadow-lg border border-white/10">
-                <img src={chapter.images[0]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-
-            {/* Smaller Shots */}
-            <motion.div initial={{ y: -20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[1]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-            <motion.div initial={{ x: 20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[2]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-
-            {/* Bottom Row */}
-            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[3]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-            <motion.div initial={{ x: -20, opacity: 0 }} whileInView={{ x: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
-                <img src={chapter.images[4]} alt="" className="w-full h-full object-cover" />
-            </motion.div>
-        </div>
-    </div>
-);
-
+// --- Main Component ---
 const Tier3Template2 = ({
     customMessage,
     customSignOff,
-    targetName = 'คนดี',
-    pinCode = '1234',
+    targetName = 'ผู้บวช',
     images = [],
-    musicUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    musicUrl = ''
 }) => {
-    const [viewState, setViewState] = useState('LOCKED');
-    const [pin, setPin] = useState("");
-    const [canSendLove, setCanSendLove] = useState(true);
-
-    useEffect(() => {
-        if (pin === pinCode) setTimeout(() => setViewState('INTRO'), 500);
-        else if (pin.length === 4) setPin("");
-    }, [pin, pinCode]);
-
-    const handleKeyPress = (n) => { if (pin.length < 4) setPin(prev => prev + n); };
-
-    useEffect(() => {
-        if (viewState === 'INTRO') {
-            const timer = setTimeout(() => setViewState('MAIN'), 3500);
-            return () => clearTimeout(timer);
-        }
-    }, [viewState]);
-
-    const getImages = (count, startIndex = 0) => {
-        const placeholders = [
-            'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800',
-            'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800',
-            'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800',
-            'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800',
-            'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800'
-        ];
-        return Array(count).fill(0).map((_, i) => images[startIndex + i] || placeholders[i % placeholders.length]);
-    };
-
-    const listItems = [
-        // Item 1: 1 Photo
-        { type: 'single', title: "Chapter 1", desc: "จุดเริ่มต้นของการเดินทาง", images: getImages(1, 0) },
-        // Item 2: 1 Photo
-        { type: 'single', title: "Chapter 2", desc: "ความทรงจำที่งดงาม", images: getImages(1, 1) },
-        // Item 3: 1 Photo
-        { type: 'single', title: "Chapter 3", desc: "รอยยิ้มที่ไม่เคยจาง", images: getImages(1, 2) },
-        // Item 4: 5 Photos (Collage)
-        { type: 'collage', title: "Memory Collection", desc: "ทุกช่วงเวลาพิเศษของเรา", images: getImages(5, 3) },
-        // Item 5: 2 Photos (Finale)
-        { type: 'finale', title: "Forever & Always", desc: "", images: getImages(2, 8) },
+    // Default Schedule (Sacred Timeline)
+    const schedule = [
+        { time: "07:30", title: "พิธีปลงผมนาค", desc: "ขอเชิญญาติมิตรและผู้มีจิตศรัทธาร่วมพิธีปลงผมนาค ณ ลานพิธี", icon: UserCheck },
+        { time: "09:00", title: "ทำขวัญนาค", desc: "พิธีทำขวัญนาคเพื่อความเป็นสิริมงคล", icon: Sparkles },
+        { time: "10:30", title: "แห่นาคเข้าโบสถ์", desc: "เคลื่อนขบวนแห่นาคเวียนรอบอุโบสถ 3 รอบ", icon: Calendar },
+        { time: "11:00", title: "พิธีอุปสมบท", desc: "นาคเข้าสู่ร่มกาสาวพัสตร์ เป็นพระภิกษุสงฆ์", icon: Sun },
+        { time: "12:00", title: "ฉลองพระใหม่", desc: "ร่วมถวายภัตตาหารเพลและรับประทานอาหารร่วมกัน", icon: Flower }
     ];
 
-    const triggerSupernova = () => {
-        if (!canSendLove) return;
-        setCanSendLove(false);
-        setTimeout(() => setCanSendLove(true), 5000);
-
-        const duration = 3000;
-        const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
-        const randomInRange = (min, max) => Math.random() * (max - min) + min;
-
-        const interval = setInterval(function () {
-            const timeLeft = animationEnd - Date.now();
-            if (timeLeft <= 0) return clearInterval(interval);
-            const particleCount = 50 * (timeLeft / duration);
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-        }, 250);
-    };
+    // Helper icon mapping if needed, used generic ones above
+    // Let's define the UserCheck since used it
+    function UserCheck(props) {
+        return (
+            <svg
+                {...props}
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <polyline points="16 11 18 13 22 9" />
+            </svg>
+        )
+    }
 
     return (
-        <div className="relative min-h-screen w-full bg-[#050510] text-white overflow-x-hidden font-sans selection:bg-rose-500/30">
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
-            <Starfield speed={viewState === 'INTRO' ? 10 : 0.5} />
-            <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay" />
-            {viewState !== 'LOCKED' && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+        <div className="min-h-screen w-full bg-[#FCF8F3] relative overflow-hidden font-serif text-[#5D4037]">
+            {/* Background Layers */}
+            <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-[#FFF8E1] to-orange-50 z-0" />
+            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-10" />
+            <GoldenDust />
 
-            <AnimatePresence mode="wait">
-                {viewState === 'LOCKED' && (
-                    <motion.div key="locked" exit={{ opacity: 0, scale: 1.5, filter: "blur(20px)" }} transition={{ duration: 1 }} className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-                        <TiltCard className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl max-w-sm w-full">
-                            <div className="text-center">
-                                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-tr from-rose-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30">
-                                    <Heart className="w-8 h-8 text-white fill-white" />
-                                </div>
-                                <h1 className="text-2xl font-light mb-2 text-white/90">Welcome Home</h1>
-                                <p className="text-sm text-white/50 mb-8">Enter the cosmic code</p>
-                                <div className="flex justify-center gap-4 mb-8">
-                                    {[0, 1, 2, 3].map(i => <div key={i} className={`w-3 h-3 rounded-full transition-all duration-300 ${i < pin.length ? 'bg-rose-400 scale-125 shadow-[0_0_10px_rgba(251,113,133,0.8)]' : 'bg-white/20'}`} />)}
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => (
-                                        <button key={n} onClick={() => handleKeyPress(n.toString())} className={`w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-lg font-medium border border-white/5 hover:border-white/20 ${n === 0 ? 'col-start-2' : ''}`}>
-                                            {n}
-                                        </button>
-                                    ))}
-                                    <button onClick={() => setPin(p => p.slice(0, -1))} className="w-14 h-14 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors col-start-3"><ChevronRight className="rotate-180" /></button>
-                                </div>
+            <div className="relative z-20 container mx-auto px-4 py-12 md:py-20 max-w-2xl">
+
+                {/* Header Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: -30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="text-center mb-8 md:mb-16"
+                >
+                    <div className="inline-block p-3 rounded-full bg-amber-100/50 mb-4 text-amber-600">
+                        <Sun size={32} />
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-bold text-amber-800 mb-4 leading-tight">
+                        กำหนดการ<br />พิธีอุปสมบท
+                    </h1>
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        <div className="h-px w-12 bg-amber-300" />
+                        <span className="text-amber-600/80 uppercase tracking-widest text-sm font-medium">Sacred Timeline</span>
+                        <div className="h-px w-12 bg-amber-300" />
+                    </div>
+
+                    {/* Main Image (if available) */}
+                    {images.length > 0 && (
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="mt-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-white aspect-video relative group"
+                        >
+                            <img src={images[0]} alt="Venue" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
+                            <div className="absolute bottom-4 left-4 text-white text-left">
+                                <p className="text-sm font-light opacity-90">สถานที่จัดงาน</p>
+                                <h3 className="text-xl font-bold">{customSignOff || "วัด..."}</h3>
                             </div>
-                        </TiltCard>
-                    </motion.div>
-                )}
+                        </motion.div>
+                    )}
+                </motion.div>
 
-                {viewState === 'INTRO' && (
-                    <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-                        <div className="relative z-10 text-center">
-                            <motion.h2 initial={{ scale: 0.5, opacity: 0, letterSpacing: "10px" }} animate={{ scale: 1, opacity: 1, letterSpacing: "2px" }} transition={{ duration: 2, ease: "easeOut" }} className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-rose-200 via-white to-indigo-200 bg-clip-text text-transparent">For {targetName}</motion.h2>
-                        </div>
-                    </motion.div>
-                )}
+                {/* Timeline Section */}
+                <div className="relative">
+                    {/* Vertical Line Background */}
+                    <div className="absolute left-[5.5rem] md:left-[7.5rem] top-4 bottom-0 w-px bg-amber-200 z-0" />
 
-                {viewState === 'MAIN' && (
-                    <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="relative z-10 w-full min-h-screen py-20 px-4 md:px-8">
-                        <div className="max-w-4xl mx-auto flex flex-col gap-24 pb-32">
-                            {listItems.map((item, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, y: 50 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, margin: "-100px" }}
-                                    transition={{ duration: 0.8 }}
-                                >
-                                    <div className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4 ml-2">Item {index + 1} / 5</div>
-                                    {item.type === 'single' && <SingleLayout chapter={item} />}
-                                    {item.type === 'collage' && <CollageLayout chapter={item} />}
-                                    {item.type === 'finale' && <DualLayout chapter={item} customMessage={customMessage} customSignOff={customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
-                                </motion.div>
-                            ))}
+                    {schedule.map((event, index) => (
+                        <TimelineEvent
+                            key={index}
+                            index={index}
+                            {...event}
+                        />
+                    ))}
+                </div>
 
-                            <div className="text-center text-white/30 text-sm mt-10">
-                                End of your story... for now.
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                {/* Footer Message */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    className="text-center mt-10 md:mt-20 p-6 md:p-8 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/60"
+                >
+                    <p className="text-xl italic text-amber-800 font-light mb-4">
+                        "{customMessage || "ขอเชิญร่วมอนุโมทนาบุญ ในงานพิธีอุปสมบทครั้งนี้"}"
+                    </p>
+                    <div className="flex justify-center text-amber-400 gap-2">
+                        <Flower size={20} />
+                        <Flower size={20} />
+                        <Flower size={20} />
+                    </div>
+                </motion.div>
+
+                <div className="text-center text-amber-800/30 text-xs mt-12 pb-8">
+                    Made with 🙏 by Nora.dev
+                </div>
+            </div>
+
+            {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
         </div>
     );
 };

@@ -174,9 +174,9 @@ const DualLayout = ({ chapter }) => (
 
 const CollageLayout = ({ chapter }) => (
     <div className="relative w-full h-full p-4 flex flex-col justify-center">
-        <div className="grid grid-cols-6 grid-rows-6 gap-3 h-full max-h-[700px] w-full max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-6 grid-rows-4 md:grid-rows-6 gap-2 md:gap-3 h-[500px] md:h-full md:max-h-[700px] w-full max-w-4xl mx-auto">
             {/* Main Feature */}
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="col-span-4 row-span-4 rounded-[2rem] overflow-hidden relative shadow-lg border border-white/10">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="col-span-2 row-span-2 md:col-span-4 md:row-span-4 rounded-2xl md:rounded-[2rem] overflow-hidden relative shadow-lg border border-white/10">
                 <img src={chapter.images[0]} alt="" className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
                     <h2 className="text-2xl font-bold text-white">{chapter.title}</h2>
@@ -184,18 +184,18 @@ const CollageLayout = ({ chapter }) => (
             </motion.div>
 
             {/* Smaller Shots */}
-            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
+            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="col-span-1 md:col-span-2 row-span-1 md:row-span-2 rounded-xl md:rounded-[1.5rem] overflow-hidden border border-white/10">
                 <img src={chapter.images[1]} alt="" className="w-full h-full object-cover" />
             </motion.div>
-            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="col-span-2 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="col-span-1 md:col-span-2 row-span-1 md:row-span-2 rounded-xl md:rounded-[1.5rem] overflow-hidden border border-white/10">
                 <img src={chapter.images[2]} alt="" className="w-full h-full object-cover" />
             </motion.div>
 
             {/* Bottom Row */}
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }} className="col-span-1 md:col-span-3 row-span-1 md:row-span-2 rounded-xl md:rounded-[1.5rem] overflow-hidden border border-white/10">
                 <img src={chapter.images[3]} alt="" className="w-full h-full object-cover" />
             </motion.div>
-            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }} className="col-span-3 row-span-2 rounded-[1.5rem] overflow-hidden border border-white/10">
+            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }} className="col-span-1 md:col-span-3 row-span-1 md:row-span-2 rounded-xl md:rounded-[1.5rem] overflow-hidden border border-white/10">
                 <img src={chapter.images[4]} alt="" className="w-full h-full object-cover" />
             </motion.div>
         </div>
@@ -205,7 +205,7 @@ const CollageLayout = ({ chapter }) => (
 const CollageMessageLayout = ({ chapter, customMessage, customSignOff, onConfetti }) => (
     <div className="relative w-full h-full flex flex-col justify-center items-center p-4">
         {/* Background Collage Layer */}
-        <div className="absolute inset-0 z-0 opacity-40">
+        <div className="absolute inset-0 z-0 opacity-40 hidden md:block">
             <img src={chapter.images[0]} className="absolute top-[10%] left-[5%] w-32 h-40 object-cover rounded-xl rotate-[-12deg]" />
             <img src={chapter.images[1]} className="absolute top-[15%] right-[8%] w-40 h-32 object-cover rounded-xl rotate-[12deg]" />
             <img src={chapter.images[2]} className="absolute bottom-[20%] left-[10%] w-36 h-36 object-cover rounded-xl rotate-[-6deg]" />
@@ -213,7 +213,7 @@ const CollageMessageLayout = ({ chapter, customMessage, customSignOff, onConfett
             <img src={chapter.images[4]} className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-64 h-64 object-cover rounded-full blur-sm" />
         </div>
 
-        <div className="relative z-10 max-w-2xl w-full bg-black/40 backdrop-blur-xl border border-white/10 p-10 rounded-[3rem] text-center shadow-2xl">
+        <div className="relative z-10 max-w-2xl w-full bg-black/40 backdrop-blur-xl border border-white/10 p-6 md:p-10 rounded-2xl md:rounded-[3rem] text-center shadow-2xl">
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-tr from-rose-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30">
                 <Heart className="w-8 h-8 text-white fill-white" />
             </div>
@@ -346,7 +346,7 @@ const Tier4Template1 = ({
 
                 {viewState === 'MAIN' && (
                     <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="relative z-10 w-full min-h-screen flex items-center justify-center p-4 md:p-8">
-                        <div className="w-full max-w-6xl mx-auto h-[85vh] flex flex-col md:flex-row gap-8 items-center justify-center">
+                        <div className="w-full max-w-6xl mx-auto min-h-[85vh] flex flex-col md:flex-row gap-4 md:gap-8 items-center justify-center">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={activeChapter}
@@ -354,7 +354,7 @@ const Tier4Template1 = ({
                                     animate={{ opacity: 1, x: 0, scale: 1 }}
                                     exit={{ opacity: 0, x: -50, scale: 0.95 }}
                                     transition={{ duration: 0.6, ease: "circOut" }}
-                                    className="relative w-full md:w-3/4 h-full rounded-[3rem] overflow-hidden shadow-2xl border border-white/10 bg-black/20 backdrop-blur-sm"
+                                    className="relative w-full h-[60vh] md:h-full md:w-3/4 rounded-2xl md:rounded-[3rem] overflow-hidden shadow-2xl border border-white/10 bg-black/20 backdrop-blur-sm"
                                 >
                                     {chapters[activeChapter].type === 'single' && <SingleLayout chapter={chapters[activeChapter]} />}
                                     {chapters[activeChapter].type === 'dual' && <DualLayout chapter={chapters[activeChapter]} />}
@@ -362,7 +362,7 @@ const Tier4Template1 = ({
                                     {chapters[activeChapter].type === 'finale' && <CollageMessageLayout chapter={chapters[activeChapter]} customMessage={customMessage} customSignOff={customSignOff} onConfetti={triggerSupernova} />}
 
                                     {/* Progress Indicator inside card */}
-                                    <div className="absolute top-6 right-6 z-40 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-xs font-bold text-white/60 uppercase tracking-widest">
+                                    <div className="absolute top-4 right-4 md:top-6 md:right-6 z-40 bg-black/40 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-white/10 text-[10px] md:text-xs font-bold text-white/60 uppercase tracking-widest">
                                         Chapter {activeChapter + 1} / {chapters.length}
                                     </div>
                                 </motion.div>
@@ -370,7 +370,7 @@ const Tier4Template1 = ({
 
                             {/* Navigation */}
                             <div className="w-full md:w-1/4 flex flex-col h-full justify-center gap-4">
-                                <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-md hidden md:block">
+                                <div className="bg-white/5 p-4 md:p-6 rounded-2xl border border-white/10 backdrop-blur-md hidden md:block">
                                     <h3 className="text-white/40 text-xs font-bold uppercase tracking-wider mb-4">You are viewing</h3>
                                     <p className="text-xl font-bold text-white mb-2">{chapters[activeChapter].title}</p>
                                     <div className="h-1 w-full bg-white/10 rounded-full mt-4 overflow-hidden">

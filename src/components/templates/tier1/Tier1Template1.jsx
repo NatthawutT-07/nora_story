@@ -60,11 +60,22 @@ const AnimatedBackground = ({ variant = 'default' }) => {
     );
 };
 
-const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ', pinCode = '1234' }) => {
+const Watermark = () => (
+    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
+            {Array.from({ length: 400 }).map((_, i) => (
+                <span key={i} className="text-lg font-black text-slate-900 whitespace-nowrap select-none">
+                    https://norastory.com
+                </span>
+            ))}
+        </div>
+    </div>
+);
+
+const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ', pinCode = '1234' }) => {
     const [viewState, setViewState] = useState('LOCKED');
     const [pin, setPin] = useState("");
     const [showError, setShowError] = useState(false);
-    const [noCount, setNoCount] = useState(0);
 
     const CORRECT_PIN = pinCode;
 
@@ -78,7 +89,10 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
         }
     }, [pin]);
 
-    const handleUnlock = () => setViewState('QUESTION');
+    const handleUnlock = () => {
+        setViewState('CONTENT');
+        triggerConfetti();
+    };
 
     const handleError = () => {
         setShowError(true);
@@ -96,24 +110,11 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
 
     const handleBackspace = () => setPin(prev => prev.slice(0, -1));
 
-    const handleLoveAnswer = (answer) => {
-        if (answer) {
-            setViewState('CONTENT');
-            triggerConfetti();
-        } else {
-            setNoCount(prev => prev + 1);
-        }
-    };
+
 
     const [canSendLove, setCanSendLove] = useState(true);
 
-    const getNoButtonText = () => {
-        if (noCount === 0) return "ไม่รักหรอก 💔";
-        if (noCount === 1) return "คิดอีกทีสิ~ 🤔";
-        if (noCount === 2) return "ยังอีก?! 😤";
-        if (noCount === 3) return "จริงดิ?! 😭";
-        return "ไม่มีทาง! 🙈";
-    };
+
 
     const triggerConfetti = () => {
         if (!canSendLove) return;
@@ -159,6 +160,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden relative">
+            <Watermark />
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - PIN Entry */}
                 {viewState === 'LOCKED' && (
@@ -196,7 +198,6 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
                                 transition={{ delay: 0.2 }}
                                 className="text-2xl md:text-3xl text-gray-700 mb-5 font-light"
                             >
-                                ข้อความลับ 💌
                             </motion.h2>
 
 
@@ -266,91 +267,6 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
                     </motion.div>
                 )}
 
-                {/* QUESTION STATE - Do you love me? */}
-                {viewState === 'QUESTION' && (
-                    <motion.div
-                        key="question-screen"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, y: -50, filter: "blur(10px)" }}
-                        transition={{ duration: 0.5 }}
-                        className="fixed inset-0 z-40 flex flex-col items-center justify-center p-4"
-                    >
-                        <AnimatedBackground variant="question" />
-                        <FloatingHearts />
-
-                        <div className="relative z-10 flex flex-col items-center">
-                            {/* Animated Heart */}
-                            <motion.div
-                                initial={{ scale: 0, rotate: -30 }}
-                                animate={{
-                                    scale: [1, 1.1, 1],
-                                    rotate: 0
-                                }}
-                                transition={{
-                                    scale: { duration: 0.8, repeat: Infinity, repeatDelay: 0.5 },
-                                    rotate: { type: "spring", stiffness: 200 }
-                                }}
-                                className="mb-8"
-                            >
-                                <div className="relative">
-                                    <Heart size={80} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
-                                    <motion.div
-                                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                                        transition={{ duration: 1.5, repeat: Infinity }}
-                                        className="absolute inset-0 flex items-center justify-center"
-                                    >
-                                        <Heart size={80} className="text-rose-400" fill="currentColor" />
-                                    </motion.div>
-                                </div>
-                            </motion.div>
-
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="text-3xl md:text-5xl font-serif text-gray-800 mb-4"
-                            >
-                                {targetName}รักเค้าไหม? 💕
-                            </motion.h2>
-
-                            <div className="flex flex-col items-center gap-6 relative min-h-[150px] w-full max-w-md justify-center">
-                                <motion.button
-                                    onClick={() => handleLoveAnswer(true)}
-                                    initial={{ scale: 1 }}
-                                    animate={{
-                                        scale: 1 + (noCount * 0.25),
-                                        boxShadow: noCount > 2 ? '0 0 40px rgba(244, 63, 94, 0.5)' : '0 10px 40px rgba(244, 63, 94, 0.3)'
-                                    }}
-                                    whileHover={{ scale: 1.1 + (noCount * 0.25) }}
-                                    whileTap={{ scale: 0.95 + (noCount * 0.25) }}
-                                    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-10 py-4 rounded-full text-xl font-medium shadow-xl hover:from-rose-600 hover:to-pink-600 transition-all duration-300 flex items-center gap-2"
-                                    style={{ zIndex: 10 }}
-                                >
-                                    <Sparkles size={20} />
-                                    รักที่สุดเลย
-                                    <Heart size={20} fill="currentColor" />
-                                </motion.button>
-
-                                {noCount < 5 && (
-                                    <motion.button
-                                        onClick={() => handleLoveAnswer(false)}
-                                        initial={{ opacity: 0 }}
-                                        animate={{
-                                            opacity: 1 - (noCount * 0.15),
-                                            scale: 1 - (noCount * 0.1)
-                                        }}
-                                        whileHover={{ scale: 0.95 - (noCount * 0.1) }}
-                                        className="text-gray-400 hover:text-gray-500 text-base px-6 py-3 rounded-full bg-white/50 backdrop-blur-sm border border-gray-200"
-                                    >
-                                        {getNoButtonText()}
-                                    </motion.button>
-                                )}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* CONTENT STATE - Greeting Card */}
                 {viewState === 'CONTENT' && (
                     <motion.div
@@ -405,7 +321,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
                                     transition={{ delay: 0.5 }}
                                     className="text-2xl md:text-4xl italic leading-relaxed text-gray-800 mb-8"
                                 >
-                                    "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
+                                    "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
                                 </motion.h1>
 
                                 <motion.div
@@ -445,7 +361,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'คุณ'
                     transition={{ delay: 1.5 }}
                     className="absolute bottom-4 text-xs text-gray-300"
                 >
-                    Made with 💕 by Nora.dev
+                    Made with by Nora Story
                 </motion.div>
             )}
         </div>

@@ -1,104 +1,25 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Star, Music, Clock, Crown, Sparkles, ChevronRight, Gift, Zap, Heart, Globe } from 'lucide-react';
+import { Check, ChevronRight, Sparkles, Globe, RefreshCcw, QrCode, MessageCircle, Info, X } from 'lucide-react';
+import { TIERS } from '../data/tierData';
 
-const tiers = [
-    {
-        id: 1,
-        name: 'Trial',
-        price: '79',
-        originalPrice: '99',
-        description: 'ทดลองใช้สั้นๆ',
-        duration: '3 วัน',
-        features: [
-            'Template สำเร็จรูปพร้อมใช้',
-            'มีลูกเล่นน่ารักๆ 💕',
-            'Random Link + QR Code',
-            'รองรับทุกอุปกรณ์',
-            'ดูแลหลังการขาย'
-        ],
-        icon: Clock,
-        gradient: 'from-slate-400 to-slate-500',
-        bgGradient: 'from-slate-50 to-white',
-        accentColor: 'slate',
-    },
-    {
-        id: 2,
-        name: 'Standard',
-        price: '149',
-        description: 'มาตรฐานยอดนิยม',
-        duration: '7 วัน',
-        features: [
-            'ทุกอย่างใน Trial',
-            'อัปโหลดรูป 5 รูป',
-            'Background Music',
-            'Random Link + QR Code',
-            'ดูแลหลังการขาย'
-        ],
-        icon: Music,
-        gradient: 'from-blue-400 to-blue-500',
-        bgGradient: 'from-blue-50 to-white',
-        accentColor: 'blue',
-    },
-    {
-        id: 3,
-        name: 'Premium',
-        price: '299',
-        description: 'สำหรับโอกาสพิเศษ',
-        duration: '15 วัน',
-        features: [
-            'ทุกอย่างใน Standard',
-            'อัปโหลดรูป 10 รูป',
-            'Custom Link เลือกชื่อเอง',
-            'Background Music',
-            'Priority Support'
-        ],
-        highlight: true,
-        tag: '⭐ แนะนำ',
-        icon: Star,
-        gradient: 'from-[#E8A08A] to-[#d4917b]',
-        bgGradient: 'from-rose-50 via-pink-50 to-amber-50',
-        accentColor: 'rose',
-    },
-];
-
-const tier4 = {
-    id: 4,
-    name: 'Archive',
-    tagline: 'เก็บความทรงจำอย่างพรีเมียม',
-    description: 'แพ็คเกจสูงสุดสำหรับคนพิเศษ พร้อม Custom Subdomain และ Priority Support',
-    icon: Crown,
-    gradient: 'from-amber-400 via-orange-400 to-amber-500',
-    subTiers: [
-        { days: 30, price: 499, perDay: 16, label: '30 วัน' },
-        { days: 60, price: 799, perDay: 13, label: '60 วัน', discount: '20%' },
-        { days: 90, price: 999, perDay: 11, label: '90 วัน', discount: '33%', popular: true },
-        { days: 180, price: 1490, perDay: 8, label: '180 วัน', discount: '50%', best: true },
-    ],
-    customDomainPrice: 990,
-    features: [
-        { icon: Gift, text: 'อัปโหลดรูปสูงสุด 20 รูป', highlight: true },
-        { icon: Globe, text: 'Custom Link / Subdomain', highlight: true },
-        { icon: Zap, text: 'Priority Support 24/7' },
-        { icon: Heart, text: 'Background Music' },
-        { icon: Star, text: 'Premium Templates' },
-    ],
-};
+const tiers = TIERS.filter(t => t.id !== '4');
+const tier4 = TIERS.find(t => t.id === '4');
 
 const Pricing = ({ onSelectTier, onViewDemos }) => {
     return (
-        <section className="py-16 sm:py-24 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white" id="pricing">
+        <section className="py-8 sm:py-28 px-4 bg-white" id="pricing">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-12 sm:mb-16">
+                <div className="text-center mb-4 sm:mb-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E8A08A]/20 to-amber-100/50 rounded-full px-5 py-2.5 mb-6 shadow-sm"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 text-rose-500 mb-6"
                     >
-                        <Sparkles className="w-4 h-4 text-[#E8A08A]" />
-                        <span className="text-[#1A3C40] text-sm font-medium">Choose Your Plan</span>
+                        <Sparkles size={16} />
+                        <span className="text-sm font-medium">Pricing Plans</span>
                     </motion.div>
 
                     <motion.h2
@@ -108,21 +29,22 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
                         transition={{ delay: 0.1 }}
                         className="text-3xl sm:text-4xl md:text-5xl font-playfair text-[#1A3C40] mb-4"
                     >
-                        Packages for <span className="text-[#E8A08A] italic">Special Ones</span>
+                        Choose the Right Plan for You
                     </motion.h2>
                     <motion.p
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.2 }}
-                        className="text-gray-500 text-base sm:text-lg max-w-md mx-auto"
+                        className="text-gray-400 text-sm sm:text-base max-w-md mx-auto"
                     >
-                        เลือกแพ็คเกจที่เหมาะกับความรักของคุณ
+                        แพ็คเกจทุกระดับ ออกแบบมาเพื่อความทรงจำที่งดงาม
                     </motion.p>
                 </div>
 
                 {/* All 4 Tiers in One Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {/* All 4 Tiers in One Row */}
+                <div className="flex overflow-x-auto snap-x snap-mandatory pb-6 gap-4 -mx-4 px-4 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5 sm:overflow-visible sm:pb-0 sm:mx-0 sm:px-0 items-start">
                     {tiers.map((tier, index) => (
                         <TierCard
                             key={tier.id}
@@ -144,80 +66,36 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="mt-12 sm:mt-16"
+                    className="mt-4 sm:mt-16"
                 >
-                    <div className="text-center mb-8">
-                        <h3 className="text-xl sm:text-2xl font-playfair font-bold text-[#1A3C40] mb-2">
-                            สิ่งที่คุณจะได้รับ 🎁
+                    <div className="text-center mb-10">
+                        <h3 className="text-xl sm:text-2xl font-playfair text-[#1A3C40] mb-2">
+                            สิ่งที่คุณจะได้รับ
                         </h3>
-                        <p className="text-gray-500 text-sm">ทุกแพ็คเกจรับประกันความพึงพอใจ</p>
+                        <p className="text-gray-400 text-sm">ทุกแพ็คเกจรับประกันความพึงพอใจ</p>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {/* 1. Purchase Link */}
-                        <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-5 text-center border border-rose-100 hover:shadow-lg transition-all">
-                            <div className="w-12 h-12 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                <span className="text-2xl">🔗</span>
-                            </div>
-                            <h4 className="font-semibold text-[#1A3C40] text-sm mb-1">ลิงก์เว็บไซต์</h4>
-                            <p className="text-xs text-gray-500">ลิงก์พร้อมใช้งานภายใน 24 ชม.</p>
-                        </div>
-
-                        {/* 2. Renewal Link */}
-                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-5 text-center border border-blue-100 hover:shadow-lg transition-all">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                <span className="text-2xl">🔄</span>
-                            </div>
-                            <h4 className="font-semibold text-[#1A3C40] text-sm mb-1">ต่ออายุง่าย</h4>
-                            <p className="text-xs text-gray-500">ลิงก์สำหรับต่ออายุการใช้งาน</p>
-                        </div>
-
-                        {/* 3. QR Code */}
-                        <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 text-center border border-purple-100 hover:shadow-lg transition-all">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                <span className="text-2xl">📱</span>
-                            </div>
-                            <h4 className="font-semibold text-[#1A3C40] text-sm mb-1">QR Code</h4>
-                            <p className="text-xs text-gray-500">สแกนเปิดเว็บได้ทันที</p>
-                        </div>
-
-                        {/* 4. After-sales Support */}
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 text-center border border-amber-100 hover:shadow-lg transition-all">
-                            <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                <span className="text-2xl">💬</span>
-                            </div>
-                            <h4 className="font-semibold text-[#1A3C40] text-sm mb-1">ดูแลหลังการขาย</h4>
-                            <p className="text-xs text-gray-500">ติดต่อสอบถามได้ตลอด</p>
-                        </div>
+                        <BenefitCard icon={Globe} color="rose" label="ลิงก์เว็บไซต์" desc="ลิงก์พร้อมใช้งานภายใน 24 ชม." />
+                        <BenefitCard icon={RefreshCcw} color="amber" label="ต่ออายุง่าย" desc="ลิงก์สำหรับต่ออายุการใช้งาน" />
+                        <BenefitCard icon={QrCode} color="blue" label="QR Code" desc="สแกนเปิดเว็บได้ทันที" />
+                        <BenefitCard icon={MessageCircle} color="emerald" label="ดูแลหลังการขาย" desc="ติดต่อสอบถามได้ตลอด" />
                     </div>
                 </motion.div>
 
                 {/* Trust Badges */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    className="mt-10 text-center"
+                    className="mt-12 text-center"
                 >
-                    <div className="inline-flex flex-wrap justify-center items-center gap-6 sm:gap-10 text-gray-400 text-sm">
-                        <span className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                <Check className="w-3 h-3 text-green-600" />
-                            </div>
-                            ปลอดภัย 100%
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                <Check className="w-3 h-3 text-green-600" />
-                            </div>
-                            ชำระผ่าน PromptPay
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                                <Check className="w-3 h-3 text-green-600" />
-                            </div>
-                            ได้รับลิงก์ภายใน 24 ชม.
-                        </span>
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-12 text-gray-400 text-xs uppercase tracking-wider">
+                        <span>ปลอดภัย 100%</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300 hidden sm:block" />
+                        <span>ชำระผ่าน PromptPay</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300 hidden sm:block" />
+                        <span>ได้รับลิงก์ภายใน 24 ชม.</span>
                     </div>
                 </motion.div>
             </div>
@@ -225,8 +103,25 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
     );
 };
 
+// Benefit Card (minimalist with accent)
+const BenefitCard = ({ icon: Icon, label, desc, color }) => (
+    <div className={`border border-gray-100 rounded-2xl p-5 text-center hover:border-${color}-200 hover:shadow-lg hover:shadow-${color}-100/50 transition-all duration-300 group bg-white h-full flex flex-col items-center justify-center`}>
+        <div className={`w-12 h-12 mb-3 rounded-full bg-${color}-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`w-6 h-6 text-${color}-500`} />
+        </div>
+        <h4 className="font-playfair font-semibold text-[#1A3C40] text-sm mb-1">{label}</h4>
+        <p className="text-xs text-gray-400">{desc}</p>
+    </div>
+);
+
 // Tier 1-3 Card Component
 const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
+    const borderAccents = {
+        slate: 'border-t-slate-400',
+        blue: 'border-t-blue-400',
+        rose: 'border-t-rose-400',
+        amber: 'border-t-amber-400'
+    };
     return (
         <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -236,76 +131,81 @@ const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
             className={`
                 relative rounded-2xl overflow-hidden
                 ${tier.highlight
-                    ? 'bg-gradient-to-br ' + tier.bgGradient + ' shadow-2xl shadow-rose-200/50 ring-2 ring-[#E8A08A] md:scale-105 z-10'
-                    : 'bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl'
+                    ? 'border-2 border-[#E8A08A] shadow-lg shadow-[#E8A08A]/10'
+                    : `border border-gray-200 border-t-4 ${borderAccents[tier.accentColor]} hover:border-gray-300 hover:shadow-md`
                 }
-                transition-all duration-300
+                bg-white transition-all duration-300
+                h-full flex flex-col
+                min-w-[85%] sm:min-w-0 snap-center
+                max-h-[60vh] sm:max-h-full overflow-hidden
             `}
         >
-            {/* Tag */}
+            {/* Recommended Tag */}
             {tier.tag && (
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#E8A08A] to-[#d4917b] text-white text-center py-1.5 text-xs font-semibold">
+                <div className="bg-gradient-to-r from-[#E8A08A] to-[#d4917b] text-white text-center py-2 text-xs font-medium tracking-wide">
                     {tier.tag}
                 </div>
             )}
 
-            <div className={`p-6 ${tier.tag ? 'pt-10' : ''}`}>
-                {/* Icon & Name */}
-                <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} text-white shadow-lg`}>
-                        <tier.icon size={22} />
+            {/* Content Split for Sticky Header on Mobile */}
+            <div className="p-6 sm:p-7 flex flex-col h-full overflow-hidden">
+                {/* Fixed Header Part (Name, Price, CTA) */}
+                <div className="shrink-0 pb-4">
+                    {/* Name & Description */}
+                    <div className="mb-4 sm:mb-5">
+                        <h3 className="text-lg font-playfair font-semibold text-[#1A3C40]">{tier.name}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{tier.description}</p>
                     </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-[#1A3C40]">{tier.name}</h3>
-                        <p className="text-xs text-gray-400">{tier.description}</p>
-                    </div>
-                </div>
 
-                {/* Price */}
-                <div className="mb-5">
-                    <div className="flex items-baseline gap-2">
-                        {tier.originalPrice && (
-                            <span className="text-lg text-gray-300 line-through">{tier.originalPrice}</span>
-                        )}
-                        <span className={`text-4xl font-bold ${tier.highlight ? 'text-[#E8A08A]' : 'text-[#1A3C40]'}`}>
-                            {tier.price}
-                        </span>
-                        <span className="text-gray-400 text-sm">บาท</span>
+                    {/* Price */}
+                    <div className="mb-4 sm:mb-6">
+                        <div className="flex items-baseline gap-2">
+                            {tier.originalPrice && (
+                                <span className="text-sm text-gray-300 line-through">{tier.originalPrice}฿</span>
+                            )}
+                            <span className="text-4xl font-playfair font-bold text-[#1A3C40]">
+                                {tier.price}
+                            </span>
+                            <span className="text-gray-400 text-sm">บาท</span>
+                        </div>
+                        <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium bg-${tier.accentColor}-50 text-${tier.accentColor}-500`}>{tier.duration}</span>
                     </div>
-                    <div className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium bg-${tier.accentColor}-100 text-${tier.accentColor}-600`}>
-                        ⏱️ {tier.duration}
-                    </div>
-                </div>
 
-                {/* Features */}
-                <ul className="space-y-2.5 mb-6">
-                    {tier.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-center text-sm text-gray-600">
-                            <div className={`w-5 h-5 rounded-full mr-2.5 flex items-center justify-center ${tier.highlight ? 'bg-[#E8A08A]/20' : 'bg-gray-100'}`}>
-                                <Check className={`w-3 h-3 ${tier.highlight ? 'text-[#E8A08A]' : 'text-gray-400'}`} />
-                            </div>
-                            {feature}
-                        </li>
-                    ))}
-                </ul>
-
-                {/* Buttons */}
-                <div className="space-y-2">
+                    {/* CTA Button */}
                     <button
                         onClick={() => onSelectTier(tier)}
-                        className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2
+                        className={`w-full py-3 rounded-xl font-medium text-sm transition-all duration-300
                             ${tier.highlight
-                                ? 'bg-gradient-to-r from-[#1A3C40] to-[#2a5c60] text-white hover:shadow-lg hover:-translate-y-0.5'
-                                : 'bg-gray-100 text-[#1A3C40] hover:bg-gray-200'
+                                ? 'bg-gradient-to-r from-[#E8A08A] to-[#d4917b] text-white hover:shadow-lg hover:shadow-[#E8A08A]/25'
+                                : `border border-${tier.accentColor}-300 text-${tier.accentColor}-600 hover:bg-${tier.accentColor}-50`
                             }
                         `}
                     >
                         เลือกแพ็คเกจนี้
-                        <ChevronRight className="w-4 h-4" />
                     </button>
+                </div>
+
+                {/* Scrollable Features Part */}
+                <div className="flex-1 overflow-y-auto sm:overflow-visible pr-1 -mr-1 custom-scrollbar">
+                    {/* Divider */}
+                    <div className="border-t border-gray-100 mb-5" />
+
+                    {/* Features */}
+                    <ul className="space-y-3 pb-2">
+                        {tier.features.map((feature, idx) => (
+                            feature && (
+                                <li key={idx} className="flex items-start text-sm text-gray-500">
+                                    <Check className={`w-4 h-4 text-${tier.accentColor}-400 mr-2.5 mt-0.5 flex-shrink-0`} />
+                                    {feature}
+                                </li>
+                            )
+                        ))}
+                    </ul>
+
+                    {/* View Demos */}
                     <button
                         onClick={() => onViewDemos(tier.id)}
-                        className="w-full py-2 text-sm text-gray-400 hover:text-[#E8A08A] transition-colors"
+                        className="mt-5 text-xs text-gray-400 hover:text-[#1A3C40] transition-colors text-center w-full block"
                     >
                         ดูตัวอย่าง →
                     </button>
@@ -315,10 +215,11 @@ const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
     );
 };
 
-// Tier 4 Premium Card (Single Column - matches other cards)
+// Tier 4 Premium Card
 const Tier4Card = ({ tier, onSelectTier, onViewDemos }) => {
-    const [selectedSubTier, setSelectedSubTier] = useState(tier.subTiers[0]); // Default to 30 days
+    const [selectedSubTier, setSelectedSubTier] = useState(tier.subTiers[0]);
     const [wantDomain, setWantDomain] = useState(false);
+    const [showFeatures, setShowFeatures] = useState(false);
 
     const totalPrice = selectedSubTier.price + (wantDomain ? tier.customDomainPrice : 0);
 
@@ -338,107 +239,129 @@ const Tier4Card = ({ tier, onSelectTier, onViewDemos }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
-            className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-300 shadow-xl hover:shadow-2xl transition-all"
+            className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-white shadow-lg shadow-amber-100/50 h-full flex flex-col min-w-[85%] sm:min-w-0 snap-center max-h-[60vh] sm:max-h-full"
         >
             {/* Premium Badge */}
-            <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white text-center py-1.5">
-                <div className="flex items-center justify-center gap-1">
-                    <Crown size={12} />
-                    <span className="text-xs font-bold">👑 Premium</span>
-                </div>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-2 text-xs font-medium tracking-wide uppercase">
+                EXCLUSIVE
             </div>
 
-            <div className="p-6 pt-10">
-                {/* Icon & Name */}
-                <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} text-white shadow-lg`}>
-                        <tier.icon size={22} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-[#1A3C40]">{tier.name}</h3>
-                        <p className="text-xs text-amber-600">{tier.tagline}</p>
-                    </div>
-                </div>
+            <div className="p-6 sm:p-7 flex flex-col h-full overflow-hidden relative">
+                {/* Info Icon for Mobile/Small screens */}
+                <button
+                    onClick={() => setShowFeatures(true)}
+                    className="absolute top-0 right-2 p-2 text-gray-300 hover:text-[#1A3C40] transition-colors z-10"
+                    aria-label="See features"
+                >
+                    <Info size={18} />
+                </button>
 
-                {/* Duration Selector */}
-                <div className="mb-4">
-                    <p className="text-xs text-gray-500 mb-2">เลือกระยะเวลา:</p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                        {tier.subTiers.map((sub) => (
-                            <button
-                                key={sub.days}
-                                onClick={() => setSelectedSubTier(sub)}
-                                className={`relative p-2 rounded-lg text-center border transition-all ${selectedSubTier?.days === sub.days
-                                    ? 'border-amber-500 bg-amber-100 shadow-sm'
-                                    : 'border-gray-200 bg-white hover:border-amber-300'
-                                    }`}
-                            >
-                                {sub.discount && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                                        -{sub.discount}
-                                    </span>
-                                )}
-                                <p className="text-xs font-bold text-[#1A3C40]">{sub.label}</p>
-                                <p className="text-[10px] text-amber-600">{sub.perDay}฿/วัน</p>
-                            </button>
-                        ))}
+                {/* Fixed Header Part */}
+                <div className="shrink-0 pb-4">
+                    {/* Name */}
+                    <div className="mb-4 sm:mb-5">
+                        <h3 className="text-lg font-playfair font-semibold text-[#1A3C40]">{tier.name}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{tier.tagline}</p>
                     </div>
-                </div>
 
-                {/* Price */}
-                <div className="mb-4">
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-amber-600">{totalPrice.toLocaleString()}</span>
-                        <span className="text-gray-400 text-sm">บาท</span>
+                    {/* Duration Selector */}
+                    <div className="mb-4 sm:mb-5">
+                        <p className="text-xs text-gray-400 mb-2">เลือกระยะเวลา</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {tier.subTiers.map((sub) => (
+                                <button
+                                    key={sub.days}
+                                    onClick={() => setSelectedSubTier(sub)}
+                                    className={`relative py-2.5 px-3 rounded-lg text-center border transition-all text-xs
+                                        ${selectedSubTier?.days === sub.days
+                                            ? 'border-[#1A3C40] bg-[#1A3C40]/5 font-semibold text-[#1A3C40]'
+                                            : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                        }`}
+                                >
+                                    {sub.discount && (
+                                        <span className="absolute -top-2 -right-2 bg-[#E8A08A] text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                                            -{sub.discount}
+                                        </span>
+                                    )}
+                                    <p className="font-medium">{sub.label}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{sub.perDay}฿/วัน</p>
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                        ⏱️ {selectedSubTier.label}
+
+                    {/* Price */}
+                    <div className="mb-4 sm:mb-5">
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-4xl font-playfair font-bold text-amber-600">{totalPrice.toLocaleString()}</span>
+                            <span className="text-gray-400 text-sm">บาท</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">{selectedSubTier.label}</p>
+                        {selectedSubTier?.discount && (
+                            <span className="text-xs text-[#E8A08A] font-medium">ประหยัด {selectedSubTier.discount}</span>
+                        )}
                     </div>
-                    {selectedSubTier?.discount && (
-                        <span className="ml-2 text-xs text-green-600 font-medium">ประหยัด {selectedSubTier.discount}</span>
-                    )}
-                </div>
 
-                {/* Custom Domain Add-on */}
-                <label className="flex items-center gap-2 p-2.5 rounded-lg bg-white/80 border border-amber-200 cursor-pointer hover:bg-amber-50 transition-all mb-4">
-                    <input
-                        type="checkbox"
-                        checked={wantDomain}
-                        onChange={(e) => setWantDomain(e.target.checked)}
-                        className="w-4 h-4 accent-amber-500"
-                    />
-                    <div className="flex-1">
-                        <p className="text-xs font-medium text-[#1A3C40]">+ Special Link</p>
-                        <p className="text-[10px] text-gray-400">yourname.norastory.com</p>
-                    </div>
-                    <span className="text-amber-600 font-bold text-xs">+990฿</span>
-                </label>
+                    {/* Custom Domain Add-on */}
+                    <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:border-gray-300 transition-all mb-4 sm:mb-5">
+                        <input
+                            type="checkbox"
+                            checked={wantDomain}
+                            onChange={(e) => setWantDomain(e.target.checked)}
+                            className="w-4 h-4 accent-[#1A3C40] rounded"
+                        />
+                        <div className="flex-1">
+                            <p className="text-xs font-medium text-[#1A3C40]">Special Link</p>
+                            <p className="text-[10px] text-gray-400">yourname.norastory.com</p>
+                        </div>
+                        <span className="text-[#1A3C40] font-semibold text-xs">+990฿</span>
+                    </label>
 
-                {/* Features */}
-                <ul className="space-y-2 mb-5">
-                    {tier.features.slice(0, 3).map((feature, idx) => (
-                        <li key={idx} className="flex items-center text-sm text-gray-600">
-                            <div className="w-5 h-5 rounded-full mr-2 flex items-center justify-center bg-amber-100">
-                                <Check className="w-3 h-3 text-amber-600" />
-                            </div>
-                            <span className="text-xs">{feature.text}</span>
-                        </li>
-                    ))}
-                </ul>
-
-                {/* Buttons */}
-                <div className="space-y-2">
+                    {/* CTA Button */}
                     <button
                         onClick={handleSelect}
-                        className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl font-medium text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-200/50 transition-all duration-300"
                     >
-                        <Crown size={16} />
                         เลือกแพ็คเกจนี้
-                        <ChevronRight className="w-4 h-4" />
                     </button>
+                </div>
+
+                {/* Scrollable Features Part - Conditional Overlay */}
+                <div className={`
+                    flex-1 overflow-y-auto custom-scrollbar transition-all duration-300
+                    ${showFeatures ? 'absolute inset-0 z-30 bg-white p-6' : 'pr-1 -mr-1'}
+                `}>
+                    {/* Close Button for Overlay */}
+                    {showFeatures && (
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-playfair font-bold text-xl text-[#1A3C40]">สิ่งที่คุณจะได้รับ</h4>
+                            <button
+                                onClick={() => setShowFeatures(false)}
+                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+                    )}
+
+                    {!showFeatures && <div className="border-t border-gray-100 mb-5" />}
+
+                    {/* Features */}
+                    <ul className="space-y-3 pb-2">
+                        {tier.features.map((feature, idx) => (
+                            feature && (
+                                <li key={idx} className="flex items-start text-sm text-gray-500">
+                                    <Check className="w-4 h-4 text-amber-500 mr-2.5 mt-0.5 flex-shrink-0" />
+                                    <span className="text-xs">{feature.text || feature}</span>
+                                </li>
+                            )
+                        ))}
+                    </ul>
+
+                    {/* View Demos */}
                     <button
                         onClick={() => onViewDemos(tier.id)}
-                        className="w-full py-2 text-sm text-amber-600 hover:text-amber-700 transition-colors"
+                        className="mt-5 text-xs text-gray-400 hover:text-[#1A3C40] transition-colors text-center w-full block"
                     >
                         ดูตัวอย่าง →
                     </button>
@@ -449,4 +372,3 @@ const Tier4Card = ({ tier, onSelectTier, onViewDemos }) => {
 };
 
 export default Pricing;
-

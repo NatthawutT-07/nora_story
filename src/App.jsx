@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { TIERS } from './data/tierData';
 import Hero from './components/Hero';
 import Pricing from './components/Pricing';
 import CheckoutModal from './components/checkout/CheckoutModal';
@@ -14,35 +15,19 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 // Templates
-// Templates
 import Tier1Template1 from './components/templates/tier1/Tier1Template1';
 import Tier1Template2 from './components/templates/tier1/Tier1Template2';
 import Tier1Template3 from './components/templates/tier1/Tier1Template3';
-import Tier1Template4 from './components/templates/tier1/Tier1Template4';
-import Tier1Template5 from './components/templates/tier1/Tier1Template5';
-import Tier1Template6 from './components/templates/tier1/Tier1Template6';
-import Tier1Template7 from './components/templates/tier1/Tier1Template7';
 
 import Tier2Template1 from './components/templates/tier2/Tier2Template1';
 import Tier2Template2 from './components/templates/tier2/Tier2Template2';
 import Tier2Template3 from './components/templates/tier2/Tier2Template3';
-import Tier2Template4 from './components/templates/tier2/Tier2Template4';
-import Tier2Template5 from './components/templates/tier2/Tier2Template5';
-import Tier2Template6 from './components/templates/tier2/Tier2Template6';
 
 import Tier3Template1 from './components/templates/tier3/Tier3Template1';
 import Tier3Template2 from './components/templates/tier3/Tier3Template2';
 import Tier3Template3 from './components/templates/tier3/Tier3Template3';
-import Tier3Template4 from './components/templates/tier3/Tier3Template4';
-import Tier3Template5 from './components/templates/tier3/Tier3Template5';
-import Tier3Template6 from './components/templates/tier3/Tier3Template6';
 
 import Tier4Template1 from './components/templates/tier4/Tier4Template1';
-import Tier4Template2 from './components/templates/tier4/Tier4Template2';
-import Tier4Template3 from './components/templates/tier4/Tier4Template3';
-import Tier4Template4 from './components/templates/tier4/Tier4Template4';
-import Tier4Template5 from './components/templates/tier4/Tier4Template5';
-import Tier4Template6 from './components/templates/tier4/Tier4Template6';
 import ExtensionPage from './components/ExtensionPage';
 
 // Demo Wrapper Component
@@ -68,10 +53,24 @@ const DemoWrapper = ({ children }) => {
 };
 
 function MainPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selectedTier, setSelectedTier] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [galleryTierId, setGalleryTierId] = useState(null);
-  const [selectedDemo, setSelectedDemo] = useState(null);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const checkoutId = searchParams.get('checkout');
+    if (checkoutId) {
+      const tier = TIERS.find(t => t.id === checkoutId);
+      if (tier) {
+        setSelectedTier(tier);
+        setIsModalOpen(true);
+        // Clean up URL
+        navigate('/', { replace: true });
+      }
+    }
+  }, [location, navigate]);
 
   const handleSelectTier = (tier) => {
     setSelectedTier(tier);
@@ -79,7 +78,7 @@ function MainPage() {
   };
 
   const handleViewDemos = (tierId) => {
-    setGalleryTierId(`t${tierId}`);
+    navigate('/gallery', { state: { tierId: `t${tierId}` } });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -88,52 +87,7 @@ function MainPage() {
     setTimeout(() => setSelectedTier(null), 300); // Clear after animation
   };
 
-  // --- Dynamic Demo Rendering ---
-  const renderDemo = () => {
-    const { tier, id } = selectedDemo;
-    const key = `${tier}-${id}`;
 
-    // Map keys to components
-    const demos = {
-      't1-1': <Tier1Template1 />, 't1-2': <Tier1Template2 />, 't1-3': <Tier1Template3 />,
-      't1-4': <Tier1Template4 />, 't1-5': <Tier1Template5 />, 't1-6': <Tier1Template6 />, 't1-7': <Tier1Template7 />,
-      't2-1': <Tier2Template1 />, 't2-2': <Tier2Template2 />, 't2-3': <Tier2Template3 />,
-      't2-4': <Tier2Template4 />, 't2-5': <Tier2Template5 />, 't2-6': <Tier2Template6 />,
-      't3-1': <Tier3Template1 />, 't3-2': <Tier3Template2 />, 't3-3': <Tier3Template3 />,
-      't3-4': <Tier3Template4 />, 't3-5': <Tier3Template5 />, 't3-6': <Tier3Template6 />,
-      't4-1': <Tier4Template1 />, 't4-2': <Tier4Template2 />, 't4-3': <Tier4Template3 />,
-      't4-4': <Tier4Template4 />, 't4-5': <Tier4Template5 />, 't4-6': <Tier4Template6 />,
-    };
-
-    return (
-      <div className="relative z-50 bg-white min-h-screen">
-        {/* Floating Close Button */}
-        <button
-          onClick={() => setSelectedDemo(null)}
-          className="fixed top-4 right-4 z-[100] bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium transition-all"
-        >
-          ✕ Close Demo
-        </button>
-        {demos[key] || <div className="p-10 text-center">Demo Not Found</div>}
-      </div>
-    );
-  };
-
-  // 1. Show Demo if active
-  if (selectedDemo) {
-    return renderDemo();
-  }
-
-  // 2. Show Gallery if active
-  if (galleryTierId) {
-    return (
-      <TierGallery
-        tierIdProp={galleryTierId}
-        onBack={() => setGalleryTierId(null)}
-        onSelectDemo={(tierId, demoId) => setSelectedDemo({ tier: tierId, id: demoId })}
-      />
-    );
-  }
 
   return (
     <div className="font-sans antialiased bg-white min-h-screen text-[#1A3C40] selection:bg-[#E8A08A] selection:text-white">
@@ -149,32 +103,25 @@ function MainPage() {
       />
 
       {/* Footer */}
-      <footer className="bg-gradient-to-b from-[#0F2A2E] to-[#051113] text-white py-12 sm:py-16 px-4" id="contact">
+      <footer className="bg-gradient-to-b from-[#0F2A2E] to-[#051113] text-white py-6 sm:py-8 px-4" id="contact">
         <div className="max-w-5xl mx-auto">
           {/* Main Footer Content */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12 mb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-y-10 gap-x-4 sm:gap-12 mb-6">
             {/* Brand */}
-            <div className="text-center sm:text-left">
+            <div className="col-span-2 sm:col-span-1 text-center sm:text-left">
               <h3 className="font-playfair text-2xl sm:text-3xl mb-3">NoraStory</h3>
-              <p className="text-white/50 text-sm leading-relaxed max-w-xs mx-auto sm:mx-0">
-                เปลี่ยนความทรงจำของคุณให้กลายเป็นเรื่องราวที่อยู่ตลอดไป
+              <p className="text-white/50 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto sm:mx-0">
+                เปลี่ยนความทรงจำของคุณให้กลายเป็น<span className="whitespace-nowrap">เรื่องราวที่อยู่ตลอดไป</span>
               </p>
             </div>
 
             {/* Quick Links */}
-            <div className="text-center">
-              <h4 className="text-white/80 font-medium mb-4">ลิงก์ด่วน</h4>
-              <div className="flex flex-col gap-2">
-                <a href="#experience" className="text-white/50 hover:text-[#E8A08A] text-sm transition-colors">ฟีเจอร์</a>
-                <a href="#pricing" className="text-white/50 hover:text-[#E8A08A] text-sm transition-colors">แพ็คเกจ</a>
-                <a href="/create" className="text-white/50 hover:text-[#E8A08A] text-sm transition-colors">Playground</a>
-              </div>
-            </div>
+
 
             {/* Contact */}
-            <div className="text-center sm:text-right lg:text-right">
+            {/* <div className="text-right sm:text-right lg:text-right pr-4 sm:pr-0">
               <h4 className="text-white/80 font-medium mb-4">ติดต่อเรา</h4>
-              <div className="flex justify-center sm:justify-end lg:justify-end gap-3">
+              <div className="flex justify-end gap-3">
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#1877F2] transition-all duration-300">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
                 </a>
@@ -185,12 +132,12 @@ function MainPage() {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
                 </a>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-white/10 pt-6 text-center">
-            <p className="text-white/30 text-xs sm:text-sm">© 2026 NoraStory. Made with 💖 for lovers.</p>
+          <div className="border-t border-white/10  text-center">
+            <p className="text-white/30 text-xs sm:text-sm">© 2026 Nora Story. Made with for lovers.</p>
           </div>
         </div>
       </footer>
@@ -202,40 +149,25 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<MainPage />} />
-      <Route path="/gallery/:tierId" element={<TierGallery />} />
+      <Route path="/gallery" element={<TierGallery />} />
 
       {/* Tier 1 Demos */}
       <Route path="/demo/t1/1" element={<DemoWrapper><Tier1Template1 /></DemoWrapper>} />
       <Route path="/demo/t1/2" element={<DemoWrapper><Tier1Template2 /></DemoWrapper>} />
       <Route path="/demo/t1/3" element={<DemoWrapper><Tier1Template3 /></DemoWrapper>} />
-      <Route path="/demo/t1/4" element={<DemoWrapper><Tier1Template4 /></DemoWrapper>} />
-      <Route path="/demo/t1/5" element={<DemoWrapper><Tier1Template5 /></DemoWrapper>} />
-      <Route path="/demo/t1/6" element={<DemoWrapper><Tier1Template6 /></DemoWrapper>} />
-      <Route path="/demo/t1/7" element={<DemoWrapper><Tier1Template7 /></DemoWrapper>} />
 
       {/* Tier 2 Demos */}
       <Route path="/demo/t2/1" element={<DemoWrapper><Tier2Template1 /></DemoWrapper>} />
       <Route path="/demo/t2/2" element={<DemoWrapper><Tier2Template2 /></DemoWrapper>} />
       <Route path="/demo/t2/3" element={<DemoWrapper><Tier2Template3 /></DemoWrapper>} />
-      <Route path="/demo/t2/4" element={<DemoWrapper><Tier2Template4 /></DemoWrapper>} />
-      <Route path="/demo/t2/5" element={<DemoWrapper><Tier2Template5 /></DemoWrapper>} />
-      <Route path="/demo/t2/6" element={<DemoWrapper><Tier2Template6 /></DemoWrapper>} />
 
       {/* Tier 3 Demos */}
       <Route path="/demo/t3/1" element={<DemoWrapper><Tier3Template1 /></DemoWrapper>} />
       <Route path="/demo/t3/2" element={<DemoWrapper><Tier3Template2 /></DemoWrapper>} />
       <Route path="/demo/t3/3" element={<DemoWrapper><Tier3Template3 /></DemoWrapper>} />
-      <Route path="/demo/t3/4" element={<DemoWrapper><Tier3Template4 /></DemoWrapper>} />
-      <Route path="/demo/t3/5" element={<DemoWrapper><Tier3Template5 /></DemoWrapper>} />
-      <Route path="/demo/t3/6" element={<DemoWrapper><Tier3Template6 /></DemoWrapper>} />
 
       {/* Tier 4 Demos */}
       <Route path="/demo/t4/1" element={<DemoWrapper><Tier4Template1 /></DemoWrapper>} />
-      <Route path="/demo/t4/2" element={<DemoWrapper><Tier4Template2 /></DemoWrapper>} />
-      <Route path="/demo/t4/3" element={<DemoWrapper><Tier4Template3 /></DemoWrapper>} />
-      <Route path="/demo/t4/4" element={<DemoWrapper><Tier4Template4 /></DemoWrapper>} />
-      <Route path="/demo/t4/5" element={<DemoWrapper><Tier4Template5 /></DemoWrapper>} />
-      <Route path="/demo/t4/6" element={<DemoWrapper><Tier4Template6 /></DemoWrapper>} />
 
       {/* Admin Routes */}
       <Route path="/jimdev" element={<AdminLogin />} />

@@ -1,7 +1,89 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Delete, Heart, Sparkles, Play, Pause, ChevronLeft, ChevronRight, Volume2, VolumeX, Music } from 'lucide-react';
+import { Delete, Heart, Sparkles, Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
+
+// Floating Images Component
+const FloatingImages = ({ images = [] }) => {
+    const getPlaceholder = (width, height, text) => {
+        const svg = `
+            <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#2a2a2a"/>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="52" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
+            </svg>
+        `;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
+    };
+
+    const defaultImages = [
+        getPlaceholder(500, 500, "1:1"),
+        getPlaceholder(500, 500, "1:1"),
+        getPlaceholder(500, 500, "1:1"),
+        getPlaceholder(500, 500, "1:1"),
+        getPlaceholder(500, 500, "1:1")
+    ];
+    const displayImages = images.length > 0 ? images : defaultImages;
+
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Random positions for floating images
+    // Desktop: Closer to center but surrounding the card
+    const desktopPositions = [
+        { top: '25%', left: '20%', rotate: -8 },
+        { top: '20%', right: '20%', rotate: 8 },
+        { bottom: '20%', left: '15%', rotate: -5 },
+        { bottom: '25%', right: '18%', rotate: 5 },
+        { top: '45%', left: '10%', rotate: -12 },
+        { top: '50%', right: '10%', rotate: 12 },
+    ];
+
+    // Mobile: 3 Top, 2 Bottom - Pushed closer to center but still framing content
+    const mobilePositions = [
+        { top: '10%', left: '0%', rotate: -12 },           // Top Left
+        { top: '8%', right: '0%', rotate: 12 },           // Top Right
+        { top: '15%', left: '50%', marginLeft: '-3.5rem', rotate: 5 }, // Top Center
+        { bottom: '12%', left: '5%', rotate: -8 },           // Bottom Left
+        { bottom: '10%', right: '5%', rotate: 8 },           // Bottom Right
+    ];
+
+    const positions = isMobile ? mobilePositions : desktopPositions;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {displayImages.map((img, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{
+                        opacity: 0.8,
+                        scale: 1,
+                        y: [0, -20, 0],
+                        rotate: positions[i % positions.length].rotate
+                    }}
+                    transition={{
+                        opacity: { delay: 0.5 + i * 0.2, duration: 1 },
+                        scale: { delay: 0.5 + i * 0.2, duration: 1, type: "spring" },
+                        y: { duration: 4 + i, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                    className="absolute w-28 h-28 md:w-48 md:h-48 rounded-xl border-4 border-white/20 shadow-xl overflow-hidden"
+                    style={positions[i % positions.length]}
+                >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                </motion.div>
+            ))}
+        </div>
+    );
+};
 
 // Floating Hearts Component - Enhanced
 const FloatingHearts = ({ intensity = 1 }) => {
@@ -104,98 +186,7 @@ const AnimatedBackground = ({ variant = 'default' }) => {
     );
 };
 
-// Photo Gallery Component
-const PhotoGallery = ({ images = [], onClose }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
 
-    const defaultImages = [
-        'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800',
-        'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800',
-        'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800',
-        'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800',
-        'https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?w=800'
-    ];
-
-    const displayImages = images.length > 0 ? images : defaultImages;
-
-    const nextImage = () => setCurrentIndex((prev) => (prev + 1) % displayImages.length);
-    const prevImage = () => setCurrentIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-md mx-auto mb-8"
-        >
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20">
-                <AnimatePresence mode="wait">
-                    <motion.img
-                        key={currentIndex}
-                        src={displayImages[currentIndex]}
-                        alt={`Photo ${currentIndex + 1}`}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.5 }}
-                        className="w-full h-full object-cover"
-                    />
-                </AnimatePresence>
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-
-                {/* Navigation Arrows */}
-                {displayImages.length > 1 && (
-                    <>
-                        <button
-                            onClick={prevImage}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                        <button
-                            onClick={nextImage}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all"
-                        >
-                            <ChevronRight size={24} />
-                        </button>
-                    </>
-                )}
-
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {displayImages.map((_, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setCurrentIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/40'
-                                }`}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Thumbnail Strip */}
-            {displayImages.length > 1 && (
-                <div className="flex gap-2 mt-4 justify-center overflow-x-auto pb-2">
-                    {displayImages.map((img, idx) => (
-                        <motion.button
-                            key={idx}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setCurrentIndex(idx)}
-                            className={`flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${idx === currentIndex ? 'border-rose-400 shadow-lg shadow-rose-500/30' : 'border-white/20'
-                                }`}
-                        >
-                            <img src={img} alt="" className="w-full h-full object-cover" />
-                        </motion.button>
-                    ))}
-                </div>
-            )}
-        </motion.div>
-    );
-};
 
 // Music Player Component
 const MusicPlayer = ({ musicUrl }) => {
@@ -251,10 +242,22 @@ const MusicPlayer = ({ musicUrl }) => {
     );
 };
 
+const Watermark = () => (
+    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
+            {Array.from({ length: 400 }).map((_, i) => (
+                <span key={i} className="text-lg font-black text-white whitespace-nowrap select-none">
+                    https://norastory.com
+                </span>
+            ))}
+        </div>
+    </div>
+);
+
 const Tier2Template1 = ({
     customMessage,
     customSignOff,
-    targetName = 'คุณ',
+    targetName = 'เธอ',
     pinCode = '1234',
     images = [],
     musicUrl = ''
@@ -262,7 +265,6 @@ const Tier2Template1 = ({
     const [viewState, setViewState] = useState('LOCKED');
     const [pin, setPin] = useState("");
     const [showError, setShowError] = useState(false);
-    const [noCount, setNoCount] = useState(0);
     const [showMusicPlayer, setShowMusicPlayer] = useState(false);
 
     const CORRECT_PIN = pinCode;
@@ -277,7 +279,11 @@ const Tier2Template1 = ({
         }
     }, [pin]);
 
-    const handleUnlock = () => setViewState('QUESTION');
+    const handleUnlock = () => {
+        setViewState('CONTENT');
+        setShowMusicPlayer(true);
+        triggerConfetti();
+    };
 
     const handleError = () => {
         setShowError(true);
@@ -295,23 +301,7 @@ const Tier2Template1 = ({
 
     const handleBackspace = () => setPin(prev => prev.slice(0, -1));
 
-    const handleLoveAnswer = (answer) => {
-        if (answer) {
-            setViewState('CONTENT');
-            setShowMusicPlayer(true);
-            triggerConfetti();
-        } else {
-            setNoCount(prev => prev + 1);
-        }
-    };
 
-    const getNoButtonText = () => {
-        if (noCount === 0) return "ไม่รักหรอก 💔";
-        if (noCount === 1) return "คิดอีกทีสิ~ 🤔";
-        if (noCount === 2) return "แน่ใจนะ?! 😤";
-        if (noCount === 3) return "จริงดิ?! 😭";
-        return "ไม่มีทาง! 🙈";
-    };
 
     const [canSendLove, setCanSendLove] = useState(true);
 
@@ -358,6 +348,7 @@ const Tier2Template1 = ({
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden relative">
+            <Watermark />
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - Premium PIN Entry */}
                 {viewState === 'LOCKED' && (
@@ -383,7 +374,7 @@ const Tier2Template1 = ({
                                 initial={{ scale: 0, rotate: -180 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                                className="mb-8 flex justify-center"
+                                className="mb-4 flex justify-center"
                             >
                                 <div className="relative">
                                     <motion.div
@@ -407,25 +398,8 @@ const Tier2Template1 = ({
                                 </div>
                             </motion.div>
 
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="text-3xl md:text-4xl font-serif mb-3 bg-gradient-to-r from-rose-200 via-pink-200 to-rose-200 bg-clip-text text-transparent"
-                            >
-                                ข้อความลับ 💌
-                            </motion.h2>
-                            <motion.p
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.4 }}
-                                className="text-white/50 text-sm mb-8"
-                            >
-                                กรุณาใส่รหัสเพื่อเปิดดู
-                            </motion.p>
-
                             {/* Premium PIN Dots */}
-                            <div className="flex justify-center gap-5 mb-12">
+                            <div className="flex justify-center gap-5 mb-6">
                                 {[...Array(4)].map((_, i) => (
                                     <motion.div
                                         key={i}
@@ -490,119 +464,22 @@ const Tier2Template1 = ({
                     </motion.div>
                 )}
 
-                {/* QUESTION STATE - Premium Love Question */}
-                {viewState === 'QUESTION' && (
-                    <motion.div
-                        key="question-screen"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, y: -50, filter: "blur(20px)" }}
-                        transition={{ duration: 0.6 }}
-                        className="fixed inset-0 z-40 flex flex-col items-center justify-center p-4"
-                    >
-                        <AnimatedBackground variant="question" />
-                        <FloatingHearts intensity={1.2} />
-                        <SparkleEffect />
-
-                        <div className="relative z-10 flex flex-col items-center">
-                            {/* Animated Premium Heart */}
-                            <motion.div
-                                initial={{ scale: 0, rotate: -30 }}
-                                animate={{
-                                    scale: [1, 1.15, 1],
-                                    rotate: 0
-                                }}
-                                transition={{
-                                    scale: { duration: 0.8, repeat: Infinity, repeatDelay: 0.3 },
-                                    rotate: { type: "spring", stiffness: 200 }
-                                }}
-                                className="mb-10 relative"
-                            >
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                                    className="absolute -inset-8 rounded-full border border-dashed border-rose-400/30"
-                                />
-                                <motion.div
-                                    animate={{ rotate: -360 }}
-                                    transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-                                    className="absolute -inset-16 rounded-full border border-dashed border-pink-400/20"
-                                />
-                                <div className="relative">
-                                    <Heart size={100} className="text-rose-500 drop-shadow-2xl" fill="currentColor" />
-                                    <motion.div
-                                        animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
-                                        transition={{ duration: 1.5, repeat: Infinity }}
-                                        className="absolute inset-0 flex items-center justify-center"
-                                    >
-                                        <Heart size={100} className="text-rose-400" fill="currentColor" />
-                                    </motion.div>
-                                </div>
-                            </motion.div>
-
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="text-4xl md:text-6xl font-serif mb-6 bg-gradient-to-r from-rose-200 via-pink-100 to-rose-200 bg-clip-text text-transparent"
-                            >
-                                {targetName}รักเค้าไหม? 💕
-                            </motion.h2>
-
-                            <div className="flex flex-col items-center gap-6 relative min-h-[160px] w-full max-w-md justify-center">
-                                <motion.button
-                                    onClick={() => handleLoveAnswer(true)}
-                                    initial={{ scale: 1 }}
-                                    animate={{
-                                        scale: 1 + (noCount * 0.3),
-                                        boxShadow: noCount > 2
-                                            ? '0 0 60px rgba(244, 63, 94, 0.7)'
-                                            : '0 15px 50px rgba(244, 63, 94, 0.4)'
-                                    }}
-                                    whileHover={{ scale: 1.1 + (noCount * 0.3) }}
-                                    whileTap={{ scale: 0.95 + (noCount * 0.3) }}
-                                    className="bg-gradient-to-r from-rose-500 via-pink-500 to-rose-500 text-white px-12 py-5 rounded-full text-xl font-medium shadow-2xl hover:from-rose-600 hover:via-pink-600 hover:to-rose-600 transition-all duration-300 flex items-center gap-3 border border-white/20"
-                                    style={{ zIndex: 10 }}
-                                >
-                                    <Sparkles size={22} />
-                                    รักที่สุดเลย
-                                    <Heart size={22} fill="currentColor" />
-                                </motion.button>
-
-                                {noCount < 5 && (
-                                    <motion.button
-                                        onClick={() => handleLoveAnswer(false)}
-                                        initial={{ opacity: 0 }}
-                                        animate={{
-                                            opacity: 1 - (noCount * 0.18),
-                                            scale: 1 - (noCount * 0.12)
-                                        }}
-                                        whileHover={{ scale: 0.95 - (noCount * 0.12) }}
-                                        className="text-white/50 hover:text-white/70 text-base px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/10"
-                                    >
-                                        {getNoButtonText()}
-                                    </motion.button>
-                                )}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* CONTENT STATE - Premium Card with Photos & Music */}
                 {viewState === 'CONTENT' && (
                     <motion.div
                         key="content"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="fixed inset-0 z-30 flex flex-col items-center justify-start overflow-y-auto py-8 px-4"
+                        className="fixed inset-0 z-30 flex flex-col items-center justify-center overflow-hidden p-4"
                     >
                         <AnimatedBackground variant="content" />
                         <FloatingHearts intensity={0.6} />
                         <SparkleEffect />
 
-                        <div className="relative z-10 w-full max-w-lg">
-                            {/* Photo Gallery */}
-                            <PhotoGallery images={images} />
+                        {/* Floating Images */}
+                        <FloatingImages images={images} />
+
+                        <div className="relative z-10 w-full max-w-lg flex flex-col items-center justify-center">
 
                             {/* Message Card */}
                             <motion.div
@@ -693,16 +570,18 @@ const Tier2Template1 = ({
                 )}
             </AnimatePresence>
 
-            {viewState === 'CONTENT' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2 }}
-                    className="fixed bottom-4 text-xs text-white/30 z-10"
-                >
-                    Made with 💕 by Nora.dev
-                </motion.div>
-            )}
+            {
+                viewState === 'CONTENT' && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 2 }}
+                        className="fixed bottom-4 text-xs text-white/30 z-10 flex items-center gap-1"
+                    >
+                        Made with by Nora Story
+                    </motion.div>
+                )
+            }
         </div>
     );
 };

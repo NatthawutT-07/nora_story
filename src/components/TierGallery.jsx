@@ -1,58 +1,31 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Clock, Music, Star, Crown, Eye, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, Sparkles } from 'lucide-react';
+import { TEMPLATE_DATA } from '../data/templateData';
+import { TIERS } from '../data/tierData';
 
-const tierData = {
-    t1: {
-        name: 'Trial',
-        tagline: 'ทดลองใช้สั้นๆ',
-        price: '79',
-        duration: '3 วัน',
-        icon: Clock,
-        gradient: 'from-slate-400 to-slate-500',
-        bgColor: 'bg-slate-50',
-        demos: [1, 2, 3]
-    },
-    t2: {
-        name: 'Standard',
-        tagline: 'สำหรับคนพิเศษ',
-        price: '149',
-        duration: '15 วัน',
-        icon: Star,
-        gradient: 'from-pink-400 to-rose-500',
-        bgColor: 'bg-rose-50',
-        demos: [1, 2, 3, 4, 5, 6]
-    },
-    t3: {
-        name: 'Premium',
-        tagline: 'สำหรับโอกาสพิเศษ',
-        price: '299',
-        duration: '15 วัน',
-        icon: Star,
-        gradient: 'from-rose-400 to-pink-500',
-        bgColor: 'bg-rose-50',
-        demos: [1, 2, 3, 4, 5, 6]
-    },
-    t4: {
-        name: 'Archive',
-        tagline: 'เก็บความทรงจำอย่างพรีเมียม',
-        price: '499+',
-        duration: '30-180 วัน',
-        icon: Crown,
-        gradient: 'from-amber-400 to-orange-500',
-        bgColor: 'bg-amber-50',
-        demos: [1, 2, 3, 4, 5, 6]
-    }
-};
+const tierData = TIERS.reduce((acc, t) => {
+    acc[t.slug] = t;
+    return acc;
+}, {});
+
 
 const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
-    const { tierId: tierIdParam } = useParams();
+    const location = useLocation();
     const navigate = useNavigate();
 
     // Default to first tier if none specified
-    const initialTier = tierIdProp || tierIdParam || 't1';
+    // Check props first, then location state, then default to 't1'
+    const initialTier = tierIdProp || location.state?.tierId || 't1';
     const [activeTier, setActiveTier] = useState(initialTier);
+
+    useEffect(() => {
+        // If state changed (e.g. from navigation), update activeTier
+        if (location.state?.tierId && tierData[location.state.tierId]) {
+            setActiveTier(location.state.tierId);
+        }
+    }, [location.state]);
 
     const tier = tierData[activeTier];
 
@@ -65,11 +38,18 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
     };
 
     const handleDemoClick = (demoId) => {
+        // Extract numeric ID from 't1-1' -> '1'
+        const numericId = demoId.split('-')[1];
+
         if (onSelectDemo) {
-            onSelectDemo(activeTier, demoId);
+            onSelectDemo(activeTier, numericId);
         } else {
-            navigate(`/demo/${activeTier}/${demoId}`);
+            navigate(`/demo/${activeTier}/${numericId}`);
         }
+    };
+
+    const handleTabClick = (key) => {
+        setActiveTier(key);
     };
 
     return (
@@ -100,12 +80,11 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                 <div className="max-w-6xl mx-auto px-4 pb-3">
                     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                         {Object.entries(tierData).map(([key, data]) => {
-                            const Icon = data.icon;
                             const isActive = activeTier === key;
                             return (
                                 <button
                                     key={key}
-                                    onClick={() => setActiveTier(key)}
+                                    onClick={() => handleTabClick(key)}
                                     className={`
                                         flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all duration-300
                                         ${isActive
@@ -114,7 +93,6 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                                         }
                                     `}
                                 >
-                                    <Icon size={16} />
                                     <span className="font-medium text-sm">{data.name}</span>
                                     <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-200'}`}>
                                         {data.demos.length}
@@ -136,8 +114,8 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                 >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} text-white shadow-lg`}>
-                                <tier.icon size={24} />
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} shadow-lg`}>
+                                <span className="text-white font-playfair font-bold text-lg">{tier.name.charAt(0)}</span>
                             </div>
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#1A3C40]">{tier.name}</h2>
@@ -150,7 +128,7 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                                 <p className="text-xs text-gray-400">{tier.duration}</p>
                             </div>
                             <button
-                                onClick={() => navigate('/#pricing')}
+                                onClick={() => navigate(`/?checkout=${tier.id}`)}
                                 className={`px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${tier.gradient} hover:shadow-lg transition-all text-sm`}
                             >
                                 เลือกแพ็คเกจ
@@ -174,48 +152,48 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
-                        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+                        className="flex flex-col gap-3"
                     >
-                        {tier.demos.map((id, index) => (
-                            <motion.div
-                                key={id}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleDemoClick(id)}
-                                className="group cursor-pointer"
-                            >
-                                <div className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
-                                    {/* Preview Image Placeholder */}
-                                    <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className="text-6xl font-bold text-gray-300/50">{id}</span>
+                        {tier.demos.map((id, index) => {
+                            const template = TEMPLATE_DATA[id] || { name: `Template ${id}`, description: `${tier.name} Style`, preview: '✨' };
+
+                            return (
+                                <motion.div
+                                    key={id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() => handleDemoClick(id)}
+                                    className="group cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                                        {/* Preview Icon */}
+                                        <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-gray-50 rounded-lg text-2xl group-hover:scale-110 transition-transform">
+                                            {template.preview}
                                         </div>
 
-                                        {/* Hover Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4">
-                                            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-[#1A3C40]">
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-semibold text-[#1A3C40] text-base truncate">{template.name}</h3>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-sm opacity-80`}>
+                                                    New
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-500 truncate">{template.description}</p>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <div className="flex items-center gap-2 text-gray-400 group-hover:text-[#1A3C40] transition-colors">
+                                            <span className="text-sm font-medium hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">ดูตัวอย่าง</span>
+                                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
                                                 <Eye size={16} />
-                                                ดูตัวอย่าง
                                             </div>
                                         </div>
-
-                                        {/* Style Badge */}
-                                        <div className="absolute top-3 left-3">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-lg`}>
-                                                Style {id}
-                                            </span>
-                                        </div>
                                     </div>
-
-                                    {/* Card Footer */}
-                                    <div className="p-3 sm:p-4">
-                                        <h3 className="font-semibold text-[#1A3C40] text-sm sm:text-base">Template {id}</h3>
-                                        <p className="text-xs text-gray-400 mt-0.5">{tier.name} Style</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </motion.div>
                 </AnimatePresence>
 
@@ -232,7 +210,7 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
             {/* Bottom CTA - Mobile */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 p-4 sm:hidden">
                 <button
-                    onClick={() => navigate('/#pricing')}
+                    onClick={() => navigate(`/?checkout=${tier.id}`)}
                     className={`w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-lg flex items-center justify-center gap-2`}
                 >
                     เลือก {tier.name} Package

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sun, Flower, Sparkles, Play, Pause, ChevronLeft, ChevronRight, Volume2, VolumeX, Music, Cloud } from 'lucide-react';
+import { Sun, Flower, Sparkles, Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
 
-// Floating Lotus/Flower Component - Enhanced
+// Floating Lotus/Flower Component
 const FloatingFlowers = ({ intensity = 1 }) => {
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -69,7 +69,7 @@ const GoldenSparkle = () => {
     );
 };
 
-// Animated Background - Premium Gold/Saffron
+// Animated Background
 const AnimatedBackground = ({ variant = 'default' }) => {
     const gradients = {
         default: 'from-amber-900 via-yellow-800 to-orange-900',
@@ -91,7 +91,6 @@ const AnimatedBackground = ({ variant = 'default' }) => {
                 }}
                 transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
             />
-            {/* Subtle Thai pattern overlay simulation */}
             <div
                 className="absolute inset-0 opacity-10"
                 style={{
@@ -103,94 +102,101 @@ const AnimatedBackground = ({ variant = 'default' }) => {
     );
 };
 
-// Photo Gallery Component
-const PhotoGallery = ({ images = [], onClose }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
+// Memory Gallery Component (Dynamic Grid)
+const MemoryGallery = ({ images = [] }) => {
+    // Ensure we have at least one image/placeholder
+    const displayImages = images.length > 0 ? images : ['https://images.unsplash.com/photo-1599553240723-5e9854737274?w=800'];
+    const count = displayImages.length;
 
-    const defaultImages = [
-        'https://images.unsplash.com/photo-1599553240723-5e9854737274?w=800', // Walking
-        'https://images.unsplash.com/photo-1574357278720-d81d23602d3f?w=800', // Temple
-        'https://images.unsplash.com/photo-1598418025219-c0ae7647895e?w=800', // Monk
-    ];
+    // Helper for Image Card styling
+    const ImageCard = ({ src, className = "" }) => (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            whileHover={{ scale: 1.02, rotate: 1, zIndex: 10 }}
+            className={`relative rounded-xl overflow-hidden shadow-xl border-4 border-white bg-white ${className}`}
+        >
+            <img src={src} alt="Memory" className="w-full h-full object-cover" />
+        </motion.div>
+    );
 
-    const displayImages = images.length > 0 ? images : defaultImages;
+    // Layout Logic based on Count
+    const renderLayout = () => {
+        if (count === 1) {
+            return (
+                <div className="w-full max-w-sm mx-auto p-4">
+                    <ImageCard src={displayImages[0]} className="aspect-[3/4] rotate-1" />
+                </div>
+            );
+        }
 
-    const nextImage = () => setCurrentIndex((prev) => (prev + 1) % displayImages.length);
-    const prevImage = () => setCurrentIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+        if (count === 2) {
+            return (
+                <div className="grid grid-cols-2 gap-4 w-full max-w-md mx-auto p-2">
+                    <ImageCard src={displayImages[0]} className="aspect-[3/4] -rotate-2 translate-y-4" />
+                    <ImageCard src={displayImages[1]} className="aspect-[3/4] rotate-2" />
+                </div>
+            );
+        }
+
+        if (count === 3) {
+            return (
+                <div className="grid grid-cols-2 gap-3 w-full max-w-md mx-auto p-2 relative">
+                    <div className="col-span-2 flex justify-center mb-[-20px] z-10">
+                        <div className="w-2/3">
+                            <ImageCard src={displayImages[0]} className="aspect-square rotate-0 shadow-2xl" />
+                        </div>
+                    </div>
+                    <ImageCard src={displayImages[1]} className="aspect-square -rotate-3 mt-4" />
+                    <ImageCard src={displayImages[2]} className="aspect-square rotate-3 mt-4" />
+                </div>
+            );
+        }
+
+        if (count === 4) {
+            // Center + 3? Or 2x2. User asked for Center + 4 corners for 5.
+            // For 4, let's do a 2x2 grid.
+            return (
+                <div className="grid grid-cols-2 gap-3 w-full max-w-md mx-auto p-2">
+                    {displayImages.map((img, idx) => (
+                        <ImageCard key={idx} src={img} className={`aspect-square ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`} />
+                    ))}
+                </div>
+            );
+        }
+
+        if (count >= 5) {
+            // 5 Images: Center + 4 corners (Mosaic)
+            return (
+                <div className="relative w-full max-w-md mx-auto h-[400px] flex items-center justify-center">
+                    {/* Center Main */}
+                    <ImageCard src={displayImages[0]} className="w-48 h-64 z-20 shadow-2xl absolute" />
+
+                    {/* Corners */}
+                    <div className="absolute top-0 left-0 w-32 h-32 transform -rotate-6 z-10">
+                        <ImageCard src={displayImages[1]} className="w-full h-full" />
+                    </div>
+                    <div className="absolute top-0 right-0 w-32 h-32 transform rotate-6 z-10">
+                        <ImageCard src={displayImages[2]} className="w-full h-full" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 w-32 h-32 transform rotate-3 z-10">
+                        <ImageCard src={displayImages[3]} className="w-full h-full" />
+                    </div>
+                    <div className="absolute bottom-0 right-0 w-32 h-32 transform -rotate-3 z-10">
+                        <ImageCard src={displayImages[4]} className="w-full h-full" />
+                    </div>
+                </div>
+            );
+        }
+
+        return null; // Fallback
+    };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-md mx-auto mb-8"
-        >
-            {/* Main Image */}
-            <div className="relative aspect-[3/4] rounded-t-full rounded-b-3xl overflow-hidden shadow-2xl border-4 border-amber-300/30">
-                <AnimatePresence mode="wait">
-                    <motion.img
-                        key={currentIndex}
-                        src={displayImages[currentIndex]}
-                        alt={`Photo ${currentIndex + 1}`}
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.6 }}
-                        className="w-full h-full object-cover"
-                    />
-                </AnimatePresence>
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-amber-900/60 via-transparent to-transparent" />
-
-                {/* Navigation Arrows */}
-                {displayImages.length > 1 && (
-                    <>
-                        <button
-                            onClick={prevImage}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-all border border-white/10"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                        <button
-                            onClick={nextImage}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-all border border-white/10"
-                        >
-                            <ChevronRight size={24} />
-                        </button>
-                    </>
-                )}
-
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {displayImages.map((_, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setCurrentIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-amber-400 w-6' : 'bg-white/40'
-                                }`}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Thumbnail Strip */}
-            {displayImages.length > 1 && (
-                <div className="flex gap-2 mt-4 justify-center overflow-x-auto pb-2 px-4">
-                    {displayImages.map((img, idx) => (
-                        <motion.button
-                            key={idx}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setCurrentIndex(idx)}
-                            className={`flex-shrink-0 w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${idx === currentIndex ? 'border-amber-400 shadow-lg shadow-amber-500/30' : 'border-white/10'
-                                }`}
-                        >
-                            <img src={img} alt="" className="w-full h-full object-cover" />
-                        </motion.button>
-                    ))}
-                </div>
-            )}
-        </motion.div>
+        <div className="w-full py-4">
+            {renderLayout()}
+        </div>
     );
 };
 
@@ -255,7 +261,6 @@ const Tier2Template2 = ({
     images = [],
     musicUrl = ''
 }) => {
-    // Default to CONTENT view immediately
     const [showMusicPlayer, setShowMusicPlayer] = useState(true);
     const [canSendMerit, setCanSendMerit] = useState(true);
 
@@ -299,7 +304,6 @@ const Tier2Template2 = ({
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden relative font-serif">
             <AnimatePresence mode="wait">
-                {/* CONTENT STATE - Premium Card with Photos & Music */}
                 <motion.div
                     key="content"
                     initial={{ opacity: 0 }}
@@ -310,33 +314,29 @@ const Tier2Template2 = ({
                     <FloatingFlowers intensity={0.6} />
                     <GoldenSparkle />
 
-                    <div className="relative z-10 w-full max-w-lg mt-8 mb-24">
-                        {/* Photo Gallery */}
-                        <PhotoGallery images={images} />
+                    <div className="relative z-10 w-full max-w-lg mt-4 mb-24">
+                        {/* HEADER: Invitation Card Title */}
+                        <motion.h2
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-2xl font-bold text-amber-200 mb-3 md:mb-6 drop-shadow-lg"
+                        >
+                            Memory Gallery
+                        </motion.h2>
+
+                        {/* Memory Gallery (Dynamic) */}
+                        <MemoryGallery images={images} />
 
                         {/* Message Card */}
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="relative bg-black/20 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-amber-200/20 shadow-2xl overflow-hidden"
+                            className="relative bg-black/20 backdrop-blur-xl p-6 md:p-10 rounded-3xl border border-amber-200/20 shadow-2xl overflow-hidden mt-4 md:mt-8"
                         >
                             {/* Decorative Elements */}
                             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-bl-full" />
                             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-orange-500/10 to-transparent rounded-tr-full" />
-
-                            {/* Glowing Border */}
-                            <motion.div
-                                animate={{
-                                    boxShadow: [
-                                        '0 0 20px rgba(245, 158, 11, 0.1)',
-                                        '0 0 40px rgba(245, 158, 11, 0.2)',
-                                        '0 0 20px rgba(245, 158, 11, 0.1)'
-                                    ]
-                                }}
-                                transition={{ duration: 4, repeat: Infinity }}
-                                className="absolute inset-0 rounded-3xl"
-                            />
 
                             {/* Content */}
                             <div className="relative z-10">
@@ -388,7 +388,7 @@ const Tier2Template2 = ({
                                     disabled={!canSendMerit}
                                     whileHover={canSendMerit ? { scale: 1.05 } : {}}
                                     whileTap={canSendMerit ? { scale: 0.95 } : {}}
-                                    className={`mt-10 text-sm text-white hover:text-amber-200 transition-colors duration-300 uppercase tracking-widest flex items-center gap-2 mx-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-8 py-3 rounded-full border border-amber-200/20 ${!canSendMerit ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                    className={`mt-6 md:mt-10 text-sm text-white hover:text-amber-200 transition-colors duration-300 uppercase tracking-widest flex items-center gap-2 mx-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-8 py-3 rounded-full border border-amber-200/20 ${!canSendMerit ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
                                 >
                                     <Sparkles size={16} />
                                     {canSendMerit ? "อนุโมทนาสาธุ" : "สาธุ..."}
@@ -397,7 +397,6 @@ const Tier2Template2 = ({
                         </motion.div>
                     </div>
 
-                    {/* Music Player */}
                     {showMusicPlayer && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
                 </motion.div>
             </AnimatePresence>
