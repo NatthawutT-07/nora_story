@@ -9,7 +9,7 @@ const FloatingImages = ({ images = [] }) => {
         const svg = `
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
                 <rect width="100%" height="100%" fill="#2a2a2a"/>
-                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="52" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="72" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
             </svg>
         `;
         return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
@@ -242,17 +242,6 @@ const MusicPlayer = ({ musicUrl }) => {
     );
 };
 
-const Watermark = () => (
-    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
-            {Array.from({ length: 400 }).map((_, i) => (
-                <span key={i} className="text-lg font-black text-white whitespace-nowrap select-none">
-                    https://norastory.com
-                </span>
-            ))}
-        </div>
-    </div>
-);
 
 const Tier2Template1 = ({
     customMessage,
@@ -348,7 +337,7 @@ const Tier2Template1 = ({
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden relative">
-            <Watermark />
+
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - Premium PIN Entry */}
                 {viewState === 'LOCKED' && (
@@ -524,14 +513,19 @@ const Tier2Template1 = ({
                                         transition={{ delay: 0.5 }}
                                         className="text-sm tracking-[0.3em] uppercase text-rose-300 mb-6 font-medium"
                                     >
-                                        ✨ For You ✨
+                                        ✨ {targetName || "For You"} ✨
                                     </motion.p>
 
                                     <motion.h1
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.6 }}
-                                        className="text-2xl md:text-3xl font-serif italic leading-relaxed text-white mb-8"
+                                        className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 80
+                                            ? "text-lg md:text-2xl"
+                                            : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 50
+                                                ? "text-xl md:text-3xl"
+                                                : "text-2xl md:text-4xl"
+                                            } font-serif italic leading-relaxed text-white mb-8 max-w-[90%] mx-auto break-words`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
                                     </motion.h1>

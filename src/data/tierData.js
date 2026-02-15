@@ -13,7 +13,8 @@ export const TIERS = [
             'มีลูกเล่นน่ารักๆ',
             'Random Link + QR Code',
             'รองรับทุกอุปกรณ์',
-            'ดูแลหลังการขาย'
+            'ดูแลหลังการขาย',
+            '100 ตัวอักษร'
         ],
         gradient: 'from-slate-400 to-slate-500',
         bgGradient: 'from-slate-50 to-white',
@@ -35,8 +36,8 @@ export const TIERS = [
             'อัปโหลดรูป 5 รูป',
             'Background Music',
             'Random Link + QR Code',
-            '',
-            'ดูแลหลังการขาย'
+            'ดูแลหลังการขาย',
+            '100 ตัวอักษร'
         ],
 
         gradient: 'from-blue-400 to-blue-500',

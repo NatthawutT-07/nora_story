@@ -4,7 +4,7 @@ import { db, storage } from '../../firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
-import { BuyerInfoStep, TemplateStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
+import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
 
 // Generate random 15-character alphanumeric ID for story URLs
 const generateRandomId = () => {
@@ -51,6 +51,9 @@ const CheckoutContent = () => {
         setError,
         handleClose,
         isTier1Template1,
+        needsDetailFields,
+        needsTimelineFields,
+        needsImageStep,
         getTotalSteps,
         getStepLabels,
         getProgressStep
@@ -80,9 +83,10 @@ const CheckoutContent = () => {
                 setError('กรุณาเลือกธีม');
                 return;
             }
-
-            // Tier 1 Template 1 specific validation
-            if (isTier1Template1) {
+            setStep(3); // Go to details
+        } else if (step === 3) {
+            // Validate template details (T1-1 and T2)
+            if (needsDetailFields) {
                 if (!formData.pin || formData.pin.length !== 4) {
                     setError('กรุณาใส่ PIN 4 หลัก');
                     return;
@@ -92,29 +96,36 @@ const CheckoutContent = () => {
                     return;
                 }
                 if (!formData.message.trim()) {
-                    setError('กรุณากรอกข้อความหลัก');
+                    setError('กรุณากรอกข้อความ');
                     return;
                 }
-                if (formData.message.length > 400) {
-                    setError('ข้อความต้องไม่เกิน 400 ตัวอักษร');
+                const maxMsg = 100;
+                if (formData.message.length > maxMsg) {
+                    setError(`ข้อความต้องไม่เกิน ${maxMsg} ตัวอักษร`);
                     return;
                 }
             }
-
-            // Tier 1 Logic
-            if (tier.id === 1) {
-                // If it's t1-2 or t1-3, go to Step 3 (Images)
-                if (selectedTemplate === 't1-2' || selectedTemplate === 't1-3') {
-                    setStep(3);
-                } else {
-                    // t1-1 skips image step
-                    setStep(4);
+            // Tier 3: Validate timeline fields
+            if (needsTimelineFields) {
+                const timelines = formData.timelines || [];
+                for (let i = 0; i < 4; i++) {
+                    if (!timelines[i]?.label?.trim()) {
+                        setError(`กรุณากรอกช่วงเวลา Timeline ${i + 1}`);
+                        return;
+                    }
+                    if (!timelines[i]?.desc?.trim()) {
+                        setError(`กรุณากรอกคำอธิบาย Timeline ${i + 1}`);
+                        return;
+                    }
                 }
-            } else {
-                setStep(3); // Go to images
+                if (!formData.finaleMessage?.trim()) {
+                    setError('กรุณากรอกข้อความสุดท้าย (ช่อง 5)');
+                    return;
+                }
             }
-        } else if (step === 3) {
-            setStep(4); // Go to payment
+            setStep(4); // Go to images
+        } else if (step === 4) {
+            setStep(5); // Go to payment
         }
     };
 
@@ -138,15 +149,25 @@ const CheckoutContent = () => {
 
             // 2. Upload Content Images (if any)
             const contentUrls = [];
-            if (contentFiles.length > 0) {
+            // Use maxImages from our utility if possible, or just use contentFiles length but we need to respect indices.
+            // For Tier 3, we want to preserve indices 0-9 even if some are null
+            const maxUploads = getMaxImages() || contentFiles.length;
+
+            if (contentFiles.length > 0 || maxUploads > 0) {
                 const orderIdTmp = Date.now().toString();
-                for (let i = 0; i < contentFiles.length; i++) {
+                // Iterate up to maxUploads to ensure we capture all slots
+                for (let i = 0; i < maxUploads; i++) {
                     const file = contentFiles[i];
-                    const refName = `uploads/${orderIdTmp}/${i}_${file.name}`;
-                    const imgRef = ref(storage, refName);
-                    await uploadBytes(imgRef, file);
-                    const url = await getDownloadURL(imgRef);
-                    contentUrls.push(url);
+                    if (file) {
+                        const refName = `uploads/${orderIdTmp}/${i}_${file.name}`;
+                        const imgRef = ref(storage, refName);
+                        await uploadBytes(imgRef, file);
+                        const url = await getDownloadURL(imgRef);
+                        contentUrls.push(url);
+                    } else {
+                        // Push null to preserve index position for templates (like Tier 3) that rely on specific slots
+                        contentUrls.push(null);
+                    }
                 }
             }
 
@@ -165,13 +186,18 @@ const CheckoutContent = () => {
                 buyer_phone: formData.buyerPhone,
 
                 // Tier 1 Template 1 specific
-                pin_code: isTier1Template1 ? formData.pin : null,
-                target_name: isTier1Template1 ? formData.targetName : null,
-                sign_off: isTier1Template1 ? formData.signOff : null,
-                message: formData.message,
+                pin_code: needsDetailFields ? formData.pin : null,
+                target_name: needsDetailFields ? formData.targetName : null,
+                sign_off: needsDetailFields ? formData.signOff : null,
+                message: needsDetailFields ? formData.message : null,
+
+                // Tier 3: Timeline data
+                timelines: needsTimelineFields ? formData.timelines : null,
+                finale_message: needsTimelineFields ? formData.finaleMessage : null,
+                finale_sign_off: needsTimelineFields ? formData.finaleSignOff : null,
 
                 // Tier 4
-                custom_domain: tier.id === 4 ? formData.customDomain : null,
+                custom_domain: String(tier.id) === '4' ? formData.customDomain : null,
 
                 selected_template_id: selectedTemplate,
                 template_id: null,
@@ -183,7 +209,7 @@ const CheckoutContent = () => {
                 story_url: `https://norastory.com/${storyId}`
             });
 
-            setStep(5); // Success
+            setStep(6); // Success
 
         } catch (err) {
             console.error("Error creating order:", err);
@@ -211,76 +237,80 @@ const CheckoutContent = () => {
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-hidden rounded-3xl shadow-2xl flex flex-col"
+                    className="relative bg-white w-full max-w-lg min-h-[60vh] max-h-[90vh] overflow-hidden rounded-3xl shadow-2xl flex flex-col"
                 >
                     <button onClick={handleClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 transition-colors z-20 bg-white shadow-sm">
                         <X size={20} className="text-gray-500" />
                     </button>
 
-                    {/* Progress Bar (Fixed Header) */}
-                    {step < 5 && (
-                        <div className="px-8 pt-14 pb-4 bg-white z-10">
-                            <div className="flex justify-between items-center mb-2">
-                                {stepLabels.map((label, idx) => (
-                                    <span
-                                        key={idx}
-                                        className={`text-xs font-bold ${getProgressStep() >= idx + 1 ? 'text-[#1A3C40]' : 'text-gray-300'}`}
-                                    >
-                                        {label}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-[#E8A08A]"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(getProgressStep() / totalSteps) * 100}%` }}
-                                />
+                    {/* Progress Steps (Fixed Header) */}
+                    {step < 6 && (
+                        <div className="px-8 pt-14 pb-2 bg-white z-10">
+                            <div className="flex items-center justify-center gap-0">
+                                {stepLabels.map((label, idx) => {
+                                    const stepNum = idx + 1;
+                                    const isActive = getProgressStep() === stepNum;
+                                    const isCompleted = getProgressStep() > stepNum;
+                                    return (
+                                        <div key={idx} className="flex items-center">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${isCompleted ? 'bg-[#1A3C40] text-white' :
+                                                    isActive ? 'bg-[#1A3C40] text-white ring-4 ring-[#1A3C40]/10' :
+                                                        'bg-gray-100 text-gray-400'
+                                                    }`}>
+                                                    {isCompleted ? '✓' : stepNum}
+                                                </div>
+                                                <span className={`text-[10px] mt-1.5 whitespace-nowrap ${isActive || isCompleted ? 'text-[#1A3C40] font-medium' : 'text-gray-300'}`}>
+                                                    {label}
+                                                </span>
+                                            </div>
+                                            {idx < stepLabels.length - 1 && (
+                                                <div className={`w-8 sm:w-12 h-[2px] mx-1 mb-5 transition-colors duration-300 ${getProgressStep() > stepNum ? 'bg-[#1A3C40]' : 'bg-gray-200'
+                                                    }`} />
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
 
                     {/* Scrollable Content Body */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-2">
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-2 flex flex-col justify-center">
                         {/* Success State */}
-                        {step === 5 ? (
+                        {step === 6 ? (
                             <SuccessStep />
                         ) : (
                             <>
-                                <div className="text-center mb-6">
-                                    <h3 className="text-2xl font-playfair font-bold text-[#1A3C40] mb-1">
+                                <div className="text-center mb-5">
+                                    <h3 className="text-xl font-playfair font-bold text-[#1A3C40] mb-0.5">
                                         {step === 1 ? 'ข้อมูลผู้สั่งซื้อ' :
                                             step === 2 ? 'เลือกธีม' :
-                                                step === 3 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
+                                                step === 3 ? 'รายละเอียดธีม' :
+                                                    step === 4 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
                                     </h3>
-                                    <p className="text-gray-500 text-sm">แพ็คเกจ: <span className="text-[#E8A08A] font-medium">{tier.name}</span></p>
+                                    <p className="text-gray-400 text-xs">{tier.name} — ฿{tier.price}</p>
                                 </div>
 
                                 <div className="space-y-4">
                                     {step === 1 && <BuyerInfoStep />}
                                     {step === 2 && <TemplateStep />}
-                                    {step === 3 && <ImagesStep />}
-                                    {step === 4 && <PaymentStep />}
+                                    {step === 3 && <DetailsStep />}
+                                    {step === 4 && <ImagesStep />}
+                                    {step === 5 && <PaymentStep />}
 
                                     {error && <div className="text-red-500 text-xs bg-red-50 p-3 rounded-lg flex items-center gap-2"><AlertCircle size={16} />{error}</div>}
 
                                     <div className="flex gap-3 mt-6 pb-2">
                                         {step > 1 && (
                                             <button
-                                                onClick={() => {
-                                                    // Handle back button for Tier 1
-                                                    if (isTier1Template1 && step === 4) {
-                                                        setStep(2);
-                                                    } else {
-                                                        setStep(step - 1);
-                                                    }
-                                                }}
+                                                onClick={() => setStep(step - 1)}
                                                 className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition-colors"
                                             >
                                                 ย้อนกลับ
                                             </button>
                                         )}
-                                        {step < 4 ? (
+                                        {step < 5 ? (
                                             <button onClick={handleNextStep} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg">ถัดไป</button>
                                         ) : (
                                             <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2">

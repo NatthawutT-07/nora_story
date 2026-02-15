@@ -11,7 +11,7 @@ export const useCheckout = () => {
 };
 
 export const CheckoutProvider = ({ children, tier, onClose }) => {
-    // Steps: 1=Buyer Info, 2=Template Selection, 3=Images (Tier 2-4 & Tier 1 t1-2/t1-3), 4=Payment, 5=Success
+    // Steps: 1=Buyer Info, 2=Template Selection, 3=Template Details, 4=Images, 5=Payment, 6=Success
     const [step, setStep] = useState(1);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [slipFile, setSlipFile] = useState(null);
@@ -32,53 +32,62 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         signOff: '',
         message: '',
         customDomain: '',
+        // Tier 3 timeline fields (5 slots)
+        timelines: [
+            { label: '', desc: '' },
+            { label: '', desc: '' },
+            { label: '', desc: '' },
+            { label: '', desc: '' },
+            { label: '', desc: '' },
+        ],
+        finaleMessage: '',
+        finaleSignOff: '',
     });
 
-    // Check if Tier 1 Template 1
-    const isTier1Template1 = tier?.id === 1 && selectedTemplate === 't1-1';
-
-    // Check if Tier 1 Template 2 or 3 (Requires 1 Image)
-    const isTier1ImageTemplate = tier?.id === 1 && (selectedTemplate === 't1-2' || selectedTemplate === 't1-3');
+    // Check template tier type
+    const isTier1Template1 = String(tier?.id) === '1' && selectedTemplate === 't1-1';
+    const isTier2 = String(tier?.id) === '2';
+    const isTier3 = String(tier?.id) === '3';
+    // Both T1-1 and T2 templates use the same detail fields (PIN, target name, message, sign off)
+    const needsDetailFields = isTier1Template1 || isTier2;
+    // Tier 3 uses timeline fields
+    const needsTimelineFields = isTier3;
 
     // Max images per tier
     const getMaxImages = () => {
         if (!tier) return 0;
-        if (tier.id === 1) {
-            // Tier 1 Templates 2 & 3 allow 1 image
+        if (String(tier?.id) === '1') {
             if (selectedTemplate === 't1-2' || selectedTemplate === 't1-3') return 1;
             return 0;
         }
-        if (tier.id === 2) return 5;
-        if (tier.id === 3) return 10;
-        if (tier.id === 4) return 30;
+        if (String(tier?.id) === '2') return 5;
+        if (String(tier?.id) === '3') return 10;
+        if (String(tier?.id) === '4') return 30;
         return 0;
     };
 
-    // Total steps (Tier 1 t1-1 has 3 steps, others have 4)
-    const getTotalSteps = () => {
-        if (tier?.id === 1) {
-            // If Tier 1 and Template 2 or 3, we have 4 steps (incl. Images)
-            if (selectedTemplate === 't1-2' || selectedTemplate === 't1-3') return 4;
-            return 3;
-        }
-        return 4;
+    // Max file size per image (in bytes)
+    const getMaxFileSize = () => {
+        return 4 * 1024 * 1024; // 4MB
     };
 
-    // Step labels
+    // Check if this template needs image upload
+    const needsImageStep = () => {
+        if (!tier) return false;
+        if (String(tier?.id) === '1' && selectedTemplate === 't1-1') return false;
+        return true;
+    };
+
+    // Always 5 visual steps (details + images for all, or just details for t1-1)
+    const getTotalSteps = () => 5;
+
+    // Step labels  
     const getStepLabels = () => {
-        if (tier?.id === 1) {
-            if (selectedTemplate === 't1-2' || selectedTemplate === 't1-3') {
-                return ['ข้อมูลผู้ซื้อ', 'เลือกธีม', 'รูปภาพ', 'ชำระเงิน'];
-            }
-            return ['ข้อมูลผู้ซื้อ', 'เลือกธีม', 'ชำระเงิน'];
-        }
-        return ['ข้อมูลผู้ซื้อ', 'เลือกธีม', 'รูปภาพ', 'ชำระเงิน'];
+        return ['ข้อมูล', 'เลือกธีม', 'รายละเอียด', 'รูปภาพ', 'ชำระเงิน'];
     };
 
-    // Progress step (for Tier 1 t1-1, step 4 = 3rd visual step)
+    // Progress step mapping
     const getProgressStep = () => {
-        if (tier?.id === 1 && selectedTemplate === 't1-1' && step === 4) return 3;
-        // For t1-2/t1-3, step 4 is actually step 4
         return step;
     };
 
@@ -97,7 +106,16 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         setFormData({
             buyerName: '', buyerEmail: '', buyerPhone: '',
             pin: '', targetName: '', signOff: '', message: '',
-            customDomain: ''
+            customDomain: '',
+            timelines: [
+                { label: '', desc: '' },
+                { label: '', desc: '' },
+                { label: '', desc: '' },
+                { label: '', desc: '' },
+                { label: '', desc: '' },
+            ],
+            finaleMessage: '',
+            finaleSignOff: '',
         });
         setSelectedTemplate(null);
         setStoryId(null);
@@ -136,8 +154,13 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
         // Computed
         isTier1Template1,
-        isTier1ImageTemplate,
+        isTier2,
+        isTier3,
+        needsDetailFields,
+        needsTimelineFields,
         getMaxImages,
+        getMaxFileSize,
+        needsImageStep,
         getTotalSteps,
         getStepLabels,
         getProgressStep,

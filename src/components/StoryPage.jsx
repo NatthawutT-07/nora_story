@@ -157,49 +157,6 @@ const StoryPage = () => {
         );
     }
 
-    // Countdown Badge Component
-    const CountdownBadge = ({ expiresAt }) => {
-        const [timeLeft, setTimeLeft] = useState(null);
-
-        useEffect(() => {
-            const calculateTime = () => {
-                if (!expiresAt) return null;
-                const expDate = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt);
-                const now = new Date();
-                const diffMs = expDate - now;
-
-                if (diffMs <= 0) return { expired: true };
-
-                const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-                return { expired: false, days, hours, minutes };
-            };
-
-            setTimeLeft(calculateTime());
-            const interval = setInterval(() => setTimeLeft(calculateTime()), 60000); // Update every minute
-            return () => clearInterval(interval);
-        }, [expiresAt]);
-
-        if (!timeLeft || timeLeft.expired) return null;
-
-        const isUrgent = timeLeft.days <= 1;
-        const isWarning = timeLeft.days <= 3;
-
-        return (
-            <div className={`fixed top-4 left-4 z-50 px-3 py-2 rounded-lg backdrop-blur-md text-xs font-medium flex items-center gap-2 shadow-lg ${isUrgent ? 'bg-red-500/90 text-white' :
-                isWarning ? 'bg-orange-500/90 text-white' :
-                    'bg-white/20 text-white'
-                }`}>
-                <span className="text-lg">⏳</span>
-                <span>
-                    {timeLeft.days > 0 && `${timeLeft.days}วัน `}
-                    {timeLeft.hours}ชม. {timeLeft.minutes}นาที
-                </span>
-            </div>
-        );
-    };
 
     // Render the appropriate template
     if (storyData && storyData.template_id) {
@@ -212,16 +169,17 @@ const StoryPage = () => {
             // Template content with effects and features
             const templateContent = (
                 <div className="relative">
-                    {/* Countdown Badge */}
-                    {storyData.expires_at && (
-                        <CountdownBadge expiresAt={storyData.expires_at} />
-                    )}
 
                     {/* Main Template */}
                     <TemplateComponent
                         customTitle={storyData.customer_name}
                         customMessage={storyData.message}
-                        customSignOff={storyData.customer_name}
+                        customSignOff={storyData.sign_off}
+                        targetName={storyData.target_name}
+                        pinCode={storyData.pin_code}
+                        timelines={storyData.timelines || []}
+                        finaleMessage={storyData.finale_message}
+                        finaleSignOff={storyData.finale_sign_off}
                         images={storyData.content_images || []}
                         config={config} // Pass config for dynamic styling
                     />

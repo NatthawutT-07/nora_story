@@ -64,3 +64,44 @@ export const THEME_PRESETS = [
     { name: 'Royal Gold', primaryColor: '#FFD700', backgroundColor: '#1A1A2E' },
     { name: 'Dark Mode', primaryColor: '#E8A08A', backgroundColor: '#1A1A2E' },
 ];
+
+/**
+ * Tier duration in days
+ */
+export const TIER_DURATIONS = {
+    1: 3,   // 3 days
+    2: 7,   // 7 days
+    3: 15,  // 15 days
+    4: 30   // 30 days
+};
+
+/**
+ * All available templates
+ */
+export const ALL_TEMPLATES = [
+    { id: 't1-1', name: 'Tier 1 - Sunrise Glow' },
+    { id: 't1-2', name: 'Tier 1 - Moonlight' },
+    { id: 't1-3', name: 'Tier 1 - Cherry Blossom' },
+    { id: 't1-4', name: 'Tier 1 - Ocean Breeze' },
+    { id: 't1-5', name: 'Tier 1 - Golden Hour' },
+    { id: 't1-6', name: 'Tier 1 - Starry Night' },
+    { id: 't1-7', name: 'Tier 1 - Rose Garden' },
+    { id: 't2-1', name: 'Tier 2 - Love Letter' },
+    { id: 't2-2', name: 'Tier 2 - Vintage Romance' },
+    { id: 't2-3', name: 'Tier 2 - Neon Love' },
+    { id: 't2-4', name: 'Tier 2 - Eternal Flame' },
+    { id: 't2-5', name: 'Tier 2 - Spring Garden' },
+    { id: 't2-6', name: 'Tier 2 - Winter Snow' },
+    { id: 't3-1', name: 'Tier 3 - Luxury Gold' },
+    { id: 't3-2', name: 'Tier 3 - Crystal Clear' },
+    { id: 't3-3', name: 'Tier 3 - Velvet Night' },
+    { id: 't3-4', name: 'Tier 3 - Rose Petal' },
+    { id: 't3-5', name: 'Tier 3 - Aurora' },
+    { id: 't3-6', name: 'Tier 3 - Twilight' },
+    { id: 't4-1', name: 'Tier 4 - Eternal Love' },
+    { id: 't4-2', name: 'Tier 4 - Paradise' },
+    { id: 't4-3', name: 'Tier 4 - Infinity' },
+    { id: 't4-4', name: 'Tier 4 - Royal' },
+    { id: 't4-5', name: 'Tier 4 - Timeless' },
+    { id: 't4-6', name: 'Tier 4 - Forever' },
+];

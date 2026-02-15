@@ -60,17 +60,6 @@ const AnimatedBackground = ({ variant = 'default' }) => {
     );
 };
 
-const Watermark = () => (
-    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
-            {Array.from({ length: 400 }).map((_, i) => (
-                <span key={i} className="text-lg font-black text-slate-900 whitespace-nowrap select-none">
-                    https://norastory.com
-                </span>
-            ))}
-        </div>
-    </div>
-);
 
 const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ', pinCode = '1234' }) => {
     const [viewState, setViewState] = useState('LOCKED');
@@ -160,7 +149,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ'
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden relative">
-            <Watermark />
+
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - PIN Entry */}
                 {viewState === 'LOCKED' && (
@@ -312,17 +301,24 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ'
                                     transition={{ delay: 0.4 }}
                                     className="text-sm tracking-[0.3em] uppercase text-rose-400 mb-6 font-medium"
                                 >
-                                    ✨ For You ✨
+                                    ✨ {targetName || "For You"} ✨
                                 </motion.p>
 
-                                <motion.h1
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.5 }}
-                                    className="text-2xl md:text-4xl italic leading-relaxed text-gray-800 mb-8"
-                                >
-                                    "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
-                                </motion.h1>
+                                <div className="space-y-4">
+                                    <motion.h1
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 80
+                                            ? "text-lg md:text-2xl"
+                                            : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 50
+                                                ? "text-xl md:text-3xl"
+                                                : "text-2xl md:text-4xl"
+                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words`}
+                                    >
+                                        "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
+                                    </motion.h1>
+                                </div>
 
                                 <motion.div
                                     initial={{ opacity: 0 }}

@@ -108,10 +108,10 @@ function MainPage() {
           {/* Main Footer Content */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-y-10 gap-x-4 sm:gap-12 mb-6">
             {/* Brand */}
-            <div className="col-span-2 sm:col-span-1 text-center sm:text-left">
-              <h3 className="font-playfair text-2xl sm:text-3xl mb-3">NoraStory</h3>
-              <p className="text-white/50 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto sm:mx-0">
-                เปลี่ยนความทรงจำของคุณให้กลายเป็น<span className="whitespace-nowrap">เรื่องราวที่อยู่ตลอดไป</span>
+            <div className="col-span-2 sm:col-span-2 lg:col-span-3 text-center">
+              <h3 className="font-playfair text-2xl sm:text-3xl mb-3">Nora Story</h3>
+              <p className="text-white/50 text-xs sm:text-sm leading-relaxed max-w-xs sm:max-w-none mx-auto">
+                เปลี่ยนความทรงจำของคุณให้กลายเป็นเรื่องราวที่อยู่ตลอดไป
               </p>
             </div>
 

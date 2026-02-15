@@ -1,34 +1,68 @@
 import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useCheckout } from '../CheckoutContext';
 
 const SuccessStep = () => {
-    const { formData, handleClose } = useCheckout();
+    const { tier, formData, handleClose } = useCheckout();
 
     return (
-        <div className="text-center flex flex-col items-center justify-center min-h-[300px]">
+        <div className="text-center flex flex-col items-center justify-center min-h-[300px] px-4">
+            {/* Success Icon */}
             <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6"
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="w-16 h-16 bg-[#1A3C40] text-white rounded-full flex items-center justify-center mb-6"
             >
-                <CheckCircle size={40} />
+                <Check size={32} strokeWidth={3} />
             </motion.div>
-            <h3 className="text-2xl font-playfair font-bold text-[#1A3C40] mb-2">
-                ได้รับข้อมูลเรียบร้อย!
-            </h3>
-            <p className="text-gray-500 mb-2">
-                ทางเราจะรีบตรวจสอบและจัดทำหน้าเว็บไซต์ให้ภายใน 24 ชม.
-            </p>
-            <p className="text-sm text-[#E8A08A] mb-6">
-                ลิงก์จะถูกส่งไปที่: {formData.buyerEmail}
-            </p>
-            <button
+
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                <h3 className="text-xl font-playfair font-bold text-[#1A3C40] mb-2">
+                    ได้รับข้อมูลเรียบร้อย!
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                    ทางเราจะตรวจสอบและจัดทำเว็บไซต์ให้ภายใน 24 ชม.
+                </p>
+            </motion.div>
+
+            {/* Order Summary */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="w-full max-w-xs bg-gray-50 rounded-xl p-4 mb-6 text-left"
+            >
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">แพ็คเกจ</span>
+                        <span className="font-medium text-[#1A3C40]">{tier?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">ราคา</span>
+                        <span className="font-medium text-[#1A3C40]">฿{tier?.price}</span>
+                    </div>
+                    <div className="h-px bg-gray-200" />
+                    <div className="flex justify-between">
+                        <span className="text-gray-400">ส่งลิงก์ไปที่</span>
+                        <span className="font-medium text-[#1A3C40] text-xs">{formData.buyerEmail}</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
                 onClick={handleClose}
-                className="bg-[#1A3C40] text-white px-8 py-3 rounded-xl hover:bg-[#1A3C40]/90 transition-colors"
+                className="bg-[#1A3C40] text-white px-8 py-3 rounded-xl hover:bg-[#1A3C40]/90 transition-colors text-sm font-medium"
             >
                 ปิดหน้าต่าง
-            </button>
+            </motion.button>
         </div>
     );
 };

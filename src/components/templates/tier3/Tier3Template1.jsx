@@ -358,21 +358,13 @@ const CollageLayout = ({ chapter }) => (
     </div>
 );
 
-const Watermark = () => (
-    <div className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.03] rotate-[-12deg] scale-150 gap-8">
-            {Array.from({ length: 400 }).map((_, i) => (
-                <span key={i} className="text-lg font-black text-white whitespace-nowrap select-none">
-                    SAMPLE WEB • ตัวอย่างเว็บไซต์
-                </span>
-            ))}
-        </div>
-    </div>
-);
 
 const Tier3Template1 = ({
     customMessage,
     customSignOff,
+    timelines = [],
+    finaleMessage,
+    finaleSignOff,
     images = [],
     musicUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
 }) => {
@@ -384,7 +376,7 @@ const Tier3Template1 = ({
         const svg = `
             <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
                 <rect width="100%" height="100%" fill="#2a2a2a"/>
-                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="36" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
+                <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="52" fill="#666" text-anchor="middle" dy=".3em">${text}</text>
             </svg>
         `;
         return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
@@ -408,18 +400,36 @@ const Tier3Template1 = ({
 
     // Helper to merge user provided images with defaults
     const getSectionImages = (startIndex, count, defaults) => {
-        // Handle case where images might be undefined or empty
         const currentImages = images || [];
-        const sectionUserImages = currentImages.slice(startIndex, startIndex + count);
-        return [...sectionUserImages, ...defaults].slice(0, count);
+        // Get the slice of user images for this section
+        const userSlice = currentImages.slice(startIndex, startIndex + count);
+
+        // Map over the count we need, using default if user image is missing or null
+        return Array(count).fill(null).map((_, i) => {
+            return userSlice[i] || defaults[i];
+        });
     };
 
+    // Default timeline data
+    const defaultTimelines = [
+        { label: 'Day 1', desc: 'จุดเริ่มต้นของการเดินทาง' },
+        { label: 'Day 30', desc: 'ความทรงจำที่งดงามในเดือนแรก' },
+        { label: 'Day 60', desc: 'ยิ่งนานยิ่งผูกพัน' },
+        { label: 'Memories', desc: 'ทุกช่วงเวลาพิเศษของเรา' },
+    ];
+
+    // Merge user timelines with defaults
+    const mergedTimelines = defaultTimelines.map((dt, i) => ({
+        label: timelines[i]?.label || dt.label,
+        desc: timelines[i]?.desc || dt.desc,
+    }));
+
     const listItems = [
-        { type: 'single', label: "Day 1", title: "The Beginning", desc: "จุดเริ่มต้นของการเดินทาง", images: getSectionImages(0, 1, defaultImages.single) },
-        { type: 'single', label: "Day 30", title: "First Month", desc: "ความทรงจำที่งดงามในเดือนแรก", images: getSectionImages(1, 1, defaultImages.single) },
-        { type: 'single', label: "Day 60", title: "Growing Closer", desc: "ยิ่งนานยิ่งผูกพัน", images: getSectionImages(2, 1, defaultImages.single) },
-        { type: 'collage', label: "Memories", title: "Our Collection", desc: "ทุกช่วงเวลาพิเศษของเรา", images: getSectionImages(3, 5, defaultImages.collage) },
-        { type: 'finale', label: "Forever", title: "To Infinity", desc: "", images: getSectionImages(8, 2, defaultImages.dual) },
+        { type: 'single', label: mergedTimelines[0].label, title: mergedTimelines[0].label, desc: mergedTimelines[0].desc, images: getSectionImages(0, 1, defaultImages.single) },
+        { type: 'single', label: mergedTimelines[1].label, title: mergedTimelines[1].label, desc: mergedTimelines[1].desc, images: getSectionImages(1, 1, defaultImages.single) },
+        { type: 'single', label: mergedTimelines[2].label, title: mergedTimelines[2].label, desc: mergedTimelines[2].desc, images: getSectionImages(2, 1, defaultImages.single) },
+        { type: 'collage', label: mergedTimelines[3].label, title: mergedTimelines[3].label, desc: mergedTimelines[3].desc, images: getSectionImages(3, 5, defaultImages.collage) },
+        { type: 'finale', label: 'Forever', title: 'To Infinity', desc: '', images: getSectionImages(8, 2, defaultImages.dual) },
     ];
 
     const scrollToSection = (index) => {
@@ -448,7 +458,7 @@ const Tier3Template1 = ({
 
     return (
         <div className="relative min-h-screen w-full bg-[#050510] text-white overflow-x-hidden font-sans selection:bg-rose-500/30">
-            <Watermark />
+
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
             <Starfield speed={0.5} />
             <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay" />
@@ -472,7 +482,7 @@ const Tier3Template1 = ({
                         >
                             {item.type === 'single' && <SingleLayout chapter={item} />}
                             {item.type === 'collage' && <CollageLayout chapter={item} />}
-                            {item.type === 'finale' && <DualLayout chapter={item} customMessage={customMessage} customSignOff={customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
+                            {item.type === 'finale' && <DualLayout chapter={item} customMessage={finaleMessage || customMessage} customSignOff={finaleSignOff || customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
                         </motion.div>
                     ))}
 

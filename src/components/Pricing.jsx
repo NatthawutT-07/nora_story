@@ -68,7 +68,7 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
                     viewport={{ once: true }}
                     className="mt-4 sm:mt-16"
                 >
-                    <div className="text-center mb-10">
+                    <div className="text-center mb-4">
                         <h3 className="text-xl sm:text-2xl font-playfair text-[#1A3C40] mb-2">
                             สิ่งที่คุณจะได้รับ
                         </h3>
@@ -88,7 +88,7 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    className="mt-12 text-center"
+                    className="mt-4 text-center"
                 >
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-12 text-gray-400 text-xs uppercase tracking-wider">
                         <span>ปลอดภัย 100%</span>
