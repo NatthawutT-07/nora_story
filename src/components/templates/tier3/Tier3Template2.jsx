@@ -75,8 +75,7 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
 // --- Music Player ---
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
 
     const togglePlay = () => {
         if (audioRef.current) {
@@ -107,9 +106,10 @@ const MusicPlayer = ({ musicUrl }) => {
 const Tier3Template2 = ({
     customMessage,
     customSignOff,
-    targetName = 'ผู้บวช',
     images = [],
-    musicUrl = ''
+    musicUrl = '',
+    isDemo = false,
+    demoMusicUrl = null
 }) => {
     // Default Schedule (Sacred Timeline)
     const schedule = [
@@ -225,7 +225,7 @@ const Tier3Template2 = ({
                 </div>
             </div>
 
-            {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+            {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
         </div>
     );
 };

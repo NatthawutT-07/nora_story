@@ -207,11 +207,12 @@ const MusicPlayer = ({ musicUrl }) => {
 const Tier2Template3 = ({
     customMessage,
     customSignOff,
-    targetName = 'ผู้มีเกียรติ',
     images = [],
-    musicUrl = ''
+    musicUrl = '',
+    isDemo = false,
+    demoMusicUrl = null
 }) => {
-    const [showMusicPlayer, setShowMusicPlayer] = useState(true);
+    const showMusicPlayer = true;
     const [canSendLove, setCanSendLove] = useState(true);
 
     const triggerConfetti = () => {
@@ -346,8 +347,8 @@ const Tier2Template3 = ({
                             </div>
                         </motion.div>
                     </div>
-
-                    {showMusicPlayer && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+                    {/* Music Player */}
+                    {showMusicPlayer && (demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
                 </motion.div>
             </AnimatePresence>
 

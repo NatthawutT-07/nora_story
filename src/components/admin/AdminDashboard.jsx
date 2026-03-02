@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Package, LogOut, RefreshCw } from 'lucide-react';
+import { Package, LogOut, RefreshCw, Music } from 'lucide-react';
 
 import StatsCards from './dashboard/StatsCards';
 import OrderFilter from './dashboard/OrderFilter';
 import OrdersTable from './dashboard/OrdersTable';
 import OrderDetailModal from './dashboard/OrderDetailModal';
+import MusicManager from './dashboard/MusicManager';
 
 const AdminDashboard = () => {
     const [orders, setOrders] = useState([]);
@@ -15,6 +16,7 @@ const AdminDashboard = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'music'
     const navigate = useNavigate();
 
     // Check auth on mount
@@ -85,6 +87,7 @@ const AdminDashboard = () => {
             (order.buyer_name || order.customer_name || order.buyerName || order.target_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.buyer_email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.buyer_phone || order.customer_contact || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (order.custom_domain || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.id?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesFilter && matchesSearch;
     });
@@ -124,18 +127,41 @@ const AdminDashboard = () => {
             </header>
 
             <div className="max-w-7xl mx-auto px-4 py-6">
-                <StatsCards orders={orders} />
-                <OrderFilter
-                    filter={filter}
-                    setFilter={setFilter}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                />
-                <OrdersTable
-                    orders={filteredOrders}
-                    loading={loading}
-                    onSelectOrder={setSelectedOrder}
-                />
+                {/* Tabs */}
+                <div className="flex gap-4 mb-8 border-b border-gray-200">
+                    <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'orders' ? 'border-[#1A3C40] text-[#1A3C40]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        จัดการออเดอร์
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('music')}
+                        className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'music' ? 'border-[#1A3C40] text-[#1A3C40]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <Music size={16} />
+                        คลังเพลงประกอบ
+                    </button>
+                </div>
+
+                {activeTab === 'orders' ? (
+                    <>
+                        <StatsCards orders={orders} />
+                        <OrderFilter
+                            filter={filter}
+                            setFilter={setFilter}
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                        />
+                        <OrdersTable
+                            orders={filteredOrders}
+                            loading={loading}
+                            onSelectOrder={setSelectedOrder}
+                        />
+                    </>
+                ) : (
+                    <MusicManager />
+                )}
             </div>
 
             {selectedOrder && (

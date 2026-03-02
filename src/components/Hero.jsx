@@ -168,10 +168,10 @@ const Hero = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mb-6 sm:mb-8"
+                    className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mb-4 sm:mb-6"
                 >
                     <Sparkles className="w-4 h-4 text-[#FFE5B4]" />
-                    <span className="text-white/90 text-sm font-medium">Share Good Feelings Online</span>
+                    <span className="text-white/90 text-sm font-medium">Concept</span>
                 </motion.div>
 
                 {/* Main Heading */}

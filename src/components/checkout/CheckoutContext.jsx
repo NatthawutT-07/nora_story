@@ -46,6 +46,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         ],
         finaleMessage: '',
         finaleSignOff: '',
+        musicUrl: '',
     });
 
     // Check template tier type

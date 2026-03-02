@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { db, storage } from '../../firebase';
-import { doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, increment } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
 import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
@@ -50,11 +50,8 @@ const CheckoutContent = () => {
         error,
         setError,
         handleClose,
-        isTier1Template1,
         needsDetailFields,
         needsTimelineFields,
-        needsImageStep,
-        getTotalSteps,
         getStepLabels,
         getProgressStep,
         getMaxImages,
@@ -81,9 +78,13 @@ const CheckoutContent = () => {
             }
 
             // Check Special Link logic
-            if (tier?.wantCustomDomain) {
+            if (tier?.wantSpecialLink || tier?.wantCustomLink) {
                 if (!formData.customDomain?.trim()) {
-                    setError('กรุณาระบุชื่อ Special Link ที่ต้องการ');
+                    setError('กรุณาระบุชื่อลิงก์ที่ต้องการ');
+                    return;
+                }
+                if (formData.customDomain.length < 5) {
+                    setError('ชื่อลิงก์ต้องมีอย่างน้อย 5 ตัวอักษร');
                     return;
                 }
                 if (isDomainAvailable !== true) {
@@ -123,7 +124,6 @@ const CheckoutContent = () => {
             }
             // Tier 3: Validate timeline fields
             if (needsTimelineFields) {
-                const timelines = formData.timelines || [];
                 // Timelines 1-5 are optional
                 if (!formData.finaleMessage?.trim()) {
                     setError('กรุณากรอกข้อความสุดท้าย (ช่อง 5)');
@@ -132,6 +132,14 @@ const CheckoutContent = () => {
             }
             setStep(4); // Go to images
         } else if (step === 4) {
+            const maxImages = getMaxImages();
+            if (maxImages > 0) {
+                const uploadedCount = contentFiles.filter(Boolean).length;
+                if (uploadedCount < maxImages) {
+                    setError(`กรุณาอัปโหลดรูปภาพให้ครบทั้งหมด ${maxImages} รูป`);
+                    return;
+                }
+            }
             setStep(5); // Go to payment
         }
     };
@@ -149,7 +157,7 @@ const CheckoutContent = () => {
         try {
             // 1. Generate unique Story ID or use Custom Domain
             let storyId;
-            if (tier?.wantCustomDomain) {
+            if (tier?.wantSpecialLink || tier?.wantCustomLink) {
                 storyId = formData.customDomain;
             } else {
                 storyId = await generateUniqueStoryId();
@@ -210,17 +218,20 @@ const CheckoutContent = () => {
                 finale_sign_off: needsTimelineFields ? formData.finaleSignOff : null,
 
                 // Special Link / Custom Domain
-                custom_domain: tier?.wantCustomDomain ? formData.customDomain : null,
-                want_custom_domain: !!tier.wantCustomDomain,
+                custom_domain: (tier?.wantSpecialLink || tier?.wantCustomLink) ? formData.customDomain : null,
+                want_special_link: !!tier?.wantSpecialLink,
+                want_custom_link: !!tier?.wantCustomLink,
+                link_type: tier?.wantSpecialLink ? 'special' : (tier?.wantCustomLink ? 'custom' : 'random'),
 
                 selected_template_id: selectedTemplate,
                 template_id: null,
                 slip_url: slipUrl,
                 content_images: contentUrls,
+                music_url: formData.musicUrl || null,
                 status: 'pending',
                 created_at: serverTimestamp(),
                 platform: 'web',
-                story_url: `https://norastory.com/${storyId}`,
+                story_url: tier?.wantSpecialLink ? `https://${storyId}.norastory.com` : `https://norastory.com/${storyId}`,
 
                 // Edit tracking
                 text_edits_used: 0,
@@ -252,7 +263,7 @@ const CheckoutContent = () => {
     };
 
     const stepLabels = getStepLabels();
-    const totalSteps = getTotalSteps();
+
 
     return (
         <AnimatePresence>

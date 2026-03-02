@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TIERS } from './data/tierData';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { db } from './firebase';
 import Hero from './components/Hero';
 import Pricing from './components/Pricing';
 import CheckoutModal from './components/checkout/CheckoutModal';
@@ -55,6 +57,28 @@ function MainPage() {
   const [showDemo, setShowDemo] = useState(false);
   const [demoTemplateId, setDemoTemplateId] = useState(null);
 
+  // Random Music for Demo
+  const [demoMusicList, setDemoMusicList] = useState([]);
+  const [currentDemoMusic, setCurrentDemoMusic] = useState(null);
+
+  // Fetch Music for Demos
+  useEffect(() => {
+    const fetchDemoMusic = async () => {
+      try {
+        const musicRef = collection(db, 'music');
+        const q = query(musicRef, limit(10)); // Get a few to randomly pick from
+        const snapshot = await getDocs(q);
+        const list = snapshot.docs.map(doc => doc.data().url);
+        if (list.length > 0) {
+          setDemoMusicList(list);
+        }
+      } catch (error) {
+        console.error("Error fetching demo music:", error);
+      }
+    };
+    fetchDemoMusic();
+  }, []);
+
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const checkoutId = searchParams.get('checkout');
@@ -88,12 +112,20 @@ function MainPage() {
 
   const handleSelectDemo = (tierId, numericId) => {
     setDemoTemplateId(`${tierId}-${numericId}`);
+
+    // Pick random music if available
+    if (demoMusicList.length > 0) {
+      const randomIndex = Math.floor(Math.random() * demoMusicList.length);
+      setCurrentDemoMusic(demoMusicList[randomIndex]);
+    }
+
     setShowDemo(true);
   };
 
   const handleCloseDemo = () => {
     setShowDemo(false);
     setDemoTemplateId(null);
+    setCurrentDemoMusic(null);
   };
 
   const handleCloseGallery = () => {
@@ -159,7 +191,7 @@ function MainPage() {
               >
                 ✕ ปิด
               </button>
-              <DemoComponent />
+              <DemoComponent isDemo={true} demoMusicUrl={currentDemoMusic} />
             </div>
           </motion.div>
         )}

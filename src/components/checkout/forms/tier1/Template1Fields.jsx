@@ -52,6 +52,24 @@ const Template1Fields = () => {
                     onChange={(e) => updateFormData({ targetName: e.target.value })}
                 />
             </div>
+            {/* Main Message */}
+            <div className="relative">
+                <div className="flex items-center justify-between mb-1">
+                    <label className="flex items-center justify-between text-xs font-medium text-gray-600 w-full">
+                        <span>ข้อความหลัก</span>
+                        <span className={`${formData.message.length > 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                            ({formData.message.length}/100)
+                        </span>
+                    </label>
+                </div>
+                <textarea
+                    maxLength={100}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 h-32 resize-none outline-none transition-all text-sm"
+                    placeholder="ข้อความที่อยากบอกคนรับ..."
+                    value={formData.message}
+                    onChange={(e) => updateFormData({ message: e.target.value.slice(0, 100) })}
+                />
+            </div>
 
             {/* Sign Off */}
             <div className="relative">
@@ -70,25 +88,6 @@ const Template1Fields = () => {
                     placeholder="รักเธอเสมอ, คนที่รักเธอที่สุด"
                     value={formData.signOff}
                     onChange={(e) => updateFormData({ signOff: e.target.value })}
-                />
-            </div>
-
-            {/* Main Message */}
-            <div className="relative">
-                <div className="flex items-center justify-between mb-1">
-                    <label className="flex items-center justify-between text-xs font-medium text-gray-600 w-full">
-                        <span>ข้อความหลัก</span>
-                        <span className={`${formData.message.length > 100 ? 'text-red-500' : 'text-gray-400'}`}>
-                            ({formData.message.length}/100)
-                        </span>
-                    </label>
-                </div>
-                <textarea
-                    maxLength={100}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 h-32 resize-none outline-none transition-all text-sm"
-                    placeholder="ข้อความที่อยากบอกคนรับ..."
-                    value={formData.message}
-                    onChange={(e) => updateFormData({ message: e.target.value.slice(0, 100) })}
                 />
             </div>
         </div>

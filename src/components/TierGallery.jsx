@@ -74,8 +74,18 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                             <span className="text-sm font-medium">กลับหน้าหลัก</span>
                         </button>
 
-                        <div className="text-center absolute left-1/2 -translate-x-1/2">
-                            <h1 className="text-lg sm:text-xl font-bold text-[#1A3C40] flex items-center gap-1.5">
+                        <div className="text-center absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                            {/* Badge */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="inline-flex items-center gap-1.5 bg-white rounded-full px-3 py-1 mb-2 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-gray-100/50"
+                            >
+                                <Sparkles className="w-3 h-3 text-[#E8A08A]" />
+                                <span className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide">All Templates</span>
+                            </motion.div>
+
+                            <h1 className="text-xl sm:text-2xl font-bold text-[#1A3C40] flex items-center gap-1.5 leading-none">
                                 Template <span className="text-[#E8A08A] font-playfair italic font-medium">Gallery</span>
                             </h1>
                         </div>

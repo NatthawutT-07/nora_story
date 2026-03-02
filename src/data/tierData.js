@@ -14,7 +14,6 @@ export const TIERS = [
             'Random Link + QR Code',
             'รองรับทุกอุปกรณ์',
             'ดูแลหลังการขาย',
-            '100 ตัวอักษร',
             'เเก้ไขข้อความได้ 1 ครั้ง'
         ],
         gradient: 'from-slate-500 to-slate-600',
@@ -36,13 +35,10 @@ export const TIERS = [
         tagline: 'สำหรับคนพิเศษ',
         duration: '7 วัน',
         features: [
-            'animation เพิ่มเติม',
-            'สีสันสวยงาม',
             'อัปโหลดรูป 5 รูป',
+            'animation เพิ่มเติม',
             'Background Music',
             'Random Link + QR Code',
-            'ดูแลหลังการขาย',
-            '100 ตัวอักษร',
             'เเก้ไขข้อความได้ 1 ครั้ง',
             'เเก้ไขรูปภาพได้ 1 ครั้ง'
         ],
@@ -67,12 +63,10 @@ export const TIERS = [
         tagline: 'สำหรับโอกาสพิเศษ',
         duration: '15 วัน',
         features: [
-            'ทุกอย่างใน Standard',
             'อัปโหลดรูป 10 รูป',
             'Custom Link เลือกชื่อเอง',
             'Background Music',
             'Priority Support',
-            '100 ตัวอักษร',
             'เเก้ไขข้อความได้ 2 ครั้ง',
             'เเก้ไขรูปภาพได้ 1 ครั้ง'
         ],

@@ -257,11 +257,12 @@ const MusicPlayer = ({ musicUrl }) => {
 const Tier2Template2 = ({
     customMessage,
     customSignOff,
-    targetName = 'ญาติธรรม',
     images = [],
-    musicUrl = ''
+    musicUrl = '',
+    isDemo = false,
+    demoMusicUrl = null
 }) => {
-    const [showMusicPlayer, setShowMusicPlayer] = useState(true);
+    const showMusicPlayer = true;
     const [canSendMerit, setCanSendMerit] = useState(true);
 
     const triggerConfetti = () => {
@@ -397,7 +398,8 @@ const Tier2Template2 = ({
                         </motion.div>
                     </div>
 
-                    {showMusicPlayer && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+                    {/* Music Player */}
+                    {showMusicPlayer && (demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
                 </motion.div>
             </AnimatePresence>
 

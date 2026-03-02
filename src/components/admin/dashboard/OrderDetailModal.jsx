@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import {
     User,
@@ -35,6 +35,10 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const [newExpiresAt, setNewExpiresAt] = useState(null);
     const [orderConfig, setOrderConfig] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [isEditingLink, setIsEditingLink] = useState(false);
+    const [newLinkChoice, setNewLinkChoice] = useState('');
+    const [newLinkType, setNewLinkType] = useState('custom');
+    const [isSavingLink, setIsSavingLink] = useState(false);
 
     // Initialize state when order changes
     useEffect(() => {
@@ -43,6 +47,9 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
             setOrderConfig(order.config || JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
             setNewExpiresAt(order.expires_at ? new Date(order.expires_at) : null);
             setModalTab('info');
+            setIsEditingLink(false);
+            setNewLinkChoice(order.custom_domain || '');
+            setNewLinkType(order.link_type || (order.want_special_link ? 'special' : 'custom'));
             setEditContent({
                 buyer_name: order.buyer_name || order.customer_name || order.buyerName || order.target_name || '',
                 buyer_phone: order.buyer_phone || order.customer_contact || '',
@@ -88,8 +95,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     };
 
     // Copy URL
-    const copyStoryUrl = (orderId) => {
-        const url = `https://norastory.com/${orderId}`;
+    const copyStoryUrl = () => {
+        const url = order.story_url || `https://norastory.com/${order.id}`;
         navigator.clipboard.writeText(url);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -106,6 +113,56 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     };
 
     // Actions
+    const handleSaveLink = async () => {
+        if (!newLinkChoice) return alert('กรุณากรอกชื่อลิงก์');
+        if (!/^[a-z0-9-]+$/.test(newLinkChoice)) return alert('เฉพาะภาษาอังกฤษตัวพิมพ์เล็ก ตัวเลข และขีด (-) เท่านั้น');
+        if (newLinkType === 'custom' && newLinkChoice.length < 5) return alert('Custom Link ต้องมีอย่างน้อย 5 ตัวอักษร');
+
+        setIsSavingLink(true);
+        try {
+            const ordersRef = collection(db, 'orders');
+            const q = query(ordersRef, where('custom_domain', '==', newLinkChoice));
+            const querySnapshot = await getDocs(q);
+
+            const isDuplicate = !querySnapshot.empty && querySnapshot.docs.some(d => d.id !== order.id);
+            if (isDuplicate || newLinkChoice === order.id) {
+                alert('ชื่อลิงก์นี้มีคนใช้งานแล้ว กรุณาเลือกชื่ออื่น');
+                setIsSavingLink(false);
+                return;
+            }
+
+            const storyUrl = newLinkType === 'special'
+                ? `https://${newLinkChoice}.norastory.com`
+                : `https://norastory.com/${newLinkChoice}`;
+
+            const orderRef = doc(db, 'orders', order.id);
+            await updateDoc(orderRef, {
+                custom_domain: newLinkChoice,
+                link_type: newLinkType,
+                want_special_link: newLinkType === 'special',
+                want_custom_link: newLinkType === 'custom',
+                story_url: storyUrl,
+                updatedAt: new Date()
+            });
+
+            onUpdate({
+                ...order,
+                custom_domain: newLinkChoice,
+                link_type: newLinkType,
+                want_special_link: newLinkType === 'special',
+                want_custom_link: newLinkType === 'custom',
+                story_url: storyUrl
+            });
+            setIsEditingLink(false);
+            alert('อัปเดตลิงก์สำเร็จ');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาดในการอัปเดตลิงก์');
+        } finally {
+            setIsSavingLink(false);
+        }
+    };
+
     const handleApprove = async () => {
         const templateId = modifiedTemplateId || order.selected_template_id;
         if (!templateId) {
@@ -369,10 +426,10 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                     <button onClick={handleReject} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-1"><XCircle size={16} /> ปฏิเสธ</button>
                                 </>)}
                                 {order.status === 'approved' && (<>
-                                    <button onClick={() => copyStoryUrl(order.id)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-[#1A3C40] hover:bg-[#2a4c50] text-white'}`}>
+                                    <button onClick={copyStoryUrl} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${copied ? 'bg-green-500 text-white' : 'bg-[#1A3C40] hover:bg-[#2a4c50] text-white'}`}>
                                         {copied ? <><CheckCircle size={16} /> คัดลอกแล้ว!</> : <><Copy size={16} /> คัดลอกลิงก์</>}
                                     </button>
-                                    <a href={`https://norastory.com/${order.id}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2"><ExternalLink size={16} /> เปิดดู</a>
+                                    <a href={order.story_url || `https://norastory.com/${order.id}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2"><ExternalLink size={16} /> เปิดดู</a>
                                 </>)}
                             </div>
                             {order.status === 'approved' && order.template_id && (
@@ -401,7 +458,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">แพ็คเกจ</p><p className="font-medium">{order.tier_name || getTierName(order.tier_id)}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">ราคา</p><p className="font-medium text-[#E8A08A]">{order.price || '-'} บาท</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">วันที่สร้าง</p><p className="text-sm">{order.created_at?.toLocaleString?.('th-TH') || '-'}</p></div>
-                                {order.custom_domain && (<div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">Custom Domain</p><p className="font-medium">{order.custom_domain}.norastory.com</p></div>)}
+                                {order.custom_domain && (<div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">{order.link_type === 'special' ? 'Special Link' : (order.link_type === 'custom' ? 'Custom Link' : 'Custom Domain')}</p><p className="font-medium text-[11px] truncate" title={order.story_url}>{order.story_url ? order.story_url.replace('https://', '') : order.custom_domain}</p></div>)}
                             </div>
                         </div>
                         {/* Extension Request */}
@@ -503,27 +560,77 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                         <p className="font-mono font-bold text-[#1A3C40] tracking-widest text-lg">{order.pin_code}</p>
                                     </div>
                                 )}
-                                {(order.want_custom_domain || order.custom_domain || order.extension_requested_subdomain) && (
-                                    <div className="p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-xs text-gray-400 mb-1">Custom Domain</p>
-                                        {order.custom_domain ? (
-                                            <p className="font-medium text-purple-600">
-                                                {order.custom_domain}.norastory.com
-                                            </p>
-                                        ) : order.want_custom_domain || order.extension_requested_subdomain ? (
-                                            <div className="space-y-1 mt-1">
-                                                <p className="text-xs text-purple-600 block">
-                                                    1. <span className="font-medium">{order.custom_domain_choice_1 || '-'}.norastory.com</span>
-                                                </p>
-                                                <p className="text-xs text-purple-600 block">
-                                                    2. <span className="font-medium">{order.custom_domain_choice_2 || '-'}.norastory.com</span>
-                                                </p>
-                                                {order.extension_requested_subdomain && order.extension_status === 'pending' && (
-                                                    <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full">รอต่ออายุ</span>
-                                                )}
+                                {(order.want_custom_domain || order.custom_domain || order.want_special_link || order.want_custom_link || order.extension_requested_subdomain || order.extension_requested_special_link || order.extension_requested_custom_link) && (
+                                    <div className="p-3 bg-gray-50 rounded-lg col-span-full">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <p className="text-xs text-gray-400">Custom / Special Link</p>
+                                            {!isEditingLink ? (
+                                                <button onClick={() => setIsEditingLink(true)} className="text-xs text-[#E8A08A] hover:underline flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-[#E8A08A]/30">
+                                                    <Edit2 size={12} /> แก้ไขลิงก์
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => setIsEditingLink(false)} className="text-xs text-gray-500 hover:text-gray-700 hover:underline">
+                                                    ยกเลิกแก้ไข
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {isEditingLink ? (
+                                            <div className="bg-white p-4 rounded-xl border border-gray-200 mt-2 space-y-4 shadow-sm">
+                                                <div className="flex gap-6">
+                                                    <label className="flex items-center gap-2 text-sm text-[#1A3C40] cursor-pointer font-medium">
+                                                        <input type="radio" name="linkType" checked={newLinkType === 'custom'} onChange={() => setNewLinkType('custom')} className="accent-[#E8A08A]" />
+                                                        Custom Link
+                                                    </label>
+                                                    <label className="flex items-center gap-2 text-sm text-purple-700 cursor-pointer font-medium">
+                                                        <input type="radio" name="linkType" checked={newLinkType === 'special'} onChange={() => setNewLinkType('special')} className="accent-purple-500" />
+                                                        Special Link
+                                                    </label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {newLinkType === 'custom' ? (
+                                                        <span className="text-sm font-mono text-gray-500 bg-gray-50 px-2 py-2 rounded-lg border border-gray-200">norastory.com/</span>
+                                                    ) : null}
+                                                    <input
+                                                        type="text"
+                                                        value={newLinkChoice}
+                                                        onChange={(e) => setNewLinkChoice(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#E8A08A] focus:ring-1 focus:ring-[#E8A08A]"
+                                                        placeholder="ระบุชื่อลิงก์"
+                                                    />
+                                                    {newLinkType === 'special' ? (
+                                                        <span className="text-sm font-mono text-gray-500 bg-gray-50 px-2 py-2 rounded-lg border border-gray-200">.norastory.com</span>
+                                                    ) : null}
+                                                </div>
+                                                <button onClick={handleSaveLink} disabled={isSavingLink} className="w-full bg-[#E8A08A] hover:bg-[#d89279] text-white py-2 rounded-lg font-bold text-sm disabled:opacity-50 transition-colors">
+                                                    {isSavingLink ? 'กำลังตรวจสอบและบันทึก...' : 'บันทึกและจัดการลิงก์'}
+                                                </button>
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-gray-400">-</p>
+                                            <>
+                                                {order.custom_domain ? (
+                                                    <p className="font-medium text-purple-600 bg-purple-50 p-2 rounded border border-purple-100 mt-1">
+                                                        {order.link_type === 'special' ? `${order.custom_domain}.norastory.com` : `norastory.com/${order.custom_domain}`}
+                                                    </p>
+                                                ) : (order.want_custom_domain || order.want_special_link || order.want_custom_link || order.extension_requested_subdomain || order.extension_requested_special_link || order.extension_requested_custom_link) ? (
+                                                    <div className="space-y-1 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                                        <p className="text-[11px] font-bold text-amber-700 mb-2 border-b border-amber-200 pb-1">
+                                                            📌 รอสร้างลิงก์ ({order.want_special_link || order.extension_requested_special_link ? 'Special Link' : 'Custom Link'})
+                                                        </p>
+                                                        <p className="text-xs text-amber-900 block">
+                                                            1. <span className="font-medium">{order.custom_domain_choice_1 || '-'}</span>
+                                                        </p>
+                                                        <p className="text-xs text-amber-900 block">
+                                                            2. <span className="font-medium">{order.custom_domain_choice_2 || '-'}</span>
+                                                        </p>
+                                                        {(order.extension_requested_subdomain || order.extension_requested_special_link || order.extension_requested_custom_link) && order.extension_status === 'pending' && (
+                                                            <span className="inline-block mt-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] rounded-full font-medium">รออนุมัติการจ่ายเงินต่ออายุ</span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-gray-400">-</p>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 )}

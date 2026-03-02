@@ -1,13 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, CheckCircle, Upload, Clock, CreditCard, ChevronLeft, AlertCircle, Timer, Globe, Sparkles, Copy, Check, Pencil, Image, X, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Loader2, CheckCircle, Clock, ChevronLeft, AlertCircle, Timer, Pencil, Image, FileText } from 'lucide-react';
 import { TIERS } from '../data/tierData';
-import generatePayload from 'promptpay-qr';
-import { QRCodeSVG } from 'qrcode.react';
 import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
@@ -125,17 +123,40 @@ const ExtensionPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPackage, setSelectedPackage] = useState(null);
     const [slipFile, setSlipFile] = useState(null);
-    const [slipPreview, setSlipPreview] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
-    const [wantSubdomain, setWantSubdomain] = useState(false);
+    const [wantSpecialLink, setWantSpecialLink] = useState(false);
+    const [wantCustomLink, setWantCustomLink] = useState(false);
     const [customDomain1, setCustomDomain1] = useState('');
-    const [customDomain2, setCustomDomain2] = useState('');
-    const [copied, setCopied] = useState(false);
-    const [qrPayload, setQrPayload] = useState(null);
+    const [domainStatus, setDomainStatus] = useState(null); // null | true | false
+    const [isDomainChecking, setIsDomainChecking] = useState(false);
+    const [qrExpiresAt, setQrExpiresAt] = useState(null);
+    const [qrTimeLeft, setQrTimeLeft] = useState(null);
     const promptpayId = '0948701182';
     const [activeTab, setActiveTab] = useState('extend'); // 'extend' | 'editText' | 'editImage' | 'history'
+
+    // Reset domain status when input changes
+    useEffect(() => {
+        setDomainStatus(null);
+        setQrExpiresAt(null);
+    }, [customDomain1, wantCustomLink, wantSpecialLink]);
+
+    // QR Countdown Timer
+    useEffect(() => {
+        if (!qrExpiresAt) {
+            setQrTimeLeft(null);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const left = Math.max(0, Math.floor((qrExpiresAt - Date.now()) / 1000));
+            setQrTimeLeft(left);
+            if (left <= 0) clearInterval(interval);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [qrExpiresAt]);
 
     // Edit states
     const [editTextMode, setEditTextMode] = useState(false);
@@ -171,6 +192,33 @@ const ExtensionPage = () => {
         fetchOrder();
     }, [id]);
 
+    const handleCheckDomain = async () => {
+        if (!customDomain1 || (wantCustomLink && customDomain1.length < 5)) return;
+
+        setIsDomainChecking(true);
+        try {
+            const ordersRef = collection(db, 'orders');
+            const q = query(ordersRef, where('custom_domain', '==', customDomain1));
+            const snapshot = await getDocs(q);
+
+            const isDuplicate = !snapshot.empty && snapshot.docs.some(doc => doc.id !== id);
+            if (isDuplicate) {
+                setDomainStatus(false);
+                setQrExpiresAt(null);
+            } else {
+                setDomainStatus(true);
+                // Set QR expiration to 15 minutes from now
+                setQrExpiresAt(Date.now() + 15 * 60 * 1000);
+            }
+        } catch (error) {
+            console.error('Error checking domain:', error);
+            alert('เกิดข้อผิดพลาดในการตรวจสอบ กรุณาลองใหม่');
+            setDomainStatus(null);
+        } finally {
+            setIsDomainChecking(false);
+        }
+    };
+
     const handleSlipChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -179,15 +227,22 @@ const ExtensionPage = () => {
                 return;
             }
             setSlipFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => setSlipPreview(reader.result);
-            reader.readAsDataURL(file);
         }
     };
 
     const handleSubmit = async () => {
         if (!slipFile) {
             alert('กรุณาแนบสลิปโอนเงิน');
+            return;
+        }
+
+        if ((wantSpecialLink || wantCustomLink) && domainStatus !== true) {
+            alert('กรุณาตรวจสอบชื่อลิงก์ก่อนดำเนินการต่อ');
+            return;
+        }
+
+        if ((wantSpecialLink || wantCustomLink) && qrTimeLeft === 0) {
+            alert('คิวอาร์โค้ดหมดอายุ กรุณากดตรวจสอบลิงก์อีกครั้ง');
             return;
         }
 
@@ -199,13 +254,14 @@ const ExtensionPage = () => {
             const slipUrl = await getDownloadURL(slipRef);
 
             const orderRef = doc(db, 'orders', id);
-            const totalPrice = selectedPackage.price + (wantSubdomain ? 999 : 0);
+            const totalPrice = selectedPackage.price + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
             const updates = {
                 extension_status: 'pending',
                 extension_slip_url: slipUrl,
                 extension_requested_days: selectedPackage.days,
                 extension_requested_price: totalPrice,
-                extension_requested_subdomain: wantSubdomain,
+                extension_requested_special_link: wantSpecialLink,
+                extension_requested_custom_link: wantCustomLink,
                 extension_requested_at: serverTimestamp(),
                 extension_approved_at: deleteField(),
                 extension_rejected_at: deleteField(),
@@ -217,9 +273,9 @@ const ExtensionPage = () => {
                 })
             };
 
-            if (wantSubdomain) {
+            if (wantSpecialLink || wantCustomLink) {
                 updates.custom_domain_choice_1 = customDomain1;
-                updates.custom_domain_choice_2 = customDomain2;
+                // choice 2 no longer used
             }
 
             await updateDoc(orderRef, updates);
@@ -513,12 +569,16 @@ const ExtensionPage = () => {
                         packages={packages}
                         selectedPackage={selectedPackage}
                         setSelectedPackage={setSelectedPackage}
-                        wantSubdomain={wantSubdomain}
-                        setWantSubdomain={setWantSubdomain}
+                        wantSpecialLink={wantSpecialLink}
+                        setWantSpecialLink={setWantSpecialLink}
+                        wantCustomLink={wantCustomLink}
+                        setWantCustomLink={setWantCustomLink}
                         customDomain1={customDomain1}
                         setCustomDomain1={setCustomDomain1}
-                        customDomain2={customDomain2}
-                        setCustomDomain2={setCustomDomain2}
+                        domainStatus={domainStatus}
+                        isDomainChecking={isDomainChecking}
+                        handleCheckDomain={handleCheckDomain}
+                        qrTimeLeft={qrTimeLeft}
                         order={order}
                         expiryDate={expiryDate}
                         isExpired={isExpired}

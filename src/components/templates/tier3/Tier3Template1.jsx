@@ -366,7 +366,9 @@ const Tier3Template1 = ({
     finaleMessage,
     finaleSignOff,
     images = [],
-    musicUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    musicUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    isDemo = false,
+    demoMusicUrl = null
 }) => {
     const [activeSection, setActiveSection] = useState(0);
     const [canSendLove, setCanSendLove] = useState(true);
@@ -496,7 +498,7 @@ const Tier3Template1 = ({
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
             <Starfield speed={0.5} />
             <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay" />
-            {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+            {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
             <ScrollIndicator />
 
             <div className="relative z-10 w-full min-h-screen py-10 px-4 md:px-8">

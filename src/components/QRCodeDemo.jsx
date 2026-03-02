@@ -91,14 +91,21 @@ const QRCodeDemo = () => {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="text-center mb-4"
+                    className="text-center mb-10 sm:mb-14"
                 >
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 rounded-full text-rose-600 text-xs md:text-sm font-medium mb-3 md:mb-4">
-                        <Smartphone size={14} className="md:w-4 md:h-4" />
-                        ลองสแกนเลย!
-                    </div>
-                    <h2 className="text-xl md:text-2xl font-playfair font-bold text-[#1A3C40] mb-2 md:mb-4">
-                        แชร์ลิงก์ง่ายๆ ด้วย QR Code
+                    {/* Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-2 bg-white rounded-full px-4 py-2 mb-4 shadow-sm"
+                    >
+                        <Smartphone className="w-4 h-4 text-[#E8A08A]" />
+                        <span className="text-gray-600 text-sm font-medium">Scan to Open</span>
+                    </motion.div>
+
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-playfair text-[#1A3C40] mb-4">
+                        Share With<span className="text-[#E8A08A] italic"> QR Code</span>
                     </h2>
                     <p className="text-xs md:text-base text-gray-500 max-w-xl mx-auto px-4">
                         สแกน QR Code หรือส่งลิงก์ให้คนที่คุณรัก เปิดได้ทันทีผ่านมือถือ

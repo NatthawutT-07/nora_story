@@ -11,23 +11,25 @@ const Pricing = ({ onSelectTier, onViewDemos }) => {
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 sm:mb-14">
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-[#E8A08A] text-sm font-medium tracking-widest uppercase mb-4"
+                        className="inline-flex items-center gap-2 bg-white rounded-full px-4 py-2 mb-4 shadow-sm"
                     >
-                        Pricing
-                    </motion.p>
+                        <Heart className="w-4 h-4 text-[#E8A08A]" />
+                        <span className="text-gray-600 text-sm font-medium">Pricing</span>
+                    </motion.div>
 
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-3xl sm:text-4xl font-playfair font-bold text-[#1A3C40] mb-3"
+                        className="text-3xl sm:text-4xl md:text-5xl font-playfair text-[#1A3C40] mb-4 leading-tight"
                     >
-                        Choose the package that's right for you.
+                        Choose the package <br className="hidden sm:block" />
+                        <span className="text-[#E8A08A] italic">that's right for you.</span>
                     </motion.h2>
                     <motion.p
                         initial={{ opacity: 0 }}
@@ -132,19 +134,23 @@ const GalleryCard = ({ onViewDemos }) => (
 );
 
 // Tier Card component (Flippable)
-const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
-    const [wantDomain, setWantDomain] = useState(false);
+const TierCard = ({ tier, index, onSelectTier }) => {
+    const isPremium = String(tier.id) === '3';
+    const [wantSpecialLink, setWantSpecialLink] = useState(false);
+    const [wantCustomLink, setWantCustomLink] = useState(isPremium);
     const [isFlipped, setIsFlipped] = useState(false);
 
     const basePrice = typeof tier.price === 'string' ? parseInt(tier.price.replace(/,/g, ''), 10) : tier.price;
-    const totalPrice = basePrice + (wantDomain ? 999 : 0);
+    const customLinkPrice = wantCustomLink ? (isPremium ? 0 : 99) : 0;
+    const specialLinkPrice = wantSpecialLink ? 999 : 0;
+    const totalPrice = basePrice + specialLinkPrice + customLinkPrice;
 
     const handleSelect = () => {
         onSelectTier({
             ...tier,
             price: totalPrice.toLocaleString(),
-            wantCustomDomain: wantDomain,
-            customDomainPrice: 999
+            wantSpecialLink,
+            wantCustomLink
         });
     };
 
@@ -226,6 +232,48 @@ const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
 
                         {/* Custom Link Add-on */}
                         <label className={`
+                            flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all mb-2
+                            ${isPopular
+                                ? 'border border-white/15 hover:border-white/30 bg-white/5'
+                                : 'border border-gray-100 hover:border-gray-200 bg-gray-50/50'
+                            }
+                        `}>
+                            <input
+                                type="checkbox"
+                                checked={wantCustomLink}
+                                onChange={(e) => {
+                                    if (isPremium) {
+                                        // Premium: Can only uncheck if Special is checked, or if switching to Special.
+                                        // Usually, clicking checkbox directly:
+                                        if (!e.target.checked && !wantSpecialLink) {
+                                            // Force it to stay checked
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                        setWantCustomLink(e.target.checked);
+                                        if (e.target.checked) setWantSpecialLink(false);
+                                    } else {
+                                        setWantCustomLink(e.target.checked);
+                                        if (e.target.checked) setWantSpecialLink(false);
+                                    }
+                                }}
+                                className={`w-3.5 h-3.5 accent-[#E8A08A] rounded ${isPremium && !wantSpecialLink ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                            />
+                            <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-medium ${isPopular ? 'text-white' : 'text-[#1A3C40]'}`}>
+                                    Custom Link
+                                </p>
+                                <p className={`text-[10px] ${isPopular ? 'text-white/40' : 'text-gray-400'}`}>
+                                    norastory.com/yourname
+                                </p>
+                            </div>
+                            <span className={`text-xs font-semibold whitespace-nowrap ${isPopular ? 'text-[#E8A08A]' : 'text-[#1A3C40]'}`}>
+                                {isPremium ? '+0฿' : '+99฿'}
+                            </span>
+                        </label>
+
+                        {/* Special Link Add-on */}
+                        <label className={`
                             flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all mb-5
                             ${isPopular
                                 ? 'border border-white/15 hover:border-white/30 bg-white/5'
@@ -234,8 +282,16 @@ const TierCard = ({ tier, index, onSelectTier, onViewDemos }) => {
                         `}>
                             <input
                                 type="checkbox"
-                                checked={wantDomain}
-                                onChange={(e) => setWantDomain(e.target.checked)}
+                                checked={wantSpecialLink}
+                                onChange={(e) => {
+                                    setWantSpecialLink(e.target.checked);
+                                    if (e.target.checked) {
+                                        setWantCustomLink(false);
+                                    } else if (isPremium) {
+                                        // If unchecking Special Link on Premium, fallback to Custom Link
+                                        setWantCustomLink(true);
+                                    }
+                                }}
                                 className="w-3.5 h-3.5 accent-[#E8A08A] rounded cursor-pointer"
                             />
                             <div className="flex-1 min-w-0">

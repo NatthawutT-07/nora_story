@@ -28,17 +28,7 @@ const TEMPLATE_PREVIEWS = {
 
 const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
     const templates = TEMPLATE_PREVIEWS[tierId] || TEMPLATE_PREVIEWS[1];
-    const [currentIndex, setCurrentIndex] = useState(0);
-
     const isSingleTemplate = templates.length === 1;
-
-    const handlePrev = () => {
-        setCurrentIndex(prev => (prev > 0 ? prev - 1 : templates.length - 1));
-    };
-
-    const handleNext = () => {
-        setCurrentIndex(prev => (prev < templates.length - 1 ? prev + 1 : 0));
-    };
 
     // Single Template UI (Tier 1)
     if (isSingleTemplate) {

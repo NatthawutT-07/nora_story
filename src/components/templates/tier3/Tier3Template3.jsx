@@ -105,7 +105,6 @@ const MusicPlayer = ({ musicUrl }) => {
 const Tier3Template3 = ({
     customMessage,
     customSignOff,
-    targetName = 'แขกผู้มีเกียรติ',
     images = [],
     musicUrl = ''
 }) => {

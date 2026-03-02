@@ -171,17 +171,16 @@ const StoryPage = () => {
                         customMessage={storyData.message}
                         customSignOff={storyData.sign_off}
                         targetName={storyData.target_name}
-                        pinCode={storyData.pin_code}
+                        pin={storyData.pin_code}
                         timelines={storyData.timelines || []}
                         finaleMessage={storyData.finale_message}
                         finaleSignOff={storyData.finale_sign_off}
                         images={storyData.content_images || []}
+                        musicUrl={storyData.music_url}
                         config={config} // Pass config for dynamic styling
                     />
                 </div>
             );
-
-            return templateContent;
 
             return templateContent;
         }

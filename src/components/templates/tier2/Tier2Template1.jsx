@@ -244,29 +244,30 @@ const MusicPlayer = ({ musicUrl }) => {
 
 
 const Tier2Template1 = ({
+    pin = "1234",
+    targetName = "คุณ",
     customMessage,
     customSignOff,
-    targetName = 'เธอ',
-    pinCode = '1234',
     images = [],
-    musicUrl = ''
+    musicUrl,
+    isDemo = false,
+    demoMusicUrl = null
 }) => {
     const [viewState, setViewState] = useState('LOCKED');
-    const [pin, setPin] = useState("");
-    const [showError, setShowError] = useState(false);
+    const [pinInput, setPinInput] = useState(""); // Renamed from 'pin' state
+    const [isPinError, setIsPinError] = useState(false); // Renamed from 'showError'
     const [showMusicPlayer, setShowMusicPlayer] = useState(false);
 
-    const CORRECT_PIN = pinCode;
 
     useEffect(() => {
-        if (pin.length === 4) {
-            if (pin === CORRECT_PIN) {
+        if (pinInput.length === 4) { // Use pinInput
+            if (pinInput === pin) { // Compare pinInput state with pin prop
                 handleUnlock();
             } else {
                 handleError();
             }
         }
-    }, [pin]);
+    }, [pinInput, pin]); // Add pin to dependency array
 
     const handleUnlock = () => {
         setViewState('CONTENT');
@@ -275,20 +276,20 @@ const Tier2Template1 = ({
     };
 
     const handleError = () => {
-        setShowError(true);
+        setIsPinError(true); // Use isPinError
         setTimeout(() => {
-            setPin("");
-            setShowError(false);
+            setPinInput(""); // Use setPinInput
+            setIsPinError(false); // Use isPinError
         }, 500);
     };
 
     const handleKeyPress = (num) => {
-        if (pin.length < 4) {
-            setPin(prev => prev + num);
+        if (pinInput.length < 4) { // Use pinInput
+            setPinInput(prev => prev + num); // Use setPinInput
         }
     };
 
-    const handleBackspace = () => setPin(prev => prev.slice(0, -1));
+    const handleBackspace = () => setPinInput(prev => prev.slice(0, -1)); // Use setPinInput
 
 
 
@@ -354,7 +355,7 @@ const Tier2Template1 = ({
                         <SparkleEffect />
 
                         <motion.div
-                            animate={showError ? { x: [-15, 15, -15, 15, 0] } : {}}
+                            animate={isPinError ? { x: [-15, 15, -15, 15, 0] } : {}} // Use isPinError
                             transition={{ duration: 0.4 }}
                             className="relative z-10 w-full max-w-sm px-6"
                         >
@@ -395,8 +396,8 @@ const Tier2Template1 = ({
                                         initial={{ scale: 0 }}
                                         animate={{
                                             scale: 1,
-                                            backgroundColor: i < pin.length ? '#f43f5e' : 'rgba(255,255,255,0.2)',
-                                            boxShadow: i < pin.length ? '0 0 15px rgba(244,63,94,0.6)' : 'none'
+                                            backgroundColor: i < pinInput.length ? '#f43f5e' : 'rgba(255,255,255,0.2)', // Use pinInput
+                                            boxShadow: i < pinInput.length ? '0 0 15px rgba(244,63,94,0.6)' : 'none' // Use pinInput
                                         }}
                                         transition={{ delay: i * 0.05, type: "spring" }}
                                         className="w-5 h-5 rounded-full"
@@ -559,7 +560,7 @@ const Tier2Template1 = ({
                         </div>
 
                         {/* Music Player */}
-                        {showMusicPlayer && musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+                        {showMusicPlayer && (demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
                     </motion.div>
                 )}
             </AnimatePresence>

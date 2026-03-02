@@ -1,16 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Copy, Loader2, Check } from 'lucide-react';
+import { Upload, Loader2, Check } from 'lucide-react';
 import { useCheckout } from '../CheckoutContext';
 import { useState, useEffect } from 'react';
 import generatePayload from 'promptpay-qr';
 import { QRCodeSVG } from 'qrcode.react';
 
 const PaymentStep = () => {
-    const { tier, slipFile, setSlipFile, setSlipPreview, setError, qrExpired, setQrExpired } = useCheckout();
+    const { tier, setSlipFile, setSlipPreview, setError, qrExpired, setQrExpired } = useCheckout();
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
     const [loadingQr, setLoadingQr] = useState(true);
     const [qrError, setQrError] = useState(null);
-    const [copied, setCopied] = useState(false);
     const [fileError, setFileError] = useState('');
     const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
 
@@ -53,11 +52,7 @@ const PaymentStep = () => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText('0948701182');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+
 
     const handleSlipChange = (e) => {
         const selectedFile = e.target.files[0];
