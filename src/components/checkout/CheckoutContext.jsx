@@ -1,4 +1,6 @@
 import { createContext, useContext, useState } from 'react';
+import { db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const CheckoutContext = createContext(null);
 
@@ -22,6 +24,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     const [error, setError] = useState('');
     const [showPreview, setShowPreview] = useState(null);
     const [storyId, setStoryId] = useState(null);
+    const [isDomainAvailable, setIsDomainAvailable] = useState(null);
+    const [qrExpired, setQrExpired] = useState(false);
 
     const [formData, setFormData] = useState({
         buyerName: '',
@@ -62,7 +66,6 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         }
         if (String(tier?.id) === '2') return 5;
         if (String(tier?.id) === '3') return 10;
-        if (String(tier?.id) === '4') return 30;
         return 0;
     };
 
@@ -89,6 +92,20 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     // Progress step mapping
     const getProgressStep = () => {
         return step;
+    };
+
+    const checkDomainAvailability = async (domain) => {
+        if (!domain) return false;
+        try {
+            const docRef = doc(db, 'orders', domain);
+            const docSnap = await getDoc(docRef);
+            const available = !docSnap.exists();
+            setIsDomainAvailable(available);
+            return available;
+        } catch (err) {
+            console.error("Error checking domain:", err);
+            return false;
+        }
     };
 
     const updateFormData = (fields) => {
@@ -119,6 +136,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         });
         setSelectedTemplate(null);
         setStoryId(null);
+        setQrExpired(false);
     };
 
     const handleClose = () => {
@@ -151,6 +169,11 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         setShowPreview,
         storyId,
         setStoryId,
+        isDomainAvailable,
+        setIsDomainAvailable,
+        checkDomainAvailability,
+        qrExpired,
+        setQrExpired,
 
         // Computed
         isTier1Template1,

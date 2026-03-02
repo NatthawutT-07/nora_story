@@ -79,6 +79,14 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
         return { expired: false, days, hours, minutes };
     };
 
+    // Format date/time for display
+    const formatDate = (d) => {
+        if (!d) return null;
+        const date = d instanceof Date ? d : d?.toDate?.() || new Date(d);
+        return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
+            + ' ' + date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    };
+
     // Copy URL
     const copyStoryUrl = (orderId) => {
         const url = `https://norastory.com/${orderId}`;
@@ -192,6 +200,66 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 extension_status: 'approved'
             });
             alert('ต่ออายุเรียบร้อยแล้ว');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    const handleRejectExtension = async () => {
+        if (!confirm('ยืนยันการปฏิเสธคำขอต่ออายุ?')) return;
+        try {
+            const orderRef = doc(db, 'orders', order.id);
+            await updateDoc(orderRef, {
+                extension_status: 'rejected',
+                extension_rejected_at: new Date()
+            });
+            onUpdate({ ...order, extension_status: 'rejected', extension_rejected_at: new Date() });
+            alert('ปฏิเสธคำขอต่ออายุแล้ว');
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    const handleApproveEditPayment = async (type) => {
+        const editType = type === 'text' ? 'ข้อความ' : 'รูปภาพ';
+        if (!confirm(`ยืนยันการอนุมัติการชำระเงินแก้ไข${editType}?`)) return;
+
+        try {
+            const orderRef = doc(db, 'orders', order.id);
+            const updates = {
+                [`${type}_edit_payment_status`]: 'approved',
+                [`${type}_edit_payment_approved_at`]: new Date(),
+            };
+
+            // Reset the edit counter so the customer can edit again
+            if (type === 'text') {
+                updates.text_edits_used = Math.max(0, (order.text_edits_used || 0) - 1);
+            } else {
+                updates.image_edits_used = Math.max(0, (order.image_edits_used || 0) - 1);
+            }
+
+            await updateDoc(orderRef, updates);
+            onUpdate({ ...order, ...updates });
+            alert(`อนุมัติการแก้ไข${editType}เรียบร้อยแล้ว ✅`);
+        } catch (error) {
+            console.error(error);
+            alert('เกิดข้อผิดพลาด');
+        }
+    };
+
+    const handleRejectEditPayment = async (type) => {
+        const editType = type === 'text' ? 'ข้อความ' : 'รูปภาพ';
+        if (!confirm(`ยืนยันการปฏิเสธการชำระเงินแก้ไข${editType}?`)) return;
+        try {
+            const orderRef = doc(db, 'orders', order.id);
+            await updateDoc(orderRef, {
+                [`${type}_edit_payment_status`]: 'rejected',
+                [`${type}_edit_payment_rejected_at`]: new Date()
+            });
+            onUpdate({ ...order, [`${type}_edit_payment_status`]: 'rejected', [`${type}_edit_payment_rejected_at`]: new Date() });
+            alert(`ปฏิเสธการชำระเงินแก้ไข${editType}แล้ว`);
         } catch (error) {
             console.error(error);
             alert('เกิดข้อผิดพลาด');
@@ -340,14 +408,187 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                         {order.extension_status === 'pending' && (
                             <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                                 <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2"><RefreshCw size={18} /> คำขอต่ออายุ</h3>
+                                {order.extension_requested_at && (
+                                    <p className="text-[11px] text-amber-600 mb-2">📅 ส่งเมื่อ: {formatDate(order.extension_requested_at)}</p>
+                                )}
                                 <div className="flex gap-4 mb-4">
                                     <div className="flex-1">
                                         <p className="text-sm text-amber-900">ขอต่อเพิ่ม: <span className="font-bold">{order.extension_requested_days} วัน</span></p>
                                         <p className="text-sm text-amber-900">ยอดโอน: <span className="font-bold">{order.extension_requested_price} บาท</span></p>
+                                        {order.extension_requested_subdomain && (
+                                            <div className="mt-2 p-2 bg-amber-100 rounded-lg">
+                                                <p className="text-xs font-semibold text-amber-800 mb-1">ต้องการเพิ่ม Special Link</p>
+                                                <p className="text-sm text-amber-900 flex items-center gap-1">
+                                                    <span className="text-xs text-amber-700">ชื่อแรก:</span>
+                                                    <span className="font-medium">{order.custom_domain_choice_1 || '-'}.norastory.com</span>
+                                                </p>
+                                                <p className="text-sm text-amber-900 flex items-center gap-1">
+                                                    <span className="text-xs text-amber-700">ชื่อสำรอง:</span>
+                                                    <span className="font-medium">{order.custom_domain_choice_2 || '-'}.norastory.com</span>
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                     {order.extension_slip_url && (<a href={order.extension_slip_url} target="_blank" rel="noreferrer" className="block w-24 h-24 flex-shrink-0"><img src={order.extension_slip_url} alt="Extension Slip" className="w-full h-full object-cover rounded-lg border border-amber-200" /></a>)}
                                 </div>
-                                <button onClick={handleApproveExtension} className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold">อนุมัติการต่ออายุ (+{order.extension_requested_days} วัน)</button>
+                                <div className="flex gap-2">
+                                    <button onClick={handleApproveExtension} className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold">อนุมัติ (+{order.extension_requested_days} วัน)</button>
+                                    <button onClick={handleRejectExtension} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">ปฏิเสธ</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Activity Log */}
+                        <div>
+                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                <Timer size={18} className="text-[#E8A08A]" /> ประวัติคำขอ
+                            </h3>
+                            <div className="space-y-0">
+                                {(() => {
+                                    const events = [];
+                                    if (order.created_at) events.push({ date: order.created_at, label: 'สร้าง Order', color: 'bg-blue-500', detail: `${order.tier_name || getTierName(order.tier_id)} — ${order.price || '?'}฿` });
+                                    if (order.approved_at) events.push({ date: order.approved_at, label: 'อนุมัติ Order', color: 'bg-green-500' });
+                                    if (order.status === 'rejected' && !order.approved_at) events.push({ date: order.created_at, label: 'ปฏิเสธ Order', color: 'bg-red-500' });
+                                    if (order.extension_requested_at) events.push({ date: order.extension_requested_at, label: 'ขอต่ออายุ', color: 'bg-amber-500', detail: `${order.extension_requested_days} วัน — ${order.extension_requested_price}฿` });
+                                    if (order.extension_approved_at) events.push({ date: order.extension_approved_at, label: 'อนุมัติต่ออายุ', color: 'bg-green-500' });
+                                    if (order.extension_status === 'rejected') events.push({ date: order.extension_rejected_at || order.extension_requested_at, label: 'ปฏิเสธต่ออายุ', color: 'bg-red-500' });
+                                    if (order.text_edit_payment_requested_at) events.push({ date: order.text_edit_payment_requested_at, label: `ขอแก้ไขข้อความ`, color: 'bg-purple-500', detail: `${order.text_edit_payment_price}฿` });
+                                    if (order.text_edit_payment_approved_at) events.push({ date: order.text_edit_payment_approved_at, label: 'อนุมัติแก้ไขข้อความ', color: 'bg-green-500' });
+                                    if (order.text_edit_payment_status === 'rejected') events.push({ date: order.text_edit_payment_rejected_at || order.text_edit_payment_requested_at, label: 'ปฏิเสธแก้ไขข้อความ', color: 'bg-red-500' });
+
+                                    if (order.image_edit_payment_requested_at) events.push({ date: order.image_edit_payment_requested_at, label: `ขอแก้ไขรูปภาพ`, color: 'bg-indigo-500', detail: `${order.image_edit_payment_price}฿` });
+                                    if (order.image_edit_payment_approved_at) events.push({ date: order.image_edit_payment_approved_at, label: 'อนุมัติแก้ไขรูปภาพ', color: 'bg-teal-500' });
+                                    if (order.image_edit_payment_status === 'rejected') events.push({ date: order.image_edit_payment_rejected_at || order.image_edit_payment_requested_at, label: 'ปฏิเสธแก้ไขรูปภาพ', color: 'bg-rose-500' });
+
+                                    events.sort((a, b) => {
+                                        const da = a.date instanceof Date ? a.date : new Date(a.date);
+                                        const db2 = b.date instanceof Date ? b.date : new Date(b.date);
+                                        return da - db2;
+                                    });
+
+                                    if (events.length === 0) return <p className="text-sm text-gray-400">ยังไม่มีประวัติ</p>;
+
+                                    return events.map((ev, i) => (
+                                        <div key={i} className="flex items-start gap-3">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-3 h-3 rounded-full ${ev.color} flex-shrink-0 mt-1`} />
+                                                {i < events.length - 1 && <div className="w-0.5 h-6 bg-gray-200" />}
+                                            </div>
+                                            <div className="pb-3">
+                                                <p className="text-sm font-medium text-gray-800">{ev.label}</p>
+                                                {ev.detail && <p className="text-xs text-gray-500">{ev.detail}</p>}
+                                                <p className="text-[11px] text-gray-400">{formatDate(ev.date)}</p>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
+
+                        {/* Edit Tracking Info */}
+                        <div>
+                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><Edit2 size={18} className="text-[#E8A08A]" /> ข้อมูลการแก้ไข</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-xs text-gray-400 mb-1">แก้ไขข้อความ</p>
+                                    <p className="font-medium text-[#1A3C40]">{order.text_edits_used || 0} ครั้ง</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-xs text-gray-400 mb-1">แก้ไขรูปภาพ</p>
+                                    <p className="font-medium text-[#1A3C40]">{order.image_edits_used || 0} ครั้ง</p>
+                                </div>
+                                {order.pin_code && (
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-xs text-gray-400 mb-1">รหัสล็อก (PIN)</p>
+                                        <p className="font-mono font-bold text-[#1A3C40] tracking-widest text-lg">{order.pin_code}</p>
+                                    </div>
+                                )}
+                                {(order.want_custom_domain || order.custom_domain || order.extension_requested_subdomain) && (
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-xs text-gray-400 mb-1">Custom Domain</p>
+                                        {order.custom_domain ? (
+                                            <p className="font-medium text-purple-600">
+                                                {order.custom_domain}.norastory.com
+                                            </p>
+                                        ) : order.want_custom_domain || order.extension_requested_subdomain ? (
+                                            <div className="space-y-1 mt-1">
+                                                <p className="text-xs text-purple-600 block">
+                                                    1. <span className="font-medium">{order.custom_domain_choice_1 || '-'}.norastory.com</span>
+                                                </p>
+                                                <p className="text-xs text-purple-600 block">
+                                                    2. <span className="font-medium">{order.custom_domain_choice_2 || '-'}.norastory.com</span>
+                                                </p>
+                                                {order.extension_requested_subdomain && order.extension_status === 'pending' && (
+                                                    <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full">รอต่ออายุ</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">-</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Text Edit Payment Pending */}
+                        {order.text_edit_payment_status === 'pending' && (
+                            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                                <h3 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                                    <CreditCard size={18} /> คำขอแก้ไขข้อความ (รอชำระเงิน)
+                                </h3>
+                                {order.text_edit_payment_requested_at && (
+                                    <p className="text-[11px] text-purple-600 mb-2">📅 ส่งเมื่อ: {formatDate(order.text_edit_payment_requested_at)}</p>
+                                )}
+                                <div className="flex gap-4 mb-4">
+                                    <div className="flex-1">
+                                        <p className="text-sm text-purple-900">ยอดชำระ: <span className="font-bold">{order.text_edit_payment_price} บาท</span></p>
+                                        <p className="text-sm text-purple-900">ประเภท: <span className="font-bold">แก้ไขข้อความ</span></p>
+                                    </div>
+                                    {order.text_edit_payment_slip_url && (
+                                        <a href={order.text_edit_payment_slip_url} target="_blank" rel="noreferrer" className="block w-24 h-24 flex-shrink-0">
+                                            <img src={order.text_edit_payment_slip_url} alt="Text Edit Slip" className="w-full h-full object-cover rounded-lg border border-purple-200" />
+                                        </a>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleApproveEditPayment('text')} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold">
+                                        อนุมัติ ✅
+                                    </button>
+                                    <button onClick={() => handleRejectEditPayment('text')} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">
+                                        ปฏิเสธ
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Image Edit Payment Pending */}
+                        {order.image_edit_payment_status === 'pending' && (
+                            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 mt-4">
+                                <h3 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                                    <CreditCard size={18} /> คำขอแก้ไขรูปภาพ (รอชำระเงิน)
+                                </h3>
+                                {order.image_edit_payment_requested_at && (
+                                    <p className="text-[11px] text-purple-600 mb-2">📅 ส่งเมื่อ: {formatDate(order.image_edit_payment_requested_at)}</p>
+                                )}
+                                <div className="flex gap-4 mb-4">
+                                    <div className="flex-1">
+                                        <p className="text-sm text-purple-900">ยอดชำระ: <span className="font-bold">{order.image_edit_payment_price} บาท</span></p>
+                                        <p className="text-sm text-purple-900">ประเภท: <span className="font-bold">แก้ไขรูปภาพ</span></p>
+                                    </div>
+                                    {order.image_edit_payment_slip_url && (
+                                        <a href={order.image_edit_payment_slip_url} target="_blank" rel="noreferrer" className="block w-24 h-24 flex-shrink-0">
+                                            <img src={order.image_edit_payment_slip_url} alt="Image Edit Slip" className="w-full h-full object-cover rounded-lg border border-purple-200" />
+                                        </a>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleApproveEditPayment('image')} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold">
+                                        อนุมัติ ✅
+                                    </button>
+                                    <button onClick={() => handleRejectEditPayment('image')} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">
+                                        ปฏิเสธ
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </>)}
@@ -474,15 +715,82 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                     )}
 
                     {/* === TAB: IMAGES === */}
-                    {modalTab === 'images' && (<>
+                    {modalTab === 'images' && (<div className="space-y-6">
                         {order.slip_url ? (
                             <div>
-                                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><CreditCard size={18} className="text-[#E8A08A]" /> หลักฐานการชำระเงิน</h3>
-                                <a href={order.slip_url} target="_blank" rel="noopener noreferrer"><img src={order.slip_url} alt="Payment Slip" className="w-full max-w-sm rounded-xl border border-gray-200 hover:shadow-lg transition-shadow cursor-zoom-in" /></a>
+                                <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2"><CreditCard size={18} className="text-[#E8A08A]" /> หลักฐานการชำระเงิน (Order เริ่มต้น)</h3>
+                                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <a href={order.slip_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                                        <img src={order.slip_url} alt="Payment Slip" className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                                    </a>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-gray-800">แพ็คเกจ: {order.tier_name || getTierName(order.tier_id)}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">ยอดรวม: <span className="font-medium text-[#1A3C40]">{order.price || '?'}฿</span></p>
+                                        {order.created_at && <p className="text-[10px] text-gray-400 mt-1">📅 {formatDate(order.created_at)}</p>}
+                                    </div>
+                                </div>
                             </div>
                         ) : (
-                            <div className="text-center text-gray-400 py-8"><ImageIcon size={32} className="mx-auto mb-2 opacity-50" /><p className="text-sm">ไม่มีสลิปการชำระเงิน</p></div>
+                            <div className="text-center text-gray-400 py-6 bg-gray-50 rounded-xl border border-gray-100"><ImageIcon size={32} className="mx-auto mb-2 opacity-50" /><p className="text-sm">ไม่มีสลิปการชำระเงิน (Order)</p></div>
                         )}
+
+                        {/* Additional Slip History */}
+                        {(() => {
+                            const additionalSlips = [];
+                            if (order.payment_slips_history && order.payment_slips_history.length > 0) {
+                                additionalSlips.push(...order.payment_slips_history);
+                            } else {
+                                if (order.extension_slip_url) {
+                                    additionalSlips.push({
+                                        url: order.extension_slip_url,
+                                        type: 'extension',
+                                        amount: order.extension_requested_price || '-',
+                                        requested_at: order.extension_requested_at
+                                    });
+                                }
+                                if (order.edit_payment_slip_url) {
+                                    additionalSlips.push({
+                                        url: order.edit_payment_slip_url,
+                                        type: order.edit_payment_status?.includes('text') ? 'text' : 'image',
+                                        amount: order.edit_payment_price || '-',
+                                        requested_at: order.edit_payment_requested_at
+                                    });
+                                }
+                            }
+
+                            if (additionalSlips.length === 0) return null;
+
+                            return (
+                                <div>
+                                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                        <RefreshCw size={18} className="text-[#1A3C40]" /> ประวัติการชำระเงินเพิ่มเติม ({additionalSlips.length} รายการ)
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {[...additionalSlips]
+                                            .sort((a, b) => {
+                                                const da = a.requested_at instanceof Date ? a.requested_at : new Date(a.requested_at);
+                                                const db = b.requested_at instanceof Date ? b.requested_at : new Date(b.requested_at);
+                                                return db - da; // Descending
+                                            })
+                                            .map((slip, idx) => (
+                                                <div key={idx} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                    <a href={slip.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                                                        <img src={slip.url} alt="Slip" className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                                                    </a>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-semibold text-gray-800">
+                                                            {slip.type === 'extension' ? 'คำขอต่ออายุ' : slip.type === 'text' ? 'คำขอแก้ไขข้อความ' : slip.type === 'image' ? 'คำขอแก้ไขรูปภาพ' : 'ชำระเงินเพิ่มเติม'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">ยอดโอน: <span className="font-medium text-[#1A3C40]">{slip.amount}฿</span></p>
+                                                        {slip.requested_at && <p className="text-[10px] text-gray-400 mt-1">📅 {formatDate(slip.requested_at)}</p>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {order.content_images && order.content_images.length > 0 && (
                             <div>
                                 <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><ImageIcon size={18} className="text-[#E8A08A]" /> รูปภาพจากลูกค้า ({order.content_images.length} รูป)</h3>
@@ -498,7 +806,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                 </div>
                             </div>
                         )}
-                    </>)}
+                    </div>)}
 
                     {/* === TAB: SETTINGS === */}
                     {modalTab === 'settings' && (<>
@@ -564,8 +872,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                         )}
                     </>)}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

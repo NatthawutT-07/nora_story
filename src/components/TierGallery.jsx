@@ -1,100 +1,108 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Sparkles } from 'lucide-react';
+import { ArrowLeft, Play, Heart, Mail, Star, Sparkles, Camera, ScrollText } from 'lucide-react';
 import { TEMPLATE_DATA } from '../data/templateData';
 import { TIERS } from '../data/tierData';
 
-const tierData = TIERS.reduce((acc, t) => {
+const tierData = TIERS.filter(t => t.id !== '4').reduce((acc, t) => {
     acc[t.slug] = t;
     return acc;
 }, {});
 
+// Helper for beautiful placeholders
+const TemplateThumbnail = ({ id, name, isDisabled }) => {
+    const isIcon = (IconComponent, bgClass, colorClass) => (
+        <div className={`w-full aspect-[4/3] rounded-t-xl flex items-center justify-center ${isDisabled ? 'bg-gray-100' : bgClass} transition-colors`}>
+            <IconComponent size={40} className={isDisabled ? 'text-gray-300' : colorClass} strokeWidth={1.5} />
+        </div>
+    );
+
+    if (id === 't1-1') return isIcon(Mail, 'bg-rose-50', 'text-rose-400');
+    if (id === 't2-1') return isIcon(Heart, 'bg-blue-50', 'text-blue-400');
+    if (id === 't3-1') return isIcon(ScrollText, 'bg-[#FFF0F3]', 'text-[#FF8FAB]');
+
+    if (name.includes('Ordination') || name.includes('Merit') || name.includes('Clear')) return isIcon(Star, 'bg-gray-50', 'text-amber-500');
+    if (name.includes('Wedding')) return isIcon(Sparkles, 'bg-gray-50', 'text-pink-400');
+    if (name.includes('Gallery')) return isIcon(Camera, 'bg-gray-50', 'text-purple-400');
+
+    return isIcon(Heart, 'bg-gray-50', 'text-gray-400');
+};
 
 const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
     const location = useLocation();
-    const navigate = useNavigate();
 
-    // Default to first tier if none specified
-    // Check props first, then location state, then default to 't1'
-    const initialTier = tierIdProp || location.state?.tierId || 't1';
+    let initialTier = 't1';
+    if (tierIdProp && tierData[tierIdProp]) {
+        initialTier = tierIdProp;
+    } else if (location.state?.tierId && tierData[location.state.tierId]) {
+        initialTier = location.state.tierId;
+    }
+
     const [activeTier, setActiveTier] = useState(initialTier);
 
     useEffect(() => {
-        // If state changed (e.g. from navigation), update activeTier
         if (location.state?.tierId && tierData[location.state.tierId]) {
             setActiveTier(location.state.tierId);
         }
     }, [location.state]);
 
-    const tier = tierData[activeTier];
+    const tier = tierData[activeTier] || tierData['t1'];
 
     const handleBack = () => {
-        if (onBack) {
-            onBack();
-        } else {
-            navigate('/');
-        }
+        if (onBack) onBack();
     };
 
     const handleDemoClick = (demoId) => {
-        // Extract numeric ID from 't1-1' -> '1'
         const numericId = demoId.split('-')[1];
-
         if (onSelectDemo) {
             onSelectDemo(activeTier, numericId);
-        } else {
-            navigate(`/demo/${activeTier}/${numericId}`);
         }
     };
 
-    const handleTabClick = (key) => {
-        setActiveTier(key);
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-b from-white via-gray-50/50 to-white">
+        <div className="min-h-screen bg-[#F9F9F9] font-sans">
             {/* Header */}
-            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-                <div className="max-w-6xl mx-auto px-4 py-4">
+            <div className="sticky top-0 z-50 bg-[#F9F9F9]/90 backdrop-blur-xl border-b border-gray-100">
+                <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4">
                     <div className="flex items-center justify-between">
                         <button
                             onClick={handleBack}
-                            className="flex items-center gap-2 text-gray-500 hover:text-[#1A3C40] transition-colors group"
+                            className="flex items-center gap-1.5 text-gray-500 hover:text-[#1A3C40] transition-colors py-2 group"
                         >
-                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="hidden sm:inline">กลับหน้าหลัก</span>
+                            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium">กลับหน้าหลัก</span>
                         </button>
 
-                        <div className="text-center">
-                            <h1 className="text-lg sm:text-xl font-playfair font-bold text-[#1A3C40]">
-                                Template <span className="text-[#E8A08A] italic">Gallery</span>
+                        <div className="text-center absolute left-1/2 -translate-x-1/2">
+                            <h1 className="text-lg sm:text-xl font-bold text-[#1A3C40] flex items-center gap-1.5">
+                                Template <span className="text-[#E8A08A] font-playfair italic font-medium">Gallery</span>
                             </h1>
                         </div>
 
-                        <div className="w-20"></div>
+                        <div className="w-[88px]"></div> {/* Spacer for centering */}
                     </div>
                 </div>
 
-                {/* Tier Navigation Tabs */}
-                <div className="max-w-6xl mx-auto px-4 pb-3">
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                {/* Tier Tabs (Pill Style) */}
+                <div className="max-w-6xl mx-auto px-4 pb-4">
+                    <div className="flex justify-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
                         {Object.entries(tierData).map(([key, data]) => {
                             const isActive = activeTier === key;
                             return (
                                 <button
                                     key={key}
-                                    onClick={() => handleTabClick(key)}
+                                    onClick={() => setActiveTier(key)}
                                     className={`
-                                        flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all duration-300
+                                        flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all duration-300 font-medium text-sm border
                                         ${isActive
-                                            ? `bg-gradient-to-r ${data.gradient} text-white shadow-lg`
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            ? `bg-gradient-to-r ${data.gradient} text-white border-transparent shadow-md shadow-${data.accentColor}-500/20`
+                                            : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
                                         }
                                     `}
                                 >
-                                    <span className="font-medium text-sm">{data.name}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-200'}`}>
+                                    {data.name}
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>
                                         {data.demos.length}
                                     </span>
                                 </button>
@@ -104,91 +112,130 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                 </div>
             </div>
 
-            {/* Current Tier Info */}
             <div className="max-w-6xl mx-auto px-4 py-6">
+                {/* Active Package Info Card */}
                 <motion.div
-                    key={activeTier}
+                    key={`info-${activeTier}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`${tier.bgColor} rounded-2xl p-5 sm:p-6 mb-6 border border-gray-100`}
+                    className="bg-white rounded-2xl p-5 sm:p-6 mb-8 border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 relative overflow-hidden"
                 >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} shadow-lg`}>
-                                <span className="text-white font-playfair font-bold text-lg">{tier.name.charAt(0)}</span>
-                            </div>
-                            <div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-[#1A3C40]">{tier.name}</h2>
-                                <p className="text-gray-500 text-sm">{tier.tagline}</p>
-                            </div>
+                    {/* Subtle aesthetic glow */}
+                    <div className={`absolute -right-20 -top-20 w-40 h-40 bg-gradient-to-br ${tier.gradient} opacity-5 rounded-full blur-3xl rounded-full`}></div>
+
+                    <div className="flex flex-col gap-1 relative z-10 w-full sm:w-auto">
+                        <div className={`inline-flex self-start items-center px-3 py-1 rounded-full bg-gradient-to-r ${tier.gradient} text-white shadow-sm font-bold text-sm tracking-wide mb-1`}>
+                            📦 Package {tier.name}
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-right">
-                                <p className="text-2xl font-bold text-[#1A3C40]">{tier.price}<span className="text-sm font-normal text-gray-400">฿</span></p>
-                                <p className="text-xs text-gray-400">{tier.duration}</p>
-                            </div>
-                            <button
-                                onClick={() => navigate(`/?checkout=${tier.id}`)}
-                                className={`px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${tier.gradient} hover:shadow-lg transition-all text-sm`}
-                            >
-                                เลือกแพ็คเกจ
-                            </button>
+                        <p className="text-gray-500 text-sm">{tier.description}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-5 sm:gap-6 relative z-10">
+                        <div className="text-right flex items-baseline gap-1">
+                            <span className="text-3xl font-extrabold text-[#1A3C40]">{tier.price}</span>
+                            <span className="text-sm font-medium text-gray-400">฿</span>
+                            <span className="text-xs text-gray-400 block sm:inline sm:ml-2">/ {tier.duration}</span>
                         </div>
+                        <button
+                            onClick={() => {
+                                if (onBack) onBack();
+                                window.location.href = `/?checkout=${tier.id}`;
+                            }}
+                            className={`px-5 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-md transition-all text-sm whitespace-nowrap hover:opacity-90 active:scale-95`}
+                        >
+                            เลือกแพ็คเกจ
+                        </button>
                     </div>
                 </motion.div>
 
-                {/* Template Grid */}
+                {/* Template Grid Section */}
                 <div className="mb-4">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                        <Sparkles size={16} className="text-[#E8A08A]" />
-                        <span>เลือกดู Template ที่ชอบ</span>
-                    </div>
+                    <h3 className="text-gray-500 text-sm font-medium">เลือกดู Template ที่ชอบ</h3>
                 </div>
 
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={activeTier}
+                        key={`grid-${activeTier}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
-                        className="flex flex-col gap-3"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
                     >
                         {tier.demos.map((id, index) => {
-                            const template = TEMPLATE_DATA[id] || { name: `Template ${id}`, description: `${tier.name} Style`, preview: '✨' };
+                            const template = TEMPLATE_DATA[id] || { name: `Template ${id}`, description: `${tier.name} Style`, preview: '' };
+                            const isDisabled = template.disabled;
 
                             return (
                                 <motion.div
                                     key={id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: index * 0.05 }}
-                                    onClick={() => handleDemoClick(id)}
-                                    className="group cursor-pointer"
+                                    onClick={() => !isDisabled && handleDemoClick(id)}
+                                    className={`group flex flex-col bg-white rounded-2xl border transition-all duration-300 overflow-hidden
+                                        ${isDisabled
+                                            ? 'border-gray-50 opacity-60 cursor-default'
+                                            : 'border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 cursor-pointer hover:border-[#E8A08A]/30'
+                                        }`}
                                 >
-                                    <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                                        {/* Preview Icon */}
-                                        <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-gray-50 rounded-lg text-2xl group-hover:scale-110 transition-transform">
-                                            {template.preview}
+                                    {/* Thumbnail */}
+                                    <div className="relative">
+                                        <TemplateThumbnail id={id} name={template.name} isDisabled={isDisabled} />
+
+                                        {/* Status Badges */}
+                                        {isDisabled && (
+                                            <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-500 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm">
+                                                เร็วๆ นี้
+                                            </div>
+                                        )}
+                                        {tier.tag && !isDisabled && index === 0 && (
+                                            <div className="absolute top-3 left-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm uppercase tracking-wider">
+                                                {tier.tag}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-5 flex flex-col flex-1">
+                                        <div className="mb-3">
+                                            <h3 className={`font-bold text-lg mb-1.5 leading-tight ${isDisabled ? 'text-gray-400' : 'text-[#1A3C40]'}`}>
+                                                {template.name}
+                                            </h3>
+
+                                            {/* Feature Badges */}
+                                            {!isDisabled && (
+                                                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                                                    {activeTier === 't1' && (
+                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-medium">รหัส PIN</span>
+                                                    )}
+                                                    {(activeTier === 't2' || activeTier === 't3') && (
+                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-medium">
+                                                            {activeTier === 't2' ? '5 รูปภาพ' : '10 รูปภาพ'}
+                                                        </span>
+                                                    )}
+                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-medium">การ์ดอวยพร</span>
+                                                </div>
+                                            )}
+
+                                            <p className={`text-xs leading-relaxed ${isDisabled ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                {template.description || template.usage}
+                                            </p>
                                         </div>
 
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold text-[#1A3C40] text-base truncate">{template.name}</h3>
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-sm opacity-80`}>
-                                                    New
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-500 truncate">{template.description}</p>
-                                        </div>
-
-                                        {/* Action Button */}
-                                        <div className="flex items-center gap-2 text-gray-400 group-hover:text-[#1A3C40] transition-colors">
-                                            <span className="text-sm font-medium hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">ดูตัวอย่าง</span>
-                                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
-                                                <Eye size={16} />
-                                            </div>
+                                        <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
+                                            {!isDisabled ? (
+                                                <button
+                                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#FFF5F2] text-[#E8A08A] font-semibold text-sm group-hover:bg-[#E8A08A] group-hover:text-white transition-colors"
+                                                >
+                                                    <Play size={16} fill="currentColor" />
+                                                    ดูตัวอย่าง
+                                                </button>
+                                            ) : (
+                                                <div className="w-full flex items-center justify-center py-2.5 rounded-lg bg-gray-50 text-gray-400 font-medium text-sm">
+                                                    ยังไม่เปิดให้บริการ
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>
@@ -197,25 +244,18 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Empty State */}
                 {tier.demos.length === 0 && (
-                    <div className="text-center py-16">
-                        <div className="text-6xl mb-4">🎨</div>
+                    <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 mt-4">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Play size={24} className="text-gray-300" />
+                        </div>
                         <h3 className="text-xl font-bold text-[#1A3C40] mb-2">กำลังสร้าง Template ใหม่</h3>
                         <p className="text-gray-500">Template สำหรับ {tier.name} กำลังมาเร็วๆ นี้!</p>
                     </div>
                 )}
             </div>
 
-            {/* Bottom CTA - Mobile */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 p-4 sm:hidden">
-                <button
-                    onClick={() => navigate(`/?checkout=${tier.id}`)}
-                    className={`w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-lg flex items-center justify-center gap-2`}
-                >
-                    เลือก {tier.name} Package
-                </button>
-            </div>
+            {/* Mobile Fixed CTA removed as we now have card prominent CTA, but could add if requested. */}
         </div>
     );
 };

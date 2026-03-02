@@ -47,9 +47,9 @@ const ImagesStep = () => {
 
     // --- Tier 3 Logic ---
     const tier3Sections = [
-        { title: "Timeline 1 (Day 1)", count: 1, start: 0, hint: "ภาพแนวนอน (4:3) — 800x600px", ratio: "4/3" },
-        { title: "Timeline 2 (Day 30)", count: 1, start: 1, hint: "ภาพแนวนอน (4:3) — 800x600px", ratio: "4/3" },
-        { title: "Timeline 3 (Day 60)", count: 1, start: 2, hint: "ภาพแนวนอน (4:3) — 800x600px", ratio: "4/3" },
+        { title: "Timeline 1 (Day 1)", count: 1, start: 0, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
+        { title: "Timeline 2 (Day 30)", count: 1, start: 1, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
+        { title: "Timeline 3 (Day 60)", count: 1, start: 2, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
         {
             title: "Timeline 4 (Memories)",
             count: 5,
@@ -138,9 +138,10 @@ const ImagesStep = () => {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <div className="space-y-6 mb-6">
                     {/* Header info */}
-                    <div className="text-center p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <p className="text-sm text-blue-800 font-medium">อัปโหลดรูปภาพตาม Timeline</p>
-                        <p className="text-xs text-blue-500 mt-0.5">ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป</p>
+                    <div className="text-center mb-2">
+                        <p className="text-[10px] text-gray-400">
+                            *อัปโหลดรูปภาพตาม Timeline (ขนาดไฟล์ไม่เกิน 4MB ต่อรูป)
+                        </p>
                     </div>
 
                     {tier3Sections.map((section, sIdx) => (
@@ -186,64 +187,71 @@ const ImagesStep = () => {
 
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            {/* Info header */}
-            <div className="text-center mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-sm text-blue-800">
-                    อัปโหลดได้สูงสุด <span className="font-bold">{maxImages}</span> รูป
-                    <span className="text-blue-500 ml-1">(รูปละไม่เกิน {maxFileSizeMB}MB)</span>
-                </p>
-                <p className="text-xs text-blue-400 mt-1">
-                    {contentFiles.filter(Boolean).length}/{maxImages} รูป
-                </p>
-            </div>
+            <div className="space-y-6 mb-6">
+                {/* Header info */}
+                <div className="text-center mb-2">
+                    <p className="text-[10px] text-gray-400">
+                        *อัปโหลดรูปภาพตามที่กำหนด (ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป)
+                    </p>
+                </div>
 
-            {/* Image Grid with Framed Slots */}
-            <div className={`grid gap-2.5 mb-4 ${maxImages <= 3 ? 'grid-cols-3' : 'grid-cols-3'}`}>
-                {slots.map((slot, idx) => {
-                    if (slot.type === 'filled') {
-                        const fileSizeMB = slot.file ? (slot.file.size / (1024 * 1024)).toFixed(1) : '—';
-                        return (
-                            <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group border-2 border-[#E8A08A]/30 bg-white shadow-sm">
-                                <img src={slot.src} className="w-full h-full object-cover" alt="" />
-                                {/* File size badge */}
-                                <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                                    {fileSizeMB}MB
-                                </div>
-                                {/* Remove button */}
-                                <button
-                                    onClick={() => removeContentImage(idx)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                                >
-                                    <X size={12} />
-                                </button>
-                                {/* Slot number */}
-                                <div className="absolute top-1 left-1 bg-[#1A3C40]/70 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
-                                    {idx + 1}
-                                </div>
-                            </div>
-                        );
-                    }
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <span className="w-6 h-6 rounded-full bg-[#1A3C40] text-white text-xs flex items-center justify-center font-bold">
+                            1
+                        </span>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-700">รูปภาพแกลเลอรี</h3>
+                            <p className="text-xs text-gray-400">
+                                อัปโหลดได้สูงสุด {maxImages} รูป (ปัจจุบัน {contentFiles.filter(Boolean).length}/{maxImages} รูป)
+                            </p>
+                        </div>
+                    </div>
 
-                    // Empty placeholder slot
-                    return (
-                        <label
-                            key={idx}
-                            className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative bg-gray-50/50"
-                        >
-                            <div className="absolute top-1.5 left-1.5 bg-gray-200 text-gray-500 text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
-                                {idx + 1}
-                            </div>
-                            <ImageIcon className="w-5 h-5 text-gray-300 mb-1" />
-                            <span className="text-[10px] text-gray-400">เพิ่มรูป</span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleContentFilesChange}
-                                className="hidden"
-                            />
-                        </label>
-                    );
-                })}
+                    <div className="grid gap-3 grid-cols-3">
+                        {slots.map((slot, idx) => {
+                            const isFilled = slot.type === 'filled';
+
+                            return (
+                                <div key={idx} className="relative group">
+                                    {isFilled ? (
+                                        <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm aspect-square">
+                                            <img src={slot.src} className="w-full h-full object-cover" alt="" />
+                                            {/* File size badge */}
+                                            <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                                                {slot.file ? (slot.file.size / (1024 * 1024)).toFixed(1) : '—'}MB
+                                            </div>
+                                            {/* Remove button */}
+                                            <button
+                                                onClick={() => removeContentImage(idx)}
+                                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label
+                                            className="w-full rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative bg-gray-50/50 group-hover:bg-white aspect-square"
+                                        >
+                                            <ImageIcon className="w-5 h-5 text-gray-300 mb-1 group-hover:text-[#E8A08A] transition-colors" />
+                                            <span className="text-[10px] text-gray-400 group-hover:text-[#E8A08A]">เลือกรูป</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleContentFilesChange}
+                                                className="hidden"
+                                                multiple
+                                            />
+                                        </label>
+                                    )}
+                                    <div className="mt-1 text-center">
+                                        <p className="text-[10px] text-gray-400 truncate px-1">รูปที่ {idx + 1}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
 
             {/* Tips */}

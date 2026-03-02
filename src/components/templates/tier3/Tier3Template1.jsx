@@ -401,36 +401,70 @@ const Tier3Template1 = ({
     // Helper to merge user provided images with defaults
     const getSectionImages = (startIndex, count, defaults) => {
         const currentImages = images || [];
-        // Get the slice of user images for this section
         const userSlice = currentImages.slice(startIndex, startIndex + count);
-
-        // Map over the count we need, using default if user image is missing or null
-        return Array(count).fill(null).map((_, i) => {
-            return userSlice[i] || defaults[i];
-        });
+        return Array(count).fill(null).map((_, i) => userSlice[i] || defaults[i]);
     };
+
+    // Layout configuration for each slot (now 5 slots)
+    const slotConfigs = [
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
+        { type: 'collage', imageCount: 5, defaultImages: defaultImages.collage },
+        { type: 'collage', imageCount: 5, defaultImages: defaultImages.collage }, // Added 5th slot
+    ];
 
     // Default timeline data
     const defaultTimelines = [
-        { label: 'Day 1', desc: 'จุดเริ่มต้นของการเดินทาง' },
-        { label: 'Day 30', desc: 'ความทรงจำที่งดงามในเดือนแรก' },
-        { label: 'Day 60', desc: 'ยิ่งนานยิ่งผูกพัน' },
-        { label: 'Memories', desc: 'ทุกช่วงเวลาพิเศษของเรา' },
+        { label: 'Day 1', desc: 'The day we met...' },
+        { label: 'Day 30', desc: 'First date...' },
+        { label: 'Day 60', desc: 'Growing closer...' },
+        { label: 'Memories', desc: 'All our moments...' },
+        { label: 'Future', desc: 'Looking forward...' },
     ];
 
     // Merge user timelines with defaults
     const mergedTimelines = defaultTimelines.map((dt, i) => ({
         label: timelines[i]?.label || dt.label,
-        desc: timelines[i]?.desc || dt.desc,
+        desc: timelines[i]?.desc !== undefined ? timelines[i].desc : dt.desc,
     }));
 
-    const listItems = [
-        { type: 'single', label: mergedTimelines[0].label, title: mergedTimelines[0].label, desc: mergedTimelines[0].desc, images: getSectionImages(0, 1, defaultImages.single) },
-        { type: 'single', label: mergedTimelines[1].label, title: mergedTimelines[1].label, desc: mergedTimelines[1].desc, images: getSectionImages(1, 1, defaultImages.single) },
-        { type: 'single', label: mergedTimelines[2].label, title: mergedTimelines[2].label, desc: mergedTimelines[2].desc, images: getSectionImages(2, 1, defaultImages.single) },
-        { type: 'collage', label: mergedTimelines[3].label, title: mergedTimelines[3].label, desc: mergedTimelines[3].desc, images: getSectionImages(3, 5, defaultImages.collage) },
-        { type: 'finale', label: 'Forever', title: 'To Infinity', desc: '', images: getSectionImages(8, 2, defaultImages.dual) },
-    ];
+    const listItems = [];
+    let currentImageIndex = 0;
+
+    slotConfigs.forEach((config, index) => {
+        // Calculate images for this slot
+        const sectionImages = getSectionImages(currentImageIndex, config.imageCount, config.defaultImages);
+        currentImageIndex += config.imageCount;
+
+        const timeline = mergedTimelines[index];
+        const userProvided = timelines[index];
+
+        // If user input is empty, skip this slot (optional timeline)
+        // But strictly check if user provided SOMETHING. 
+        // If timelines[index] is undefined, userProvided is undefined.
+        // If userProvided exists but label/desc empty, skip.
+        if (!userProvided?.label && !userProvided?.desc) {
+            return;
+        }
+
+        listItems.push({
+            type: config.type,
+            label: timeline.label,
+            title: timeline.label,
+            desc: timeline.desc,
+            images: sectionImages
+        });
+    });
+
+    // Add Finale
+    listItems.push({
+        type: 'finale',
+        label: 'Forever',
+        title: 'To Infinity',
+        desc: '',
+        images: getSectionImages(currentImageIndex, 2, defaultImages.dual)
+    });
 
     const scrollToSection = (index) => {
         sectionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });

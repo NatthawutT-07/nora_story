@@ -78,6 +78,16 @@ const OrdersTable = ({ orders, loading, onSelectOrder }) => {
                                                 <RefreshCw size={10} /> ขอต่ออายุ
                                             </span>
                                         )}
+                                        {order.text_edit_payment_status === 'pending' && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                                                ✏️ แก้ไขข้อความ
+                                            </span>
+                                        )}
+                                        {order.image_edit_payment_status === 'pending' && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                                🖼️ แก้ไขรูปภาพ
+                                            </span>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500">

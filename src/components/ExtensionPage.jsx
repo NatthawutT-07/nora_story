@@ -1,45 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { motion } from 'framer-motion';
-import { Loader2, CheckCircle, Upload, Clock, CreditCard, ChevronLeft, AlertCircle, Timer, Globe, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, CheckCircle, Upload, Clock, CreditCard, ChevronLeft, AlertCircle, Timer, Globe, Sparkles, Copy, Check, Pencil, Image, X, FileText } from 'lucide-react';
+import { TIERS } from '../data/tierData';
+import generatePayload from 'promptpay-qr';
+import { QRCodeSVG } from 'qrcode.react';
+import ExtendTab from './extension/ExtendTab';
+import EditTab from './extension/EditTab';
+import HistoryTab from './extension/HistoryTab';
 
-// Extension packages — same as pricing page tiers
-// Extension packages by Tier
-const EXTENSION_PACKAGES_BY_TIER = {
-    // Tier 1: Basic Memory
-    1: [
-        { days: 3, price: 59, label: '3 วัน', perDay: '~20฿/วัน' },
-        { days: 7, price: 119, label: '7 วัน', recommended: true, perDay: '~17฿/วัน' },
-        { days: 15, price: 199, label: '15 วัน', perDay: '~13฿/วัน' },
-    ],
-    // Tier 2: Standard Love
-    2: [
-        { days: 7, price: 99, label: '7 วัน', perDay: '~14฿/วัน' },
-        { days: 15, price: 179, label: '15 วัน', recommended: true, perDay: '~12฿/วัน' },
-        { days: 30, price: 299, label: '30 วัน', perDay: '~10฿/วัน' },
-    ],
-    // Tier 3: Premium Valentine
-    3: [
-        { days: 15, price: 199, label: '15 วัน', perDay: '~13฿/วัน' },
-        { days: 30, price: 349, label: '30 วัน', recommended: true, perDay: '~12฿/วัน' },
-        { days: 60, price: 599, label: '60 วัน', perDay: '~10฿/วัน' },
-    ],
-    // Tier 4: Archive (Lifetime)
-    4: [
-        { days: 30, price: 499, label: '30 วัน', perDay: '~16฿/วัน' },
-        { days: 60, price: 799, label: '60 วัน', perDay: '~13฿/วัน' },
-        { days: 90, price: 999, label: '90 วัน', recommended: true, perDay: '~11฿/วัน' },
-        { days: 180, price: 1490, label: '180 วัน', perDay: '~8฿/วัน' },
-    ],
-};
+// Build extension packages from tierData.js so pricing stays in sync
+const EXTENSION_PACKAGES_BY_TIER = {};
+TIERS.forEach(tier => {
+    const tierId = parseInt(tier.id);
+    if (tier.extensionTiers && tier.extensionTiers.length > 0) {
+        EXTENSION_PACKAGES_BY_TIER[tierId] = tier.extensionTiers.map(ext => ({
+            days: ext.days,
+            price: ext.price,
+            label: `${ext.days} วัน`,
+            perDay: `~${Math.round(ext.price / ext.days)}฿/วัน`,
+            recommended: ext.popular || false,
+            best: ext.best || false,
+        }));
+    }
+});
 
-const TIER_NAMES = {
-    1: 'Trial',
-    2: 'Standard',
-    3: 'Premium',
+const TIER_NAMES = {};
+TIERS.forEach(tier => {
+    TIER_NAMES[parseInt(tier.id)] = tier.name;
+});
+
+// Edit config per tier
+const EDIT_CONFIG = {
+    1: { freeTextEdits: 1, freeImageEdits: 0, paidTextPrice: 29, paidImagePrice: 0 },
+    2: { freeTextEdits: 1, freeImageEdits: 1, paidTextPrice: 29, paidImagePrice: 49 },
+    3: { freeTextEdits: 3, freeImageEdits: 1, paidTextPrice: 29, paidImagePrice: 79 },
 };
 
 // Live Countdown Component
@@ -132,6 +130,21 @@ const ExtensionPage = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [wantSubdomain, setWantSubdomain] = useState(false);
+    const [customDomain1, setCustomDomain1] = useState('');
+    const [customDomain2, setCustomDomain2] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [qrPayload, setQrPayload] = useState(null);
+    const promptpayId = '0948701182';
+    const [activeTab, setActiveTab] = useState('extend'); // 'extend' | 'editText' | 'editImage' | 'history'
+
+    // Edit states
+    const [editTextMode, setEditTextMode] = useState(false);
+    const [editImageMode, setEditImageMode] = useState(false);
+    const [editFormData, setEditFormData] = useState({});
+    const [editImageFiles, setEditImageFiles] = useState([]);
+    const [editSlipFile, setEditSlipFile] = useState(null);
+    const [editPayType, setEditPayType] = useState(null); // 'text' | 'image'
+    const [editSubmitting, setEditSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -187,14 +200,29 @@ const ExtensionPage = () => {
 
             const orderRef = doc(db, 'orders', id);
             const totalPrice = selectedPackage.price + (wantSubdomain ? 999 : 0);
-            await updateDoc(orderRef, {
+            const updates = {
                 extension_status: 'pending',
                 extension_slip_url: slipUrl,
                 extension_requested_days: selectedPackage.days,
                 extension_requested_price: totalPrice,
                 extension_requested_subdomain: wantSubdomain,
-                extension_requested_at: serverTimestamp()
-            });
+                extension_requested_at: serverTimestamp(),
+                extension_approved_at: deleteField(),
+                extension_rejected_at: deleteField(),
+                payment_slips_history: arrayUnion({
+                    url: slipUrl,
+                    type: 'extension',
+                    amount: totalPrice,
+                    requested_at: new Date().toISOString()
+                })
+            };
+
+            if (wantSubdomain) {
+                updates.custom_domain_choice_1 = customDomain1;
+                updates.custom_domain_choice_2 = customDomain2;
+            }
+
+            await updateDoc(orderRef, updates);
 
             setIsSuccess(true);
         } catch (err) {
@@ -202,6 +230,160 @@ const ExtensionPage = () => {
             alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    // --- Edit Handlers ---
+    const tierId = order ? (parseInt(order.tier_id) || 1) : 1;
+    const editConfig = EDIT_CONFIG[tierId] || EDIT_CONFIG[1];
+
+    const textEditsUsed = order?.text_edits_used || 0;
+    const imageEditsUsed = order?.image_edits_used || 0;
+    const textEditsRemaining = Math.max(0, editConfig.freeTextEdits - textEditsUsed);
+    const imageEditsRemaining = Math.max(0, editConfig.freeImageEdits - imageEditsUsed);
+    const canFreeEditText = textEditsRemaining > 0;
+    const canFreeEditImage = imageEditsRemaining > 0;
+    const textPaymentPending = order?.text_edit_payment_status === 'pending';
+    const imagePaymentPending = order?.image_edit_payment_status === 'pending';
+
+    const openTextEditForm = () => {
+        // Pre-fill form with current order data
+        if (tierId === 3) {
+            setEditFormData({
+                timelines: order?.timelines || [],
+                finaleMessage: order?.finale_message || '',
+                finaleSignOff: order?.finale_sign_off || '',
+            });
+        } else {
+            setEditFormData({
+                pin: order?.pin_code || '',
+                message: order?.message || '',
+                targetName: order?.target_name || '',
+                signOff: order?.sign_off || '',
+            });
+        }
+        setEditTextMode(true);
+        setEditImageMode(false);
+        setEditPayType(null);
+    };
+
+    const openImageEditForm = () => {
+        setEditImageFiles([]);
+        setEditImageMode(true);
+        setEditTextMode(false);
+        setEditPayType(null);
+    };
+
+    const handleSaveTextEdit = async () => {
+        setEditSubmitting(true);
+        try {
+            const orderRef = doc(db, 'orders', id);
+            const updates = { text_edits_used: (order?.text_edits_used || 0) + 1 };
+
+            if (tierId === 3) {
+                updates.timelines = editFormData.timelines;
+                updates.finale_message = editFormData.finaleMessage;
+                updates.finale_sign_off = editFormData.finaleSignOff;
+            } else {
+                updates.pin_code = editFormData.pin;
+                updates.message = editFormData.message;
+                updates.target_name = editFormData.targetName;
+                updates.sign_off = editFormData.signOff;
+            }
+
+            await updateDoc(orderRef, updates);
+            setOrder(prev => ({ ...prev, ...updates }));
+            setEditTextMode(false);
+            alert('แก้ไขข้อความเรียบร้อยแล้ว!');
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    const handleSaveImageEdit = async () => {
+        if (editImageFiles.length === 0) {
+            alert('กรุณาเลือกรูปภาพ');
+            return;
+        }
+        setEditSubmitting(true);
+        try {
+            const newUrls = [];
+            for (const file of editImageFiles) {
+                const timestamp = Date.now();
+                const imgRef = ref(storage, `edit_images/${id}/${timestamp}_${file.name}`);
+                await uploadBytes(imgRef, file);
+                const url = await getDownloadURL(imgRef);
+                newUrls.push(url);
+            }
+
+            const orderRef = doc(db, 'orders', id);
+            const updates = {
+                image_edits_used: (order?.image_edits_used || 0) + 1,
+                content_images: newUrls,
+            };
+            await updateDoc(orderRef, updates);
+            setOrder(prev => ({ ...prev, ...updates }));
+            setEditImageMode(false);
+            setEditImageFiles([]);
+            alert('แก้ไขรูปภาพเรียบร้อยแล้ว!');
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    const handleEditPayment = async () => {
+        if (!editSlipFile) {
+            alert('กรุณาแนบสลิปโอนเงิน');
+            return;
+        }
+        setEditSubmitting(true);
+        try {
+            const timestamp = Date.now();
+            const slipRef = ref(storage, `edit_slips/${id}/${timestamp}_edit_${editPayType}.jpg`);
+            await uploadBytes(slipRef, editSlipFile);
+            const slipUrl = await getDownloadURL(slipRef);
+
+            const price = editPayType === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
+            const orderRef = doc(db, 'orders', id);
+            await updateDoc(orderRef, {
+                [`${editPayType}_edit_payment_status`]: 'pending',
+                [`${editPayType}_edit_payment_slip_url`]: slipUrl,
+                [`${editPayType}_edit_payment_price`]: price,
+                [`${editPayType}_edit_payment_requested_at`]: serverTimestamp(),
+                [`${editPayType}_edit_payment_approved_at`]: deleteField(),
+                [`${editPayType}_edit_payment_rejected_at`]: deleteField(),
+                payment_slips_history: arrayUnion({
+                    url: slipUrl,
+                    type: editPayType,
+                    amount: price,
+                    requested_at: new Date().toISOString()
+                })
+            });
+            setOrder(prev => {
+                const next = {
+                    ...prev,
+                    [`${editPayType}_edit_payment_status`]: 'pending',
+                    [`${editPayType}_edit_payment_slip_url`]: slipUrl,
+                    [`${editPayType}_edit_payment_price`]: price,
+                    [`${editPayType}_edit_payment_requested_at`]: new Date()
+                };
+                delete next[`${editPayType}_edit_payment_approved_at`];
+                delete next[`${editPayType}_edit_payment_rejected_at`];
+                return next;
+            });
+            setEditSlipFile(null);
+            setEditPayType(null);
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+        } finally {
+            setEditSubmitting(false);
         }
     };
 
@@ -249,7 +431,6 @@ const ExtensionPage = () => {
     }
 
     // Derive packages based on tier
-    const tierId = order?.tier_id || 1;
     const packages = EXTENSION_PACKAGES_BY_TIER[tierId] || EXTENSION_PACKAGES_BY_TIER[1];
     const tierName = TIER_NAMES[tierId] || `Tier ${tierId}`;
 
@@ -279,7 +460,7 @@ const ExtensionPage = () => {
             <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
                 {/* Title */}
                 <div className="text-center mb-6 sm:mb-8">
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-bold text-[#1A3C40] mb-1">ต่ออายุเว็บไซต์</h2>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-bold text-[#1A3C40] mb-1">จัดการเว็บไซต์</h2>
                     <p className="text-gray-400 text-xs sm:text-sm">
                         แพ็คเกจ: <span className="font-medium text-[#E8A08A]">{tierName}</span>
                         {' · '}
@@ -305,141 +486,94 @@ const ExtensionPage = () => {
                     )}
                 </div>
 
-                {/* Main Content */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
-                    {/* Left: Package Selection */}
-                    <div className="space-y-5 sm:space-y-6">
-                        <div>
-                            <h3 className="text-base sm:text-lg font-bold text-[#1A3C40] mb-3 sm:mb-4">เลือกแพ็คเกจต่ออายุ</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                {packages.map((pkg) => (
-                                    <div
-                                        key={pkg.days}
-                                        onClick={() => setSelectedPackage(pkg)}
-                                        className={`cursor-pointer rounded-xl p-4 border-2 transition-all relative flex justify-between items-center ${selectedPackage?.days === pkg.days
-                                            ? 'border-[#E8A08A] bg-[#E8A08A]/5 shadow-md'
-                                            : 'border-gray-100 bg-white hover:border-gray-200'
-                                            }`}
-                                    >
-                                        {pkg.recommended && (
-                                            <span className="absolute -top-3 left-4 bg-[#1A3C40] text-white text-[10px] px-2 py-0.5 rounded-full">
-                                                แนะนำ
-                                            </span>
-                                        )}
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-[#1A3C40]">{pkg.label}</span>
-                                            <span className="text-xs text-gray-400">{pkg.tierName || pkg.perDay}</span>
-                                        </div>
-                                        <span className="font-bold text-[#E8A08A] text-lg">{pkg.price} ฿</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Subdomain Upsell */}
-                        <div
-                            onClick={() => setWantSubdomain(!wantSubdomain)}
-                            className={`cursor-pointer rounded-xl p-4 border-2 transition-all ${wantSubdomain
-                                ? 'border-purple-400 bg-purple-50 shadow-md'
-                                : 'border-gray-100 bg-white hover:border-purple-200'
-                                }`}
-                        >
-                            <div className="flex items-start gap-3">
-                                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${wantSubdomain ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
-                                    }`}>
-                                    {wantSubdomain && <CheckCircle size={14} className="text-white" />}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <Globe size={16} className="text-purple-500" />
-                                        <span className="font-bold text-[#1A3C40] text-sm">Special Link</span>
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 border border-red-200 animate-pulse">
-                                            <Sparkles size={10} /> จำนวนจำกัด
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">ได้ลิงก์ <span className="font-mono text-purple-600">ชื่อคุณ.norastory.com</span> แทนลิงก์ปกติ</p>
-                                </div>
-                                <span className="font-bold text-purple-500 text-lg flex-shrink-0">999 ฿</span>
-                            </div>
-                        </div>
-
-                        {/* New Expiry Preview */}
-                        {expiryDate && selectedPackage && (
-                            <div className="bg-[#1A3C40]/5 rounded-xl p-4 border border-[#1A3C40]/10">
-                                <p className="text-xs text-gray-500 mb-1">วันหมดอายุใหม่หลังต่ออายุ</p>
-                                <p className="font-bold text-[#1A3C40]">
-                                    {(() => {
-                                        const base = isExpired ? new Date() : expiryDate;
-                                        const newDate = new Date(base);
-                                        newDate.setDate(newDate.getDate() + selectedPackage.days);
-                                        return newDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
-                                    })()}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right: Payment */}
-                    <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 h-fit md:sticky md:top-6">
-                        <h3 className="text-base sm:text-lg font-bold text-[#1A3C40] mb-4 flex items-center gap-2">
-                            <CreditCard size={20} className="text-[#E8A08A]" /> ชำระเงิน
-                        </h3>
-
-                        {/* QR Code */}
-                        <div className="bg-gray-50 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center mb-4 sm:mb-6 text-center border border-gray-100">
-                            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-white p-2 rounded-lg shadow-sm mb-3 sm:mb-4">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PlaceholderPromptPay" alt="QR Code" className="w-full h-full object-contain" />
-                            </div>
-                            <p className="text-[#1A3C40] font-bold text-sm sm:text-base">ธนาคารกสิกรไทย</p>
-                            <p className="text-gray-500 text-xs sm:text-sm mb-2">123-4-56789-0 (Nora Story)</p>
-                            <div className="bg-[#1A3C40] text-white px-4 py-2 rounded-lg w-full">
-                                <span className="text-xs sm:text-sm opacity-80 block">ยอดชำระ</span>
-                                <span className="text-lg sm:text-xl font-bold">{(selectedPackage?.price || 0) + (wantSubdomain ? 999 : 0)} บาท</span>
-                                {wantSubdomain && (
-                                    <span className="text-[10px] opacity-60 block mt-0.5">({selectedPackage?.price}฿ + Subdomain 999฿)</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Slip Upload */}
-                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 sm:p-6 text-center hover:bg-gray-50 transition-colors relative cursor-pointer mb-4 sm:mb-6 h-32 sm:h-40 flex items-center justify-center">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleSlipChange}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            {slipPreview ? (
-                                <div className="relative w-full h-full">
-                                    <img src={slipPreview} alt="Slip" className="w-full h-full object-contain rounded-lg" />
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg">
-                                        <span className="text-white text-sm font-medium">เปลี่ยนรูป</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-2 text-gray-400">
-                                    <Upload size={24} />
-                                    <span className="text-xs sm:text-sm">อัปโหลดสลิปโอนเงิน</span>
-                                </div>
-                            )}
-                        </div>
-
+                {/* Tab Selector */}
+                <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-1">
+                    {[
+                        { id: 'extend', label: 'ต่ออายุ', icon: <Clock size={16} /> },
+                        { id: 'editText', label: 'แก้ไขข้อความ', icon: <Pencil size={16} /> },
+                        ...(editConfig.freeImageEdits > 0 ? [{ id: 'editImage', label: 'แก้ไขรูปภาพ', icon: <Image size={16} /> }] : []),
+                        { id: 'history', label: 'ประวัติ', icon: <FileText size={16} /> },
+                    ].map(tab => (
                         <button
-                            onClick={handleSubmit}
-                            disabled={isSubmitting || !slipFile}
-                            className={`w-full py-3 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 ${isSubmitting || !slipFile
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279] shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                                ? 'bg-[#1A3C40] text-white shadow-md'
+                                : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
                                 }`}
                         >
-                            {isSubmitting ? (
-                                <><Loader2 className="animate-spin" size={20} /> กำลังส่ง...</>
-                            ) : (
-                                'ยืนยันการต่ออายุ'
-                            )}
+                            {tab.icon} {tab.label}
                         </button>
-                    </div>
+                    ))}
                 </div>
+
+                {/* === TAB: ต่ออายุ === */}
+                {activeTab === 'extend' && (
+                    <ExtendTab
+                        packages={packages}
+                        selectedPackage={selectedPackage}
+                        setSelectedPackage={setSelectedPackage}
+                        wantSubdomain={wantSubdomain}
+                        setWantSubdomain={setWantSubdomain}
+                        customDomain1={customDomain1}
+                        setCustomDomain1={setCustomDomain1}
+                        customDomain2={customDomain2}
+                        setCustomDomain2={setCustomDomain2}
+                        order={order}
+                        expiryDate={expiryDate}
+                        isExpired={isExpired}
+                        promptpayId={promptpayId}
+                        handleSlipChange={handleSlipChange}
+                        slipFile={slipFile}
+                        isSubmitting={isSubmitting}
+                        handleSubmit={handleSubmit}
+                    />
+                )}
+
+                {/* === TAB: แก้ไขข้อความ และ รูปภาพ === */}
+                {(activeTab === 'editText' || activeTab === 'editImage') && (
+                    <EditTab
+                        activeTab={activeTab}
+                        order={order}
+                        tierId={tierId}
+                        editConfig={editConfig}
+
+                        canFreeEditText={canFreeEditText}
+                        textEditsUsed={textEditsUsed}
+                        textEditsRemaining={textEditsRemaining}
+                        editTextMode={editTextMode}
+                        setEditTextMode={setEditTextMode}
+                        openTextEditForm={openTextEditForm}
+                        editFormData={editFormData}
+                        setEditFormData={setEditFormData}
+                        handleSaveTextEdit={handleSaveTextEdit}
+
+                        canFreeEditImage={canFreeEditImage}
+                        imageEditsUsed={imageEditsUsed}
+                        imageEditsRemaining={imageEditsRemaining}
+                        editImageMode={editImageMode}
+                        setEditImageMode={setEditImageMode}
+                        openImageEditForm={openImageEditForm}
+                        editImageFiles={editImageFiles}
+                        setEditImageFiles={setEditImageFiles}
+                        handleSaveImageEdit={handleSaveImageEdit}
+
+                        textPaymentPending={textPaymentPending}
+                        imagePaymentPending={imagePaymentPending}
+                        editPayType={editPayType}
+                        setEditPayType={setEditPayType}
+                        editSlipFile={editSlipFile}
+                        setEditSlipFile={setEditSlipFile}
+                        editSubmitting={editSubmitting}
+                        handleEditPayment={handleEditPayment}
+                        promptpayId={promptpayId}
+                    />
+                )}
+
+                {/* === TAB: ประวัติ === */}
+                {activeTab === 'history' && (
+                    <HistoryTab order={order} />
+                )}
             </div>
         </div>
     );

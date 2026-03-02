@@ -17,14 +17,16 @@ const OrderFilter = ({ filter, setFilter, searchTerm, setSearchTerm }) => {
                 </div>
                 <div className="flex items-center gap-2">
                     <Filter size={18} className="text-gray-400" />
-                    {['all', 'pending', 'approved', 'rejected', 'extension_pending'].map((f) => (
+                    {['all', 'pending', 'approved', 'rejected', 'extension_pending', 'edit_pending'].map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
                                 ? 'bg-[#1A3C40] text-white'
-                                : f === 'extension_pending'
-                                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                                : (f === 'extension_pending' || f === 'edit_pending')
+                                    ? f === 'edit_pending'
+                                        ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                                        : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
@@ -32,7 +34,8 @@ const OrderFilter = ({ filter, setFilter, searchTerm, setSearchTerm }) => {
                                 f === 'pending' ? 'รอตรวจสอบ' :
                                     f === 'approved' ? 'อนุมัติ' :
                                         f === 'rejected' ? 'ปฏิเสธ' :
-                                            'คำขอต่ออายุ'}
+                                            f === 'extension_pending' ? 'คำขอต่ออายุ' :
+                                                'แก้ไข (รอชำระ)'}
                         </button>
                     ))}
                 </div>

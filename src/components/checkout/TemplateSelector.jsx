@@ -5,24 +5,24 @@ import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 // Template preview data
 const TEMPLATE_PREVIEWS = {
     1: [
-        { id: 't1-1', name: 'Love Card 💕', preview: '💕', description: 'ข้อความลับพร้อม PIN' },
-        { id: 't1-2', name: 'Ordination', preview: '🪷', description: 'การ์ดงานบวช', disabled: true },
-        { id: 't1-3', name: 'Wedding', preview: '💍', description: 'การ์ดงานแต่ง', disabled: true },
+        { id: 't1-1', number: '01', name: 'Love Card', preview: '', description: 'ข้อความลับพร้อม PIN' },
+        { id: 't1-2', number: '02', name: 'Ordination', preview: '', description: 'การ์ดงานบวช', disabled: true },
+        { id: 't1-3', number: '03', name: 'Wedding', preview: '', description: 'การ์ดงานแต่ง', disabled: true },
     ],
     2: [
-        { id: 't2-1', name: 'Standard Love', preview: '💌', description: 'อนิเมชั่นพื้นฐาน' },
-        { id: 't2-2', name: 'Golden Merit', preview: '✨', description: 'งานบวชพรีเมียม', disabled: true },
-        { id: 't2-3', name: 'Rose Wedding', preview: '🌹', description: 'งานแต่งพรีเมียม', disabled: true },
+        { id: 't2-1', number: '01', name: 'Standard Love', preview: '', description: 'อนิเมชั่นพื้นฐาน' },
+        { id: 't2-2', number: '02', name: 'Golden Merit', preview: '', description: 'งานบวชพรีเมียม', disabled: true },
+        { id: 't2-3', number: '03', name: 'Love Gallery', preview: '', description: 'แกลเลอรี่ความทรงจำ', disabled: true },
     ],
     3: [
-        { id: 't3-1', name: 'Luxury Gold', preview: '👑', description: 'หรูหราอลังการ' },
-        { id: 't3-2', name: 'Crystal Clear', preview: '💎', description: 'เพชรพราว', disabled: true },
-        { id: 't3-3', name: 'Velvet Night', preview: '🌌', description: 'ราตรีสุดโรแมนติก', disabled: true },
+        { id: 't3-1', number: '01', name: 'Luxury Gold', preview: '', description: 'หรูหราอลังการ' },
+        { id: 't3-2', number: '02', name: 'Crystal Clear', preview: '', description: 'เพชรพราว', disabled: true },
+        { id: 't3-3', number: '03', name: 'The Wedding Day', preview: '', description: 'ไทม์ไลน์งานแต่ง', disabled: true },
     ],
     4: [
-        { id: 't4-1', name: 'Eternal Love', preview: '💕', description: 'ความรักนิรันดร์', disabled: true },
-        // { id: 't4-2', name: 'Paradise', preview: '🏝️', description: 'สวรรค์บนดิน', disabled: true },
-        // { id: 't4-3', name: 'Infinity', preview: '♾️', description: 'ไม่มีวันจบ', disabled: true },
+        { id: 't4-1', number: '01', name: 'Eternal Love', preview: '', description: 'ความรักนิรันดร์', disabled: true },
+        // { id: 't4-2', number: '02', name: 'Paradise', preview: '', description: 'สวรรค์บนดิน', disabled: true },
+        // { id: 't4-3', number: '03', name: 'Infinity', preview: '', description: 'ไม่มีวันจบ', disabled: true },
     ],
 };
 
@@ -70,11 +70,16 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                             </motion.div>
                         )}
 
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="text-5xl">{template.preview}</div>
+                        <div className="flex flex-col items-center gap-1">
+                            {/* Number Badge */}
+                            <div className={`text-xs font-mono mb-1 px-2 py-0.5 rounded-full ${isSelected ? 'bg-[#1A3C40]/10 text-[#1A3C40]' : 'bg-gray-100 text-gray-400'}`}>
+                                {template.number}
+                            </div>
+
+                            {/* <div className="text-5xl">{template.preview}</div> */}
                             <div>
-                                <h4 className="text-lg font-semibold text-gray-800 mb-0.5">{template.name}</h4>
-                                <p className="text-xs text-gray-500">{template.description}</p>
+                                <h4 className="text-xl font-serif text-[#1A3C40] mb-1">{template.name}</h4>
+                                <p className="text-sm text-gray-400">{template.description}</p>
                             </div>
                         </div>
 
@@ -133,11 +138,21 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                                     <Check size={10} />
                                 </motion.div>
                             )}
-                            <div className={`text-3xl mb-2 ${isDisabled ? 'grayscale' : ''}`}>{template.preview}</div>
-                            <p className={`text-[11px] leading-tight ${isDisabled ? 'text-gray-400' : isSelected ? 'text-[#1A3C40] font-medium' : 'text-gray-500'}`}>
-                                {template.name}
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{template.description}</p>
+                            {/* <div className={`text-3xl mb-2 ${isDisabled ? 'grayscale' : ''}`}>{template.preview}</div> */}
+
+                            {/* Number Badge */}
+                            <div className={`absolute top-2 left-2 text-[10px] font-mono px-1.5 py-0.5 rounded ${isDisabled ? 'bg-gray-200 text-gray-400' :
+                                isSelected ? 'bg-[#1A3C40] text-white' : 'bg-gray-200/50 text-gray-400'
+                                }`}>
+                                {template.number}
+                            </div>
+
+                            <div className="mt-4">
+                                <p className={`text-sm font-medium leading-tight ${isDisabled ? 'text-gray-400' : isSelected ? 'text-[#1A3C40]' : 'text-gray-600'}`}>
+                                    {template.name}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-1">{template.description}</p>
+                            </div>
                         </motion.div>
                     );
                 })}

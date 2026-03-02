@@ -19,8 +19,6 @@ import Tier3Template1 from './templates/tier3/Tier3Template1';
 import Tier3Template2 from './templates/tier3/Tier3Template2';
 import Tier3Template3 from './templates/tier3/Tier3Template3';
 
-import Tier4Template1 from './templates/tier4/Tier4Template1';
-
 // Template mapping
 const TEMPLATES = {
     't1-1': Tier1Template1,
@@ -29,9 +27,6 @@ const TEMPLATES = {
     't2-1': Tier2Template1, 't2-2': Tier2Template2, 't2-3': Tier2Template3,
     // 't2-4': Tier2Template4, 't2-5': Tier2Template5, 't2-6': Tier2Template6,
     't3-1': Tier3Template1, 't3-2': Tier3Template2, 't3-3': Tier3Template3,
-    // 't3-4': Tier3Template4, 't3-5': Tier3Template5, 't3-6': Tier3Template6,
-    't4-1': Tier4Template1,
-    // 't4-4': Tier4Template4, 't4-5': Tier4Template5, 't4-6': Tier4Template6,
 };
 
 /**

@@ -3,7 +3,7 @@ export const TIERS = [
         id: '1',
         slug: 't1',
         name: 'Trial',
-        price: '79',
+        price: '59',
         // originalPrice: '99',
         description: 'ทดลองใช้สั้นๆ',
         tagline: 'ทดลองใช้สั้นๆ',
@@ -14,19 +14,24 @@ export const TIERS = [
             'Random Link + QR Code',
             'รองรับทุกอุปกรณ์',
             'ดูแลหลังการขาย',
-            '100 ตัวอักษร'
+            '100 ตัวอักษร',
+            'เเก้ไขข้อความได้ 1 ครั้ง'
         ],
-        gradient: 'from-slate-400 to-slate-500',
+        gradient: 'from-slate-500 to-slate-600',
         bgGradient: 'from-slate-50 to-white',
-        bgColor: 'bg-slate-50',
+        bgColor: 'bg-white',
         accentColor: 'slate',
-        demos: ['t1-1', 't1-2', 't1-3']
+        demos: ['t1-1', 't1-2', 't1-3'],
+        extensionTiers: [
+            { days: 3, price: 39, label: 'ต่ออายุ 3 วัน' },
+            { days: 7, price: 79, label: 'ต่ออายุ 7 วัน', popular: true }
+        ]
     },
     {
         id: '2',
         slug: 't2',
         name: 'Standard',
-        price: '149',
+        price: '129',
         description: 'มาตรฐานยอดนิยม',
         tagline: 'สำหรับคนพิเศษ',
         duration: '7 วัน',
@@ -37,20 +42,27 @@ export const TIERS = [
             'Background Music',
             'Random Link + QR Code',
             'ดูแลหลังการขาย',
-            '100 ตัวอักษร'
+            '100 ตัวอักษร',
+            'เเก้ไขข้อความได้ 1 ครั้ง',
+            'เเก้ไขรูปภาพได้ 1 ครั้ง'
         ],
 
-        gradient: 'from-blue-400 to-blue-500',
-        bgGradient: 'from-blue-50 to-white',
-        bgColor: 'bg-blue-50',
+        gradient: 'from-[#6E8898] to-[#4B616E]', // More elegant muted blue/teal
+        bgGradient: 'from-[#F0F4F8] to-white',
+        bgColor: 'bg-white',
         accentColor: 'blue',
-        demos: ['t2-1', 't2-2', 't2-3']
+        demos: ['t2-1', 't2-2', 't2-3'],
+        extensionTiers: [
+            { days: 7, price: 99, label: 'ต่ออายุ 7 วัน' },
+            { days: 15, price: 169, label: 'ต่ออายุ 15 วัน' },
+            { days: 30, price: 299, label: 'ต่ออายุ 30 วัน', best: true },
+        ]
     },
     {
         id: '3',
         slug: 't3',
         name: 'Premium',
-        price: '299',
+        price: '249',
         description: 'สำหรับโอกาสพิเศษ',
         tagline: 'สำหรับโอกาสพิเศษ',
         duration: '15 วัน',
@@ -59,43 +71,22 @@ export const TIERS = [
             'อัปโหลดรูป 10 รูป',
             'Custom Link เลือกชื่อเอง',
             'Background Music',
-            'Priority Support'
+            'Priority Support',
+            '100 ตัวอักษร',
+            'เเก้ไขข้อความได้ 2 ครั้ง',
+            'เเก้ไขรูปภาพได้ 1 ครั้ง'
         ],
         highlight: true,
         tag: 'POPULAR',
-        gradient: 'from-[#E8A08A] to-[#d4917b]',
-        bgGradient: 'from-rose-50 via-pink-50 to-amber-50',
-        bgColor: 'bg-rose-50',
+        gradient: 'from-[#FF8FAB] to-[#FB6F92]', // Vibrant pastel pink
+        bgGradient: 'from-rose-50 via-pink-50 to-white',
+        bgColor: 'bg-white',
         accentColor: 'rose',
-        demos: ['t3-1', 't3-2', 't3-3']
-    },
-    {
-        id: '4',
-        slug: 't4',
-        name: 'Archive',
-        tagline: 'เก็บความทรงจำอย่างพรีเมียม',
-        description: 'แพ็คเกจสูงสุดสำหรับคนพิเศษ พร้อม Custom Subdomain และ Priority Support',
-        price: '499+',
-
-        gradient: 'from-amber-400 via-orange-400 to-amber-500',
-        bgGradient: 'from-amber-50 via-orange-50 to-yellow-50',
-        bgColor: 'bg-amber-50',
-        accentColor: 'amber',
-        highlight: false,
-        demos: ['t4-1', 't4-2', 't4-3'],
-        subTiers: [
-            { days: 30, price: 499, perDay: 16, label: '30 วัน' },
-            { days: 60, price: 799, perDay: 13, label: '60 วัน', discount: '20%' },
-            { days: 90, price: 999, perDay: 11, label: '90 วัน', discount: '33%', popular: true },
-            { days: 180, price: 1490, perDay: 8, label: '180 วัน', discount: '50%', best: true },
-        ],
-        customDomainPrice: 990,
-        features: [
-            { text: 'อัปโหลดรูปสูงสุด 20 รูป' },
-            { text: 'Custom Link / Subdomain' },
-            { text: 'Priority Support 24/7' },
-            { text: 'Background Music' },
-            { text: 'Premium Templates' },
+        demos: ['t3-1', 't3-2', 't3-3'],
+        extensionTiers: [
+            { days: 15, price: 199, label: 'ต่ออายุ 15 วัน' },
+            { days: 30, price: 349, label: 'ต่ออายุ 30 วัน', popular: true },
+            { days: 60, price: 599, label: 'ต่ออายุ 60 วัน', best: true },
         ]
     }
 ];

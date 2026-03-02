@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { db, storage } from '../../firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
 import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
@@ -56,7 +56,10 @@ const CheckoutContent = () => {
         needsImageStep,
         getTotalSteps,
         getStepLabels,
-        getProgressStep
+        getProgressStep,
+        getMaxImages,
+        isDomainAvailable,
+        qrExpired
     } = useCheckout();
 
     const handleNextStep = () => {
@@ -76,6 +79,19 @@ const CheckoutContent = () => {
                 setError('กรุณากรอกเบอร์โทรศัพท์');
                 return;
             }
+
+            // Check Special Link logic
+            if (tier?.wantCustomDomain) {
+                if (!formData.customDomain?.trim()) {
+                    setError('กรุณาระบุชื่อ Special Link ที่ต้องการ');
+                    return;
+                }
+                if (isDomainAvailable !== true) {
+                    setError('กรุณาตรวจสอบความว่างของชื่อลิงก์ก่อนทำรายการถัดไป');
+                    return;
+                }
+            }
+
             setStep(2);
         } else if (step === 2) {
             // Validate template selection
@@ -108,16 +124,7 @@ const CheckoutContent = () => {
             // Tier 3: Validate timeline fields
             if (needsTimelineFields) {
                 const timelines = formData.timelines || [];
-                for (let i = 0; i < 4; i++) {
-                    if (!timelines[i]?.label?.trim()) {
-                        setError(`กรุณากรอกช่วงเวลา Timeline ${i + 1}`);
-                        return;
-                    }
-                    if (!timelines[i]?.desc?.trim()) {
-                        setError(`กรุณากรอกคำอธิบาย Timeline ${i + 1}`);
-                        return;
-                    }
-                }
+                // Timelines 1-5 are optional
                 if (!formData.finaleMessage?.trim()) {
                     setError('กรุณากรอกข้อความสุดท้าย (ช่อง 5)');
                     return;
@@ -140,26 +147,33 @@ const CheckoutContent = () => {
         setError('');
 
         try {
-            // 1. Upload Slip
+            // 1. Generate unique Story ID or use Custom Domain
+            let storyId;
+            if (tier?.wantCustomDomain) {
+                storyId = formData.customDomain;
+            } else {
+                storyId = await generateUniqueStoryId();
+            }
+
+            // 2. Upload Slip
             const slipExt = slipFile.name.split('.').pop();
-            const slipName = `${Date.now()}_slip.${slipExt}`;
+            const slipName = `${storyId}_${Date.now()}_slip.${slipExt}`;
             const slipRef = ref(storage, `slips/${slipName}`);
             await uploadBytes(slipRef, slipFile);
             const slipUrl = await getDownloadURL(slipRef);
 
-            // 2. Upload Content Images (if any)
+            // 3. Upload Content Images (if any)
             const contentUrls = [];
             // Use maxImages from our utility if possible, or just use contentFiles length but we need to respect indices.
             // For Tier 3, we want to preserve indices 0-9 even if some are null
             const maxUploads = getMaxImages() || contentFiles.length;
 
             if (contentFiles.length > 0 || maxUploads > 0) {
-                const orderIdTmp = Date.now().toString();
                 // Iterate up to maxUploads to ensure we capture all slots
                 for (let i = 0; i < maxUploads; i++) {
                     const file = contentFiles[i];
                     if (file) {
-                        const refName = `uploads/${orderIdTmp}/${i}_${file.name}`;
+                        const refName = `uploads/${storyId}/${i}_${file.name}`;
                         const imgRef = ref(storage, refName);
                         await uploadBytes(imgRef, file);
                         const url = await getDownloadURL(imgRef);
@@ -171,8 +185,7 @@ const CheckoutContent = () => {
                 }
             }
 
-            // 3. Generate unique Story ID and Save Order
-            const storyId = await generateUniqueStoryId();
+            // 4. Save Order
             const orderRef = doc(db, 'orders', storyId);
 
             await setDoc(orderRef, {
@@ -196,8 +209,9 @@ const CheckoutContent = () => {
                 finale_message: needsTimelineFields ? formData.finaleMessage : null,
                 finale_sign_off: needsTimelineFields ? formData.finaleSignOff : null,
 
-                // Tier 4
-                custom_domain: String(tier.id) === '4' ? formData.customDomain : null,
+                // Special Link / Custom Domain
+                custom_domain: tier?.wantCustomDomain ? formData.customDomain : null,
+                want_custom_domain: !!tier.wantCustomDomain,
 
                 selected_template_id: selectedTemplate,
                 template_id: null,
@@ -206,8 +220,26 @@ const CheckoutContent = () => {
                 status: 'pending',
                 created_at: serverTimestamp(),
                 platform: 'web',
-                story_url: `https://norastory.com/${storyId}`
+                story_url: `https://norastory.com/${storyId}`,
+
+                // Edit tracking
+                text_edits_used: 0,
+                image_edits_used: 0,
+                text_edit_payment_status: null,
+                text_edit_payment_slip_url: null,
+                text_edit_payment_price: null,
+                image_edit_payment_status: null,
+                image_edit_payment_slip_url: null,
+                image_edit_payment_price: null,
             });
+
+            // 4. Update Global User Counter
+            try {
+                const statsRef = doc(db, 'stats', 'users');
+                await setDoc(statsRef, { count: increment(1) }, { merge: true });
+            } catch (statErr) {
+                console.error("Error updating user stats (non-critical):", statErr);
+            }
 
             setStep(6); // Success
 
@@ -245,7 +277,7 @@ const CheckoutContent = () => {
 
                     {/* Progress Steps (Fixed Header) */}
                     {step < 6 && (
-                        <div className="px-8 pt-14 pb-2 bg-white z-10">
+                        <div className="px-4 sm:px-8 pt-8 pb-2 bg-white z-10 pr-12 sm:pr-8">
                             <div className="flex items-center justify-center gap-0">
                                 {stepLabels.map((label, idx) => {
                                     const stepNum = idx + 1;
@@ -254,7 +286,7 @@ const CheckoutContent = () => {
                                     return (
                                         <div key={idx} className="flex items-center">
                                             <div className="flex flex-col items-center">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${isCompleted ? 'bg-[#1A3C40] text-white' :
+                                                <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all duration-300 ${isCompleted ? 'bg-[#1A3C40] text-white' :
                                                     isActive ? 'bg-[#1A3C40] text-white ring-4 ring-[#1A3C40]/10' :
                                                         'bg-gray-100 text-gray-400'
                                                     }`}>
@@ -265,7 +297,7 @@ const CheckoutContent = () => {
                                                 </span>
                                             </div>
                                             {idx < stepLabels.length - 1 && (
-                                                <div className={`w-8 sm:w-12 h-[2px] mx-1 mb-5 transition-colors duration-300 ${getProgressStep() > stepNum ? 'bg-[#1A3C40]' : 'bg-gray-200'
+                                                <div className={`w-5 sm:w-12 h-[2px] mx-0.5 sm:mx-1 mb-5 transition-colors duration-300 ${getProgressStep() > stepNum ? 'bg-[#1A3C40]' : 'bg-gray-200'
                                                     }`} />
                                             )}
                                         </div>
@@ -276,13 +308,13 @@ const CheckoutContent = () => {
                     )}
 
                     {/* Scrollable Content Body */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-2 flex flex-col justify-center">
+                    <div className={`flex-1 overflow-y-auto p-6 md:p-6 pt-2 flex flex-col ${step === 6 ? 'justify-center' : 'justify-start'}`}>
                         {/* Success State */}
                         {step === 6 ? (
                             <SuccessStep />
                         ) : (
                             <>
-                                <div className="text-center mb-5">
+                                <div className="text-center mb-2">
                                     <h3 className="text-xl font-playfair font-bold text-[#1A3C40] mb-0.5">
                                         {step === 1 ? 'ข้อมูลผู้สั่งซื้อ' :
                                             step === 2 ? 'เลือกธีม' :
@@ -313,7 +345,11 @@ const CheckoutContent = () => {
                                         {step < 5 ? (
                                             <button onClick={handleNextStep} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg">ถัดไป</button>
                                         ) : (
-                                            <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={handleSubmit}
+                                                disabled={loading || qrExpired}
+                                                className={`flex-1 py-3.5 rounded-xl ${qrExpired ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#1A3C40] hover:bg-[#1A3C40]/90'} text-white font-medium transition-all shadow-lg flex items-center justify-center gap-2`}
+                                            >
                                                 {loading ? <Loader2 className="animate-spin" size={20} /> : 'ยืนยันการชำระเงิน'}
                                             </button>
                                         )}

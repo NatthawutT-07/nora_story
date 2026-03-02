@@ -38,7 +38,13 @@ const AdminDashboard = () => {
                 ...doc.data(),
                 created_at: doc.data().created_at?.toDate?.() || new Date(),
                 approved_at: doc.data().approved_at?.toDate?.() || null,
-                expires_at: doc.data().expires_at?.toDate?.() || null
+                expires_at: doc.data().expires_at?.toDate?.() || null,
+                extension_requested_at: doc.data().extension_requested_at?.toDate?.() || null,
+                extension_approved_at: doc.data().extension_approved_at?.toDate?.() || null,
+                text_edit_payment_requested_at: doc.data().text_edit_payment_requested_at?.toDate?.() || null,
+                text_edit_payment_approved_at: doc.data().text_edit_payment_approved_at?.toDate?.() || null,
+                image_edit_payment_requested_at: doc.data().image_edit_payment_requested_at?.toDate?.() || null,
+                image_edit_payment_approved_at: doc.data().image_edit_payment_approved_at?.toDate?.() || null,
             }));
 
             setOrders(ordersList);
@@ -69,6 +75,8 @@ const AdminDashboard = () => {
         let matchesFilter = true;
         if (filter === 'extension_pending') {
             matchesFilter = order.extension_status === 'pending';
+        } else if (filter === 'edit_pending') {
+            matchesFilter = order.text_edit_payment_status === 'pending' || order.image_edit_payment_status === 'pending';
         } else if (filter !== 'all') {
             matchesFilter = order.status === filter;
         }

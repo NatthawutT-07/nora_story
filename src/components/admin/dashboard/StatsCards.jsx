@@ -5,11 +5,13 @@ const StatsCards = ({ orders }) => {
         { label: 'ทั้งหมด', value: orders.length, color: 'bg-blue-500' },
         { label: 'รอตรวจสอบ', value: orders.filter(o => o.status === 'pending').length, color: 'bg-yellow-500' },
         { label: 'อนุมัติแล้ว', value: orders.filter(o => o.status === 'approved').length, color: 'bg-green-500' },
+        { label: 'คำขอต่ออายุ', value: orders.filter(o => o.extension_status === 'pending').length, color: 'bg-amber-500' },
+        { label: 'แก้ไข (รอชำระ)', value: orders.filter(o => o.text_edit_payment_status === 'pending' || o.image_edit_payment_status === 'pending').length, color: 'bg-purple-500' },
         { label: 'ปฏิเสธ', value: orders.filter(o => o.status === 'rejected').length, color: 'bg-red-500' },
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             {stats.map((stat, i) => (
                 <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3">

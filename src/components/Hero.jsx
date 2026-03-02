@@ -2,12 +2,29 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, Heart, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import logo from '../assets/logo.png';
 
 const Hero = () => {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [userCount, setUserCount] = useState(0);
+
+    useEffect(() => {
+        // Listen to real-time updates of the user counter
+        const statsRef = doc(db, 'stats', 'users');
+        const unsubscribe = onSnapshot(statsRef, (doc) => {
+            if (doc.exists()) {
+                // Add a base number to make it look active initially, plus real counts
+                const realCount = doc.data().count || 0;
+                setUserCount(realCount);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const scrollToSection = (id) => {
         setIsMenuOpen(false);
@@ -211,11 +228,11 @@ const Hero = () => {
                     className="grid grid-cols-3 gap-4 sm:gap-8 mt-12 sm:mt-16 pt-8 border-t border-white/10 w-full max-w-lg"
                 >
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">-</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">3</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">เทมเพลต</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">-</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">{(89 + userCount).toLocaleString()}</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">ผู้ใช้งาน</p>
                     </div>
                     <div className="text-center">
