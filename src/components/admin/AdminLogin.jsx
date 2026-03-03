@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-const ADMIN_PASSWORD = '123456';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
 
 const AdminLogin = () => {
     const [password, setPassword] = useState('');

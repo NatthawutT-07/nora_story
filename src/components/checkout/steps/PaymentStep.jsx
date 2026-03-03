@@ -13,7 +13,7 @@ const PaymentStep = () => {
     const [fileError, setFileError] = useState('');
     const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
 
-    const promptpayId = '0948701182'; // Merchant PromptPay number
+    const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || ''; // Merchant PromptPay number
     const amount = tier?.price ? parseFloat(tier.price.replace(/,/g, '')) : 0;
 
     useEffect(() => {

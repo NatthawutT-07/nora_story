@@ -226,6 +226,17 @@ const Tier3Template2 = ({
             </div>
 
             {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
+
+            {/* Demo Watermark */}
+            {isDemo && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-[100]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30 150 150)' fill='rgba(93,64,55,0.04)' font-family='sans-serif' font-size='22' font-weight='bold' letter-spacing='4'%3ENORA STORY DEMO%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat'
+                    }}
+                />
+            )}
         </div>
     );
 };

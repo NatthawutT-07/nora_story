@@ -61,7 +61,7 @@ const AnimatedBackground = ({ variant = 'default' }) => {
 };
 
 
-const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ', pinCode = '1234' }) => {
+const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง ที่รักของเค้า', pinCode = '1234', isDemo = false }) => {
     const [viewState, setViewState] = useState('LOCKED');
     const [pin, setPin] = useState("");
     const [showError, setShowError] = useState(false);
@@ -133,7 +133,8 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ'
                 origin: { x: 0, y: 0.6 },
                 colors,
                 shapes: [heart, 'circle'],
-                scalar: 1.2
+                scalar: 1.2,
+                zIndex: 9999
             });
             confetti({
                 particleCount,
@@ -142,13 +143,25 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ'
                 origin: { x: 1, y: 0.6 },
                 colors,
                 shapes: [heart, 'circle'],
-                scalar: 1.2
+                scalar: 1.2,
+                zIndex: 9999
             });
         }, 200);
     };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden relative">
+
+            {/* Watermark for Demo */}
+            {isDemo && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-[100]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30 150 150)' fill='rgba(0,0,0,0.06)' font-family='sans-serif' font-size='22' font-weight='bold' letter-spacing='4'%3ENORA STORY DEMO%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat'
+                    }}
+                />
+            )}
 
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - PIN Entry */}
@@ -185,10 +198,14 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'เธอ'
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="text-2xl md:text-3xl text-gray-700 mb-5 font-light"
+                                className="text-2xl md:text-3xl text-gray-700 mb-5 font-light flex justify-center"
                             >
+                                {isDemo && (
+                                    <span className="text-sm bg-rose-100/80 text-rose-600 px-4 py-1.5 rounded-full font-sans tracking-wide">
+                                        รหัสผ่าน Demo: <span className="font-bold">1234</span>
+                                    </span>
+                                )}
                             </motion.h2>
-
 
                             {/* PIN Dots */}
                             <div className="flex justify-center gap-4 mb-10">

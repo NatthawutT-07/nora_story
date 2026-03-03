@@ -407,13 +407,14 @@ const Tier3Template1 = ({
         return Array(count).fill(null).map((_, i) => userSlice[i] || defaults[i]);
     };
 
-    // Layout configuration for each slot (now 5 slots)
+    // Layout configuration for each slot matching the checkout ImagesStep structure:
+    // Timeline 1(1) + 2(1) + 3(1) + 4(collage 5). Finale takes the last 2 images.
+    // Total exactly 10 images.
     const slotConfigs = [
-        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
-        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
-        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },
-        { type: 'collage', imageCount: 5, defaultImages: defaultImages.collage },
-        { type: 'collage', imageCount: 5, defaultImages: defaultImages.collage }, // Added 5th slot
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },    // T1
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },    // T2
+        { type: 'single', imageCount: 1, defaultImages: defaultImages.single },    // T3
+        { type: 'collage', imageCount: 5, defaultImages: defaultImages.collage },  // T4 (Memories)
     ];
 
     // Default timeline data
@@ -442,11 +443,8 @@ const Tier3Template1 = ({
         const timeline = mergedTimelines[index];
         const userProvided = timelines[index];
 
-        // If user input is empty, skip this slot (optional timeline)
-        // But strictly check if user provided SOMETHING. 
-        // If timelines[index] is undefined, userProvided is undefined.
-        // If userProvided exists but label/desc empty, skip.
-        if (!userProvided?.label && !userProvided?.desc) {
+        // In demo mode, we always want to show all slots with defaults.
+        if (!isDemo && !userProvided?.label && !userProvided?.desc) {
             return;
         }
 
@@ -459,11 +457,12 @@ const Tier3Template1 = ({
         });
     });
 
-    // Add Finale
+    // Add Finale as the 5th section using the 5th timeline data (or fallback to finaleMessage/finaleSignOff)
+    const finaleTimeline = mergedTimelines[4];
     listItems.push({
         type: 'finale',
-        label: 'Forever',
-        title: 'To Infinity',
+        label: finaleTimeline?.label || 'Forever',
+        title: finaleMessage || customMessage || finaleTimeline?.title || 'To Infinity', // Use proper priorities
         desc: '',
         images: getSectionImages(currentImageIndex, 2, defaultImages.dual)
     });
@@ -480,7 +479,7 @@ const Tier3Template1 = ({
 
         const duration = 3000;
         const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
         const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
         const interval = setInterval(function () {
@@ -517,6 +516,7 @@ const Tier3Template1 = ({
                             transition={{ duration: 0.8 }}
                         >
                             {item.type === 'single' && <SingleLayout chapter={item} />}
+                            {item.type === 'dual' && <DualLayout chapter={item} />}
                             {item.type === 'collage' && <CollageLayout chapter={item} />}
                             {item.type === 'finale' && <DualLayout chapter={item} customMessage={finaleMessage || customMessage} customSignOff={finaleSignOff || customSignOff} onConfetti={triggerSupernova} canSendLove={canSendLove} />}
                         </motion.div>
@@ -527,6 +527,17 @@ const Tier3Template1 = ({
                     </div>
                 </div>
             </div>
+
+            {/* Demo Watermark */}
+            {isDemo && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-[100]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30 150 150)' fill='rgba(255,255,255,0.04)' font-family='sans-serif' font-size='22' font-weight='bold' letter-spacing='4'%3ENORA STORY DEMO%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat'
+                    }}
+                />
+            )}
         </div>
     );
 };

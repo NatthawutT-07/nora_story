@@ -322,7 +322,8 @@ const Tier2Template1 = ({
                 origin: { x: 0, y: 0.7 },
                 colors,
                 shapes: [heart, 'circle', 'star'],
-                scalar: 1.3
+                scalar: 1.3,
+                zIndex: 9999
             });
             confetti({
                 particleCount,
@@ -331,13 +332,25 @@ const Tier2Template1 = ({
                 origin: { x: 1, y: 0.7 },
                 colors,
                 shapes: [heart, 'circle', 'star'],
-                scalar: 1.3
+                scalar: 1.3,
+                zIndex: 9999
             });
         }, 180);
     };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden relative">
+
+            {/* Watermark for Demo */}
+            {isDemo && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-[100]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30 150 150)' fill='rgba(255,255,255,0.04)' font-family='sans-serif' font-size='22' font-weight='bold' letter-spacing='4'%3ENORA STORY DEMO%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat'
+                    }}
+                />
+            )}
 
             <AnimatePresence mode="wait">
                 {/* LOCKED STATE - Premium PIN Entry */}
@@ -387,6 +400,19 @@ const Tier2Template1 = ({
                                     />
                                 </div>
                             </motion.div>
+
+                            {/* Demo Hint */}
+                            {isDemo && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-4 flex justify-center"
+                                >
+                                    <span className="text-sm bg-rose-500/20 border border-rose-400/30 text-rose-200 px-4 py-1.5 rounded-full font-sans tracking-wide backdrop-blur-sm">
+                                        รหัสผ่าน Demo: <span className="font-bold">1234</span>
+                                    </span>
+                                </motion.div>
+                            )}
 
                             {/* Premium PIN Dots */}
                             <div className="flex justify-center gap-5 mb-6">

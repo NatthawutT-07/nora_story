@@ -106,7 +106,8 @@ const Tier3Template3 = ({
     customMessage,
     customSignOff,
     images = [],
-    musicUrl = ''
+    musicUrl = '',
+    isDemo = false,
 }) => {
     // Default Schedule (Wedding Day)
     const schedule = [
@@ -118,7 +119,7 @@ const Tier3Template3 = ({
     ];
 
     return (
-        <div className="min-h-screen w-full bg-[#fff0f3] relative overflow-hidden font-sans text-slate-700">
+        <div className="min-h-screen w-full bg-[#fff0f3] relative overflow-x-hidden font-sans text-slate-700">
             {/* Background Layers */}
             <div className="fixed inset-0 bg-gradient-to-tr from-rose-50 via-white to-pink-50 z-0" />
             <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-white/80 to-transparent z-10" />
@@ -197,6 +198,17 @@ const Tier3Template3 = ({
             </div>
 
             {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
+
+            {/* Demo Watermark */}
+            {isDemo && (
+                <div
+                    className="absolute inset-0 pointer-events-none z-[100]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30 150 150)' fill='rgba(159,18,57,0.04)' font-family='sans-serif' font-size='22' font-weight='bold' letter-spacing='4'%3ENORA STORY DEMO%3C/text%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'repeat'
+                    }}
+                />
+            )}
         </div>
     );
 };

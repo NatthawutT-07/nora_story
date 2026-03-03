@@ -133,7 +133,7 @@ const ExtensionPage = () => {
     const [isDomainChecking, setIsDomainChecking] = useState(false);
     const [qrExpiresAt, setQrExpiresAt] = useState(null);
     const [qrTimeLeft, setQrTimeLeft] = useState(null);
-    const promptpayId = '0948701182';
+    const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || '';
     const [activeTab, setActiveTab] = useState('extend'); // 'extend' | 'editText' | 'editImage' | 'history'
 
     // Reset domain status when input changes

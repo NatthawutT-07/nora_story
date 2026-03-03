@@ -162,7 +162,7 @@ const TierCard = ({ tier, index, onSelectTier }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.08 }}
-            className="relative min-w-[80%] sm:min-w-0 snap-center perspective-1000 self-stretch"
+            className="relative shrink-0 sm:shrink min-w-[300px] sm:w-[auto] sm:flex-1 snap-center perspective-[1000px] self-[stretch]"
             style={{ perspective: '1000px' }}
         >
             <motion.div
