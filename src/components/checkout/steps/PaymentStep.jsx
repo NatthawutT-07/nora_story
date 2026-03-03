@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Loader2, Check } from 'lucide-react';
 import { useCheckout } from '../CheckoutContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import generatePayload from 'promptpay-qr';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const PaymentStep = () => {
     const { tier, setSlipFile, setSlipPreview, setError, qrExpired, setQrExpired } = useCheckout();
@@ -12,6 +12,20 @@ const PaymentStep = () => {
     const [qrError, setQrError] = useState(null);
     const [fileError, setFileError] = useState('');
     const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+
+    const downloadQr = () => {
+        const canvas = document.getElementById("qr-payment-canvas");
+        if (!canvas) return;
+        const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `Promptpay_NoraStory_${amount}Thb.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    };
+
+    const qrRef = useRef(null);
 
     const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || ''; // Merchant PromptPay number
     const amount = tier?.price ? parseFloat(tier.price.replace(/,/g, '')) : 0;
@@ -77,18 +91,11 @@ const PaymentStep = () => {
     };
 
     return (
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-            {/* Amount */}
-            <div className="text-center py-2">
-                <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-0.5">ยอดชำระ</p>
-                <p className="text-3xl font-bold text-[#1A3C40]">
-                    ฿{tier?.price}<span className="text-base font-normal text-gray-400">.-</span>
-                </p>
-            </div>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
 
             {/* Payment Details Card */}
             <div className={`rounded-2xl border ${qrExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'} overflow-hidden transition-colors`}>
-                <div className="p-5 flex flex-col items-center justify-center border-b border-gray-100 bg-gray-50/50">
+                <div className="px-4 py-3 flex flex-col items-center justify-center border-b border-gray-100 bg-gray-50/50">
                     {qrExpired ? (
                         <div className="h-44 w-full bg-red-50/50 rounded-xl flex flex-col items-center justify-center text-red-500 text-sm p-4 text-center border border-dashed border-red-200">
                             <span className="font-semibold mb-1">QR Code หมดอายุแล้ว</span>
@@ -100,12 +107,13 @@ const PaymentStep = () => {
                         </div>
                     ) : qrCodeUrl ? (
                         <>
-                            <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative mb-4">
+                            <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative mb-2">
                                 {/* Decorative elements for PromptPay QR */}
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10">
                                     สแกนจ่ายด้วยแอปธนาคาร
                                 </div>
-                                <QRCodeSVG
+                                <QRCodeCanvas
+                                    id="qr-payment-canvas"
                                     value={qrCodeUrl}
                                     size={180}
                                     level="M"
@@ -113,9 +121,21 @@ const PaymentStep = () => {
                                     className="rounded-lg"
                                 />
                             </div>
-                            <div className="flex items-center gap-1.5 text-rose-500 font-mono text-sm bg-rose-50 px-3 py-1 rounded-full font-medium">
-                                <span>⏳</span>
-                                <span>{formatTime(timeLeft)}</span>
+
+                            {/* Save QR Button and Timer inside Row */}
+                            <div className="flex flex-row items-center justify-between w-full mx-auto mt-0 mb-0 gap-[6px]">
+                                <div className="flex-none flex items-center justify-center gap-1 text-rose-500 font-[monospace] px-3 py-[5px] bg-rose-50/90 shadow-sm rounded-lg w-auto border border-rose-100/50 cursor-default">
+                                    <span className="text-[11px]">⏳</span>
+                                    <span className="text-xs font-semibold tracking-wide whitespace-nowrap">{formatTime(timeLeft)}</span>
+                                </div>
+
+                                <button
+                                    onClick={downloadQr}
+                                    className="flex w-auto min-w-max py-[5px] px-4 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-lg justify-center items-center gap-[5px] text-xs font-semibold transition-colors shadow-sm"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#3b5368]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    บันทึก
+                                </button>
                             </div>
                         </>
                     ) : (
@@ -127,7 +147,7 @@ const PaymentStep = () => {
                 </div>
 
                 {/* Bank Info Section */}
-                <div className="p-4 space-y-3">
+                <div className="px-4 py-3 space-y-2">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">ช่องทางชำระเงิน</p>

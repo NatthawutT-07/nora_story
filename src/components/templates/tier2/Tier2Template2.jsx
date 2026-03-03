@@ -204,53 +204,43 @@ const MemoryGallery = ({ images = [] }) => {
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
+
+    useEffect(() => {
+        if (!audioRef.current) return;
+        audioRef.current.volume = 0.4;
+        const tryPlay = () => {
+            audioRef.current?.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                    const playOnClick = () => {
+                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        document.removeEventListener('click', playOnClick);
+                        document.removeEventListener('touchstart', playOnClick);
+                    };
+                    document.addEventListener('click', playOnClick, { once: true });
+                    document.addEventListener('touchstart', playOnClick, { once: true });
+                });
+        };
+        tryPlay();
+    }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
-    const toggleMute = () => {
-        if (audioRef.current) {
-            audioRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
+            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+            else { audioRef.current.play().then(() => setIsPlaying(true)); }
         }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
-        >
+        <div className="fixed bottom-6 right-6 z-50">
             <audio ref={audioRef} src={musicUrl} loop />
-            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-full px-4 py-2 border border-amber-500/30 shadow-xl">
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={togglePlay}
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg border border-amber-300/20"
-                >
-                    {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-                </motion.button>
-
-                <div className="flex items-center gap-2">
-                    <Music size={14} className="text-amber-200" />
-                    <span className="text-amber-100 text-sm font-light tracking-wide">Sound of Merit</span>
-                </div>
-
-                <button onClick={toggleMute} className="text-amber-200/60 hover:text-amber-100 transition-colors">
-                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
-            </div>
-        </motion.div>
+            <button
+                onClick={togglePlay}
+                className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-amber-200/30 shadow-lg transition-all duration-300 ${isPlaying ? 'bg-amber-500/20 text-amber-300' : 'bg-black/20 text-amber-200/50'}`}
+            >
+                {isPlaying ? <Pause size={18} /> : <Music size={18} />}
+            </button>
+        </div>
     );
 };
 

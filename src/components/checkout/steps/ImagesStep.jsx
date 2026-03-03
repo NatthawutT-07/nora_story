@@ -7,7 +7,7 @@ const ImagesStep = () => {
         contentFiles, setContentFiles,
         contentPreviews, setContentPreviews,
         getMaxImages, getMaxFileSize, setError,
-        isTier3
+        isTier3, formData
     } = useCheckout();
 
     const maxImages = getMaxImages();
@@ -46,19 +46,25 @@ const ImagesStep = () => {
     };
 
     // --- Tier 3 Logic ---
+    const getTimelineTitle = (index) => {
+        const tl = formData?.timelines?.[index];
+        if (tl?.label) return `Timeline ${index + 1} (${tl.label})`;
+        return `Timeline ${index + 1}`;
+    };
+
     const tier3Sections = [
-        { title: "Timeline 1 (Day 1)", count: 1, start: 0, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
-        { title: "Timeline 2 (Day 30)", count: 1, start: 1, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
-        { title: "Timeline 3 (Day 60)", count: 1, start: 2, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
+        { title: getTimelineTitle(0), count: 1, start: 0, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
+        { title: getTimelineTitle(1), count: 1, start: 1, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
+        { title: getTimelineTitle(2), count: 1, start: 2, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
         {
-            title: "Timeline 4 (Memories)",
+            title: getTimelineTitle(3),
             count: 5,
             start: 3,
             hint: "5 รูป: 1 แนวตั้ง, 2 แนวนอน, 2 สี่เหลี่ยม",
             subHints: ["แนวตั้ง (3:4)", "แนวนอน (16:9)", "สี่เหลี่ยม (1:1)", "สี่เหลี่ยม (1:1)", "แนวนอน (16:9)"],
             subRatios: ["3/4", "16/9", "1/1", "1/1", "16/9"]
         },
-        { title: "Timeline 5 (Forever)", count: 2, start: 8, hint: "ภาพแนวตั้ง (3:4) — 600x800px", ratio: "3/4" },
+        { title: getTimelineTitle(4), count: 2, start: 8, hint: "ภาพแนวตั้ง (3:4) — 600x800px", ratio: "3/4" },
     ];
 
     const updateSlot = (index, file) => {
@@ -99,14 +105,11 @@ const ImagesStep = () => {
                 {isFilled ? (
                     <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm" style={{ aspectRatio: ratio || 'square' }}>
                         <img src={preview} className="w-full h-full object-cover" alt="" />
-                        {/* File size badge */}
-                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                            {(file?.size / (1024 * 1024)).toFixed(1)}MB
-                        </div>
+
                         {/* Remove button */}
                         <button
                             onClick={() => updateSlot(idx, null)}
-                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors z-10"
                         >
                             <X size={12} />
                         </button>
@@ -172,95 +175,53 @@ const ImagesStep = () => {
         );
     }
 
-    // --- Standard Logic (Tier 1, 2) ---
-
-    // Build slots array: filled slots + empty placeholders
-    const slots = [];
-    for (let i = 0; i < maxImages; i++) {
-        // Robust check for mixed content types (sparse array handling for safety)
-        if (i < contentPreviews.length && contentPreviews[i]) {
-            slots.push({ type: 'filled', src: contentPreviews[i], file: contentFiles[i] });
-        } else {
-            slots.push({ type: 'empty', index: i });
-        }
-    }
-
+    // --- Standard (Tier 1/2) ---
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="space-y-6 mb-6">
-                {/* Header info */}
-                <div className="text-center mb-2">
-                    <p className="text-[10px] text-gray-400">
-                        *อัปโหลดรูปภาพตามที่กำหนด (ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป)
-                    </p>
-                </div>
+            <div className="space-y-4">
+                {/* Upload Zone */}
+                <label className="block w-full border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative group">
+                    <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-[#E8A08A] transition-colors" />
+                    <span className="text-sm font-medium text-gray-500 group-hover:text-[#E8A08A]">
+                        เลือกรูปภาพ ({contentFiles.length}/{maxImages})
+                    </span>
+                    <span className="block text-xs text-gray-400 mt-1">รองรับ JPG, PNG (สูงสุด {maxFileSizeMB}MB ต่อรูป)</span>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleContentFilesChange}
+                        className="hidden"
+                    />
+                </label>
 
-                <div className="space-y-3">
-                    <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                        <span className="w-6 h-6 rounded-full bg-[#1A3C40] text-white text-xs flex items-center justify-center font-bold">
-                            1
-                        </span>
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-700">รูปภาพแกลเลอรี</h3>
-                            <p className="text-xs text-gray-400">
-                                อัปโหลดได้สูงสุด {maxImages} รูป (ปัจจุบัน {contentFiles.filter(Boolean).length}/{maxImages} รูป)
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-3 grid-cols-3">
-                        {slots.map((slot, idx) => {
-                            const isFilled = slot.type === 'filled';
-
-                            return (
-                                <div key={idx} className="relative group">
-                                    {isFilled ? (
-                                        <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm aspect-square">
-                                            <img src={slot.src} className="w-full h-full object-cover" alt="" />
-                                            {/* File size badge */}
-                                            <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                                                {slot.file ? (slot.file.size / (1024 * 1024)).toFixed(1) : '—'}MB
-                                            </div>
-                                            {/* Remove button */}
-                                            <button
-                                                onClick={() => removeContentImage(idx)}
-                                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
-                                            >
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <label
-                                            className="w-full rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative bg-gray-50/50 group-hover:bg-white aspect-square"
-                                        >
-                                            <ImageIcon className="w-5 h-5 text-gray-300 mb-1 group-hover:text-[#E8A08A] transition-colors" />
-                                            <span className="text-[10px] text-gray-400 group-hover:text-[#E8A08A]">เลือกรูป</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleContentFilesChange}
-                                                className="hidden"
-                                                multiple
-                                            />
-                                        </label>
-                                    )}
-                                    <div className="mt-1 text-center">
-                                        <p className="text-[10px] text-gray-400 truncate px-1">รูปที่ {idx + 1}</p>
+                {/* Image Previews */}
+                {contentPreviews.length > 0 && (
+                    <div className={`grid gap-3 ${contentPreviews.length === 1 ? 'grid-cols-1' : contentPreviews.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                        {contentPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative group">
+                                <div className="w-full aspect-square rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                                    <img src={preview} className="w-full h-full object-cover" alt="" />
+                                    {/* File size */}
+                                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                                        {contentFiles[idx] && (contentFiles[idx].size / (1024 * 1024)).toFixed(1)}MB
                                     </div>
                                 </div>
-                            );
-                        })}
+                                <button
+                                    onClick={() => removeContentImage(idx)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors z-10"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                </div>
-            </div>
+                )}
 
-            {/* Tips */}
-            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                <AlertCircle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-700 space-y-0.5">
-                    <p>• รองรับไฟล์ JPG, PNG, WebP</p>
-                    <p>• ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป</p>
-                    <p>• แนะนำรูปแนวตั้งเพื่อความสวยงาม</p>
+                {/* Info Banner */}
+                <div className="flex items-start gap-2 bg-blue-50 text-blue-600 p-3 rounded-xl text-xs">
+                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>ใส่รูปภาพที่ต้องการให้ปรากฏในเว็บไซต์ของคุณ คุณสามารถอัปโหลดได้สูงสุด {maxImages} รูป</span>
                 </div>
             </div>
         </motion.div>

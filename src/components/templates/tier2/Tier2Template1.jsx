@@ -192,53 +192,43 @@ const AnimatedBackground = ({ variant = 'default' }) => {
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
+
+    useEffect(() => {
+        if (!audioRef.current) return;
+        audioRef.current.volume = 0.4;
+        const tryPlay = () => {
+            audioRef.current?.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                    const playOnClick = () => {
+                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        document.removeEventListener('click', playOnClick);
+                        document.removeEventListener('touchstart', playOnClick);
+                    };
+                    document.addEventListener('click', playOnClick, { once: true });
+                    document.addEventListener('touchstart', playOnClick, { once: true });
+                });
+        };
+        tryPlay();
+    }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
-    const toggleMute = () => {
-        if (audioRef.current) {
-            audioRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
+            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+            else { audioRef.current.play().then(() => setIsPlaying(true)); }
         }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
-        >
+        <div className="fixed bottom-6 right-6 z-50">
             <audio ref={audioRef} src={musicUrl} loop />
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-xl rounded-full px-4 py-2 border border-white/20 shadow-xl">
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={togglePlay}
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 flex items-center justify-center text-white shadow-lg"
-                >
-                    {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-                </motion.button>
-
-                <div className="flex items-center gap-2">
-                    <Music size={14} className="text-white/60" />
-                    <span className="text-white/80 text-sm font-medium">Our Song</span>
-                </div>
-
-                <button onClick={toggleMute} className="text-white/60 hover:text-white transition-colors">
-                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
-            </div>
-        </motion.div>
+            <button
+                onClick={togglePlay}
+                className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-300 ${isPlaying ? 'bg-rose-500/20 text-rose-300' : 'bg-white/5 text-white/50'}`}
+            >
+                {isPlaying ? <Pause size={18} /> : <Music size={18} />}
+            </button>
+        </div>
     );
 };
 

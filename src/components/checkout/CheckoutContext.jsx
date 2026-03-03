@@ -41,7 +41,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
             { label: '', desc: '' },
             { label: '', desc: '' },
             { label: '', desc: '' },
-            { label: '', desc: '' },
+            { label: 'Memories', desc: 'All our moments...' },
             { label: '', desc: '' },
         ],
         finaleMessage: '',
@@ -111,6 +111,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
     const updateFormData = (fields) => {
         setFormData(prev => ({ ...prev, ...fields }));
+        if (error) setError('');
     };
 
     const resetAll = () => {

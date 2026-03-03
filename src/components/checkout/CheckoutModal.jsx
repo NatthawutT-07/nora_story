@@ -325,14 +325,24 @@ const CheckoutContent = () => {
                             <SuccessStep />
                         ) : (
                             <>
-                                <div className="text-center mb-2">
+                                <div className={`text-center ${step === 5 ? 'mb-1' : 'mb-2'}`}>
                                     <h3 className="text-xl font-playfair font-bold text-[#1A3C40] mb-0.5">
                                         {step === 1 ? 'ข้อมูลผู้สั่งซื้อ' :
                                             step === 2 ? 'เลือกธีม' :
                                                 step === 3 ? 'รายละเอียดธีม' :
                                                     step === 4 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
                                     </h3>
-                                    <p className="text-gray-400 text-xs">{tier.name} — ฿{tier.price}</p>
+                                    {step === 5 ? (
+                                        <div className="mt-1">
+                                            <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-0.5">{tier.name}</p>
+                                            <p className="text-3xl font-extrabold text-[#1A3C40]">
+                                                ฿{tier.price}<span className="text-base font-normal text-gray-400">.-</span>
+                                            </p>
+                                            <div className="w-16 h-[2px] bg-[#1A3C40]/10 mx-auto mt-2 rounded-full" />
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 text-xs">{tier.name} — ฿{tier.price}</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">

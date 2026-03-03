@@ -75,30 +75,44 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
 // --- Music Player ---
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
-    const [isPlaying, setIsPlaying] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    useEffect(() => {
+        if (!audioRef.current) return;
+        audioRef.current.volume = 0.4;
+        const tryPlay = () => {
+            audioRef.current?.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                    const playOnClick = () => {
+                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        document.removeEventListener('click', playOnClick);
+                        document.removeEventListener('touchstart', playOnClick);
+                    };
+                    document.addEventListener('click', playOnClick, { once: true });
+                    document.addEventListener('touchstart', playOnClick, { once: true });
+                });
+        };
+        tryPlay();
+    }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) audioRef.current.pause();
-            else audioRef.current.play();
-            setIsPlaying(!isPlaying);
+            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+            else { audioRef.current.play().then(() => setIsPlaying(true)); }
         }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="fixed bottom-6 right-6 z-50"
-        >
+        <div className="fixed bottom-6 right-6 z-50">
             <audio ref={audioRef} src={musicUrl} loop />
             <button
                 onClick={togglePlay}
-                className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-amber-200 shadow-xl transition-all duration-300 ${isPlaying ? 'bg-amber-500 text-white animate-spin-slow' : 'bg-white/80 text-amber-600'}`}
+                className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-amber-200/30 shadow-lg transition-all duration-300 ${isPlaying ? 'bg-amber-500/20 text-amber-300 animate-spin-slow' : 'bg-white/5 text-amber-200/50'}`}
             >
-                {isPlaying ? <Pause size={20} /> : <Music size={20} />}
+                {isPlaying ? <Pause size={18} /> : <Music size={18} />}
             </button>
-        </motion.div>
+        </div>
     );
 };
 

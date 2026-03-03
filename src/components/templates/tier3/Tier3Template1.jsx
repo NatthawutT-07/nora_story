@@ -80,14 +80,31 @@ const MusicPlayer = ({ musicUrl }) => {
     const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
-        if (audioRef.current) audioRef.current.volume = 0.4;
+        if (!audioRef.current) return;
+        audioRef.current.volume = 0.4;
+
+        // Try autoplay
+        const tryPlay = () => {
+            audioRef.current?.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                    // Browser blocked autoplay — play on first user interaction
+                    const playOnClick = () => {
+                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        document.removeEventListener('click', playOnClick);
+                        document.removeEventListener('touchstart', playOnClick);
+                    };
+                    document.addEventListener('click', playOnClick, { once: true });
+                    document.addEventListener('touchstart', playOnClick, { once: true });
+                });
+        };
+        tryPlay();
     }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) audioRef.current.pause();
-            else audioRef.current.play();
-            setIsPlaying(!isPlaying);
+            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+            else { audioRef.current.play().then(() => setIsPlaying(true)); }
         }
     };
 
@@ -96,11 +113,11 @@ const MusicPlayer = ({ musicUrl }) => {
             <audio ref={audioRef} src={musicUrl} loop />
             <button
                 onClick={togglePlay}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-500 ${isPlaying ? "bg-rose-500/20 text-rose-300" : "bg-white/5 text-white/50"
+                className={`group relative w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-500 ${isPlaying ? "bg-rose-500/20 text-rose-300" : "bg-white/5 text-white/50"
                     }`}
             >
                 {isPlaying && <span className="absolute inset-0 rounded-full animate-ping bg-rose-500/20" />}
-                {isPlaying ? <Pause size={20} /> : <Music size={20} />}
+                {isPlaying ? <Pause size={18} /> : <Music size={18} />}
             </button>
         </div>
     );
@@ -176,22 +193,20 @@ const TimelineNav = ({ items, activeIndex, onSelect }) => {
 // --- Layout Sub-Components ---
 
 const SingleLayout = ({ chapter }) => (
-    <div className="relative w-full h-[400px] md:h-[600px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 group">
+    <div className="relative w-full h-[300px] md:h-[500px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10 group">
         <img src={chapter.images[0]} alt="" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-[20s] ease-linear" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-transparent to-transparent opacity-90" />
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-12">
             <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="inline-block bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest border border-rose-500/30">
                 {chapter.label}
             </motion.div>
-            <motion.h2 initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-bold mb-4 text-white leading-tight">{chapter.title}</motion.h2>
-            <motion.p initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-white/70 text-lg md:text-xl max-w-xl leading-relaxed">{chapter.desc}</motion.p>
         </div>
     </div>
 );
 
 const DualLayout = ({ chapter, customMessage, customSignOff, onConfetti, canSendLove }) => (
-    <div className="relative w-full min-h-[600px] p-6 flex flex-col items-center justify-center">
-        <div className="relative w-full md:w-[90%] h-[500px]">
+    <div className="relative w-full min-h-[450px] p-6 flex flex-col items-center justify-center">
+        <div className="relative w-full md:w-[90%] h-[400px]">
             {/* Photo 1: Large Left */}
             <motion.div
                 initial={{ x: -50, opacity: 0, rotate: -5 }}
@@ -240,9 +255,9 @@ const DualLayout = ({ chapter, customMessage, customSignOff, onConfetti, canSend
 );
 
 const CollageLayout = ({ chapter }) => (
-    <div className="relative w-full h-full p-6 flex flex-col justify-center min-h-[500px] md:min-h-[800px]">
+    <div className="relative w-full h-full p-4 flex flex-col justify-center min-h-[400px] md:min-h-[600px]">
         {/* Elegant Title Section */}
-        <div className="relative text-center mb-4 md:mb-8">
+        <div className="relative text-center mb-2 md:mb-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -256,14 +271,7 @@ const CollageLayout = ({ chapter }) => (
                     </span>
                     <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-rose-400/50" />
                 </div>
-                <h2 className="text-4xl md:text-5xl font-serif text-white/90 tracking-wide">
-                    {chapter.title}
-                </h2>
-                {chapter.desc && (
-                    <p className="mt-3 text-white/50 font-light text-sm tracking-wide max-w-md mx-auto">
-                        {chapter.desc}
-                    </p>
-                )}
+
             </motion.div>
         </div>
 
@@ -419,11 +427,11 @@ const Tier3Template1 = ({
 
     // Default timeline data
     const defaultTimelines = [
-        { label: 'Day 1', desc: 'The day we met...' },
-        { label: 'Day 30', desc: 'First date...' },
-        { label: 'Day 60', desc: 'Growing closer...' },
-        { label: 'Memories', desc: 'All our moments...' },
-        { label: 'Future', desc: 'Looking forward...' },
+        { label: 'Day 1', desc: '' },
+        { label: 'Day 30', desc: '' },
+        { label: 'Day 60', desc: '' },
+        { label: 'Memories', desc: '' },
+        { label: 'Forever', desc: '' },
     ];
 
     // Merge user timelines with defaults
@@ -444,7 +452,7 @@ const Tier3Template1 = ({
         const userProvided = timelines[index];
 
         // In demo mode, we always want to show all slots with defaults.
-        if (!isDemo && !userProvided?.label && !userProvided?.desc) {
+        if (!isDemo && !userProvided?.label) {
             return;
         }
 
@@ -452,7 +460,7 @@ const Tier3Template1 = ({
             type: config.type,
             label: timeline.label,
             title: timeline.label,
-            desc: timeline.desc,
+            desc: '',
             images: sectionImages
         });
     });
@@ -500,11 +508,11 @@ const Tier3Template1 = ({
             {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
             <ScrollIndicator />
 
-            <div className="relative z-10 w-full min-h-screen py-10 px-4 md:px-8">
+            <div className="relative z-10 w-full min-h-screen py-4 px-4 md:px-8">
 
                 <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
 
-                <div className="max-w-4xl mx-auto flex flex-col gap-6 pb-10">
+                <div className="max-w-4xl mx-auto flex flex-col gap-2 pb-6">
                     {listItems.map((item, index) => (
                         <motion.div
                             key={index}
