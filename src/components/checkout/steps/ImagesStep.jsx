@@ -159,7 +159,7 @@ const ImagesStep = () => {
                                 </div>
                             </div>
 
-                            <div className={`grid gap-3 ${section.count > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                            <div className={`grid gap-3 ${section.count > 2 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                                 {Array.from({ length: section.count }).map((_, k) => {
                                     const slotIndex = section.start + k;
                                     // Use specific sub-hint/ratio if available, else general
@@ -175,48 +175,37 @@ const ImagesStep = () => {
         );
     }
 
-    // --- Standard (Tier 1/2) ---
+    // --- Standard (Tier 1/2) — Slot-based like Tier 3 ---
+    const tier2Sections = [
+        { title: 'รูปภาพที่ 1', hint: 'ภาพแนวตั้ง (3:4)', ratio: '3/4' },
+        { title: 'รูปภาพที่ 2', hint: 'ภาพแนวนอน (16:9)', ratio: '16/9' },
+        { title: 'รูปภาพที่ 3', hint: 'สี่เหลี่ยม (1:1)', ratio: '1/1' },
+        { title: 'รูปภาพที่ 4', hint: 'ภาพแนวนอน (4:3)', ratio: '4/3' },
+        { title: 'รูปภาพที่ 5', hint: 'ภาพแนวตั้ง (3:4)', ratio: '3/4' },
+    ];
+
+    // For Tier 1 (single image templates)
+    const tier1Section = [
+        { title: 'รูปภาพ', hint: 'สี่เหลี่ยม (1:1)', ratio: '1/1' },
+    ];
+
+    const sections = maxImages <= 1 ? tier1Section : tier2Sections.slice(0, maxImages);
+
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="space-y-4">
-                {/* Upload Zone */}
-                <label className="block w-full border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative group">
-                    <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-[#E8A08A] transition-colors" />
-                    <span className="text-sm font-medium text-gray-500 group-hover:text-[#E8A08A]">
-                        เลือกรูปภาพ ({contentFiles.length}/{maxImages})
-                    </span>
-                    <span className="block text-xs text-gray-400 mt-1">รองรับ JPG, PNG (สูงสุด {maxFileSizeMB}MB ต่อรูป)</span>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleContentFilesChange}
-                        className="hidden"
-                    />
-                </label>
+            <div className="space-y-4 mb-4">
+                {/* Header info */}
+                <div className="text-center mb-2">
+                    <p className="text-[10px] text-gray-400">
+                        *อัปโหลดรูปภาพ (ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป)
+                    </p>
+                </div>
 
-                {/* Image Previews */}
-                {contentPreviews.length > 0 && (
-                    <div className={`grid gap-3 ${contentPreviews.length === 1 ? 'grid-cols-1' : contentPreviews.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                        {contentPreviews.map((preview, idx) => (
-                            <div key={idx} className="relative group">
-                                <div className="w-full aspect-square rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-                                    <img src={preview} className="w-full h-full object-cover" alt="" />
-                                    {/* File size */}
-                                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                                        {contentFiles[idx] && (contentFiles[idx].size / (1024 * 1024)).toFixed(1)}MB
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => removeContentImage(idx)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors z-10"
-                                >
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <div className={`grid gap-3 ${maxImages <= 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
+                    {sections.map((section, idx) => (
+                        renderTier3Slot(idx, section.hint, section.ratio)
+                    ))}
+                </div>
 
                 {/* Info Banner */}
                 <div className="flex items-start gap-2 bg-blue-50 text-blue-600 p-3 rounded-xl text-xs">

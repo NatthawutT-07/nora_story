@@ -51,7 +51,7 @@ const TimelineFields = () => {
                                     inputMode="numeric"
                                     pattern="[0-9]*"
                                     maxLength={5}
-                                    className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm"
+                                    className="flex-1 px-3 py-2 sm:py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm"
                                     placeholder="ตัวเลข"
                                     value={num}
                                     onChange={(e) => {
@@ -60,7 +60,7 @@ const TimelineFields = () => {
                                     }}
                                 />
                                 <select
-                                    className="px-3 py-1.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm min-w-[90px]"
+                                    className="px-3 py-2 sm:py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm min-w-[90px]"
                                     value={unit}
                                     onChange={(e) => updateLabelParts(i, num, e.target.value)}
                                 >
@@ -90,7 +90,7 @@ const TimelineFields = () => {
                             <input
                                 type="text"
                                 disabled
-                                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-400 text-sm cursor-not-allowed"
+                                className="w-full px-3 py-2 sm:py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-400 text-sm cursor-not-allowed"
                                 value={fixedLabels[i]}
                             />
                         </div>
@@ -114,7 +114,7 @@ const TimelineFields = () => {
                     <input
                         type="text"
                         maxLength={15}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 bg-white outline-none transition-all text-sm"
+                        className="w-full px-3 py-2 sm:py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 bg-white outline-none transition-all text-sm"
                         placeholder="To Infinity"
                         value={formData.timelines[4]?.label || ''}
                         onChange={(e) => updateTimeline(4, 'label', e.target.value.slice(0, 15))}
@@ -145,7 +145,7 @@ const TimelineFields = () => {
                     <input
                         type="text"
                         maxLength={20}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 bg-white outline-none transition-all text-sm"
+                        className="w-full px-3 py-2 sm:py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 bg-white outline-none transition-all text-sm"
                         placeholder="รักเธอเสมอ"
                         value={formData.finaleSignOff}
                         onChange={(e) => updateFormData({ finaleSignOff: e.target.value.slice(0, 20) })}

@@ -1,32 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
+import { auth } from '../../firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
 const AdminLogin = () => {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    // Ensure we skip login if already authenticated
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                navigate('/jimdev/dashboard');
+            } else {
+                setIsLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [navigate]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
 
-        // Simulate a small delay for UX
-        setTimeout(() => {
-            if (password === ADMIN_PASSWORD) {
-                // Store auth state in sessionStorage
-                sessionStorage.setItem('adminAuth', 'true');
-                navigate('/jimdev/dashboard');
-            } else {
-                setError('รหัสผ่านไม่ถูกต้อง');
-                setIsLoading(false);
-            }
-        }, 500);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            navigate('/jimdev/dashboard');
+        } catch (error) {
+            console.error(error);
+            setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -44,6 +55,19 @@ const AdminLogin = () => {
                 {/* Login Card */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
                     <form onSubmit={handleSubmit}>
+                        <div className="mb-4">
+                            <label className="block text-white/70 text-sm mb-2">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8A08A]/50 focus:border-transparent transition-all"
+                                placeholder="admin@norastory.com"
+                                autoFocus
+                                required
+                            />
+                        </div>
+
                         <div className="mb-6">
                             <label className="block text-white/70 text-sm mb-2">Password</label>
                             <div className="relative">
@@ -53,7 +77,7 @@ const AdminLogin = () => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#E8A08A]/50 focus:border-transparent transition-all"
                                     placeholder="Enter admin password"
-                                    autoFocus
+                                    required
                                 />
                                 <button
                                     type="button"

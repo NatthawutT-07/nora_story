@@ -123,15 +123,15 @@ const PaymentStep = () => {
                             </div>
 
                             {/* Save QR Button and Timer inside Row */}
-                            <div className="flex flex-row items-center justify-between w-full mx-auto mt-0 mb-0 gap-[6px]">
-                                <div className="flex-none flex items-center justify-center gap-1 text-rose-500 font-[monospace] px-3 py-[5px] bg-rose-50/90 shadow-sm rounded-lg w-auto border border-rose-100/50 cursor-default">
-                                    <span className="text-[11px]">⏳</span>
-                                    <span className="text-xs font-semibold tracking-wide whitespace-nowrap">{formatTime(timeLeft)}</span>
+                            <div className="flex flex-row items-center justify-between w-full mx-auto mt-2 mb-0 gap-3">
+                                <div className="flex-none flex items-center justify-center gap-1.5 text-rose-500 font-[monospace] px-4 py-2 sm:py-2.5 bg-rose-50/90 shadow-sm rounded-xl w-auto border border-rose-100/50 cursor-default">
+                                    <span className="text-xs sm:text-sm">⏳</span>
+                                    <span className="text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap">{formatTime(timeLeft)}</span>
                                 </div>
 
                                 <button
                                     onClick={downloadQr}
-                                    className="flex w-auto min-w-max py-[5px] px-4 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-lg justify-center items-center gap-[5px] text-xs font-semibold transition-colors shadow-sm"
+                                    className="flex flex-1 sm:flex-none py-2 sm:py-2.5 px-6 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-xl justify-center items-center gap-2 text-sm sm:text-base font-semibold transition-colors shadow-sm"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#3b5368]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                     บันทึก
@@ -179,7 +179,7 @@ const PaymentStep = () => {
                         type="file"
                         accept="image/*"
                         onChange={handleSlipChange}
-                        className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg p-1.5 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
+                        className="block w-full text-sm md:text-base text-gray-600 border border-gray-200 rounded-xl p-2 md:p-2.5 cursor-pointer bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 transition-all"
                     />
                     {fileError && (
                         <p className="text-red-500 text-[11px] mt-1.5">{fileError}</p>

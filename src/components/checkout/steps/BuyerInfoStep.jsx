@@ -21,7 +21,7 @@ const BuyerInfoStep = () => {
                     <label className="block text-xs font-medium text-gray-600 mb-1.5">ชื่อผู้สั่งซื้อ</label>
                     <input
                         type="text"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm md:text-base"
                         placeholder="ชื่อของคุณ"
                         value={formData.buyerName}
                         onChange={(e) => updateFormData({ buyerName: e.target.value })}
@@ -31,7 +31,7 @@ const BuyerInfoStep = () => {
                     <label className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
                     <input
                         type="email"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm md:text-base"
                         placeholder="your@email.com"
                         value={formData.buyerEmail}
                         onChange={(e) => updateFormData({ buyerEmail: e.target.value })}
@@ -42,7 +42,7 @@ const BuyerInfoStep = () => {
                     <label className="block text-xs font-medium text-gray-600 mb-1.5">เบอร์โทรศัพท์</label>
                     <input
                         type="tel"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-gray-50/50 outline-none transition-all text-sm md:text-base"
                         placeholder="0812345678"
                         value={formData.buyerPhone}
                         onChange={(e) => updateFormData({ buyerPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
@@ -60,15 +60,15 @@ const BuyerInfoStep = () => {
                         </div>
 
                         <div>
-                            <label className="block text-[11px] font-medium text-gray-500 mb-2">ตรวจสอบชื่อลิงก์ว่าว่างหรือไม่ก่อนทำรายการถัดไป</label>
-                            <div className="flex items-center gap-2">
+                            <label className="block text-[11px] sm:text-xs font-medium text-gray-500 mb-2">ตรวจสอบชื่อลิงก์ว่าว่างหรือไม่ก่อนทำรายการถัดไป</label>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                 <div className="flex items-center flex-1 min-w-0">
                                     <span className="bg-gray-100 border border-r-0 border-gray-200 px-2.5 py-2.5 rounded-l-xl text-gray-400 text-[11px] whitespace-nowrap">
                                         {tier?.wantSpecialLink ? 'https://' : 'norastory.com/'}
                                     </span>
                                     <input
                                         type="text"
-                                        className={`flex-1 min-w-0 px-3 py-2.5 ${tier?.wantSpecialLink ? 'border-y' : 'border border-l-0 rounded-r-xl'} border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm ${isDomainAvailable === false ? 'border-red-300 bg-red-50' : isDomainAvailable === true ? 'border-green-300 bg-green-50' : ''}`}
+                                        className={`flex-1 min-w-0 px-3 py-2.5 sm:py-3 ${tier?.wantSpecialLink ? 'border-y' : 'border border-l-0 rounded-r-xl'} border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm md:text-base ${isDomainAvailable === false ? 'border-red-300 bg-red-50' : isDomainAvailable === true ? 'border-green-300 bg-green-50' : ''}`}
                                         placeholder="yourname"
                                         value={formData.customDomain}
                                         onChange={(e) => {
@@ -83,7 +83,7 @@ const BuyerInfoStep = () => {
                                 <button
                                     onClick={handleCheckDomain}
                                     disabled={!formData.customDomain || formData.customDomain.length < 5 || isChecking}
-                                    className="px-4 py-2.5 bg-[#1A3C40] hover:bg-[#2a4c50] disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap flex items-center gap-2"
+                                    className="px-4 py-2.5 sm:py-3 bg-[#1A3C40] hover:bg-[#2a4c50] disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap flex items-center justify-center gap-2"
                                 >
                                     {isChecking ? <Loader2 size={16} className="animate-spin" /> : 'ตรวจสอบ'}
                                 </button>

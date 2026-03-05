@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, auth } from '../../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Package, LogOut, RefreshCw, Music } from 'lucide-react';
 
 import StatsCards from './dashboard/StatsCards';
@@ -21,10 +22,12 @@ const AdminDashboard = () => {
 
     // Check auth on mount
     useEffect(() => {
-        const isAuth = sessionStorage.getItem('adminAuth');
-        if (!isAuth) {
-            navigate('/jimdev');
-        }
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                navigate('/jimdev');
+            }
+        });
+        return () => unsubscribe();
     }, [navigate]);
 
     // Fetch orders from Firebase
@@ -61,9 +64,13 @@ const AdminDashboard = () => {
         fetchOrders();
     }, []);
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('adminAuth');
-        navigate('/jimdev');
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            navigate('/jimdev');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     };
 
     // Update order in the list when it changes in the modal

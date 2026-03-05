@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -6,6 +6,7 @@ import { db, storage } from '../firebase';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, Clock, ChevronLeft, AlertCircle, Timer, Pencil, Image, FileText } from 'lucide-react';
 import { TIERS } from '../data/tierData';
+import { useToast } from './ui/Toast';
 import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
@@ -135,6 +136,8 @@ const ExtensionPage = () => {
     const [qrTimeLeft, setQrTimeLeft] = useState(null);
     const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || '';
     const [activeTab, setActiveTab] = useState('extend'); // 'extend' | 'editText' | 'editImage' | 'history'
+    const { showToast, ToastContainer } = useToast();
+    const isSubmittingRef = useRef(false);
 
     // Reset domain status when input changes
     useEffect(() => {
@@ -212,7 +215,7 @@ const ExtensionPage = () => {
             }
         } catch (error) {
             console.error('Error checking domain:', error);
-            alert('เกิดข้อผิดพลาดในการตรวจสอบ กรุณาลองใหม่');
+            showToast('เกิดข้อผิดพลาดในการตรวจสอบ กรุณาลองใหม่', 'error');
             setDomainStatus(null);
         } finally {
             setIsDomainChecking(false);
@@ -223,7 +226,7 @@ const ExtensionPage = () => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                alert('ไฟล์ขนาดใหญ่เกินไป (Max 5MB)');
+                showToast('ไฟล์ขนาดใหญ่เกินไป (Max 5MB)', 'warning');
                 return;
             }
             setSlipFile(file);
@@ -231,21 +234,23 @@ const ExtensionPage = () => {
     };
 
     const handleSubmit = async () => {
+        if (isSubmittingRef.current) return;
         if (!slipFile) {
-            alert('กรุณาแนบสลิปโอนเงิน');
+            showToast('กรุณาแนบสลิปโอนเงิน', 'warning');
             return;
         }
 
         if ((wantSpecialLink || wantCustomLink) && domainStatus !== true) {
-            alert('กรุณาตรวจสอบชื่อลิงก์ก่อนดำเนินการต่อ');
+            showToast('กรุณาตรวจสอบชื่อลิงก์ก่อนดำเนินการต่อ', 'warning');
             return;
         }
 
         if ((wantSpecialLink || wantCustomLink) && qrTimeLeft === 0) {
-            alert('คิวอาร์โค้ดหมดอายุ กรุณากดตรวจสอบลิงก์อีกครั้ง');
+            showToast('คิวอาร์โค้ดหมดอายุ กรุณากดตรวจสอบลิงก์อีกครั้ง', 'error');
             return;
         }
 
+        isSubmittingRef.current = true;
         setIsSubmitting(true);
         try {
             const timestamp = Date.now();
@@ -283,9 +288,10 @@ const ExtensionPage = () => {
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
-            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         } finally {
             setIsSubmitting(false);
+            isSubmittingRef.current = false;
         }
     };
 
@@ -350,10 +356,10 @@ const ExtensionPage = () => {
             await updateDoc(orderRef, updates);
             setOrder(prev => ({ ...prev, ...updates }));
             setEditTextMode(false);
-            alert('แก้ไขข้อความเรียบร้อยแล้ว!');
+            showToast('แก้ไขข้อความเรียบร้อยแล้ว!', 'success');
         } catch (err) {
             console.error(err);
-            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         } finally {
             setEditSubmitting(false);
         }
@@ -361,7 +367,7 @@ const ExtensionPage = () => {
 
     const handleSaveImageEdit = async () => {
         if (editImageFiles.length === 0) {
-            alert('กรุณาเลือกรูปภาพ');
+            showToast('กรุณาเลือกรูปภาพ', 'warning');
             return;
         }
         setEditSubmitting(true);
@@ -384,10 +390,10 @@ const ExtensionPage = () => {
             setOrder(prev => ({ ...prev, ...updates }));
             setEditImageMode(false);
             setEditImageFiles([]);
-            alert('แก้ไขรูปภาพเรียบร้อยแล้ว!');
+            showToast('แก้ไขรูปภาพเรียบร้อยแล้ว!', 'success');
         } catch (err) {
             console.error(err);
-            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         } finally {
             setEditSubmitting(false);
         }
@@ -395,7 +401,7 @@ const ExtensionPage = () => {
 
     const handleEditPayment = async () => {
         if (!editSlipFile) {
-            alert('กรุณาแนบสลิปโอนเงิน');
+            showToast('กรุณาแนบสลิปโอนเงิน', 'warning');
             return;
         }
         setEditSubmitting(true);
@@ -437,7 +443,7 @@ const ExtensionPage = () => {
             setEditPayType(null);
         } catch (err) {
             console.error(err);
-            alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         } finally {
             setEditSubmitting(false);
         }
@@ -502,6 +508,7 @@ const ExtensionPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#F5F5F0] to-white">
+            <ToastContainer />
             {/* Header */}
             <div className="bg-[#1A3C40] text-white px-4 py-3 sm:py-4">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
