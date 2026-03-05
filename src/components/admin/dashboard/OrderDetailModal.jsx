@@ -365,37 +365,37 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     if (!order) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4" onClick={onClose}>
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
                 {/* Modal Header */}
-                <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
-                    <div>
-                        <h2 className="font-playfair text-xl text-gray-800">Order Details</h2>
-                        <p className="text-sm text-gray-400 font-mono">#{order.id}</p>
+                <div className="border-b border-gray-100 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
+                    <div className="min-w-0">
+                        <h2 className="font-playfair text-lg sm:text-xl text-gray-800">Order Details</h2>
+                        <p className="text-xs text-gray-400 font-mono truncate">#{order.id}</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         <StatusBadge status={order.status} />
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl ml-1">×</button>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-100 px-6 flex-shrink-0 overflow-x-auto">
+                <div className="flex border-b border-gray-100 px-2 sm:px-6 flex-shrink-0 overflow-x-auto scrollbar-none">
                     {[
                         { key: 'info', label: 'ข้อมูล', icon: <User size={14} /> },
-                        { key: 'content', label: 'แก้ไขเนื้อหา', icon: <Edit2 size={14} /> },
+                        { key: 'content', label: 'แก้ไข', icon: <Edit2 size={14} /> },
                         { key: 'images', label: 'รูปภาพ', icon: <ImageIcon size={14} /> },
                         { key: 'settings', label: 'ตั้งค่า', icon: <Settings size={14} /> },
                     ].map(tab => (
                         <button key={tab.key} onClick={() => setModalTab(tab.key)}
-                            className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${modalTab === tab.key ? 'border-[#1A3C40] text-[#1A3C40]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+                            className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${modalTab === tab.key ? 'border-[#1A3C40] text-[#1A3C40]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                             {tab.icon} {tab.label}
                         </button>
                     ))}
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                     {/* === TAB: INFO === */}
                     {modalTab === 'info' && (<>
                         <div className="p-4 bg-gray-50 rounded-xl space-y-4">
@@ -442,19 +442,19 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                         {/* Customer & Order Info */}
                         <div>
                             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><User size={18} className="text-[#E8A08A]" /> ข้อมูลลูกค้า</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">ชื่อ</p><p className="font-medium">{order.buyer_name || order.customer_name || '-'}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg">
                                     <p className="text-xs text-gray-400 mb-1">ติดต่อ</p>
                                     <p className="font-medium">{order.buyer_phone || order.customer_contact || '-'}</p>
-                                    {order.buyer_email && <p className="text-xs text-gray-500 mt-1">{order.buyer_email}</p>}
+                                    {order.buyer_email && <p className="text-xs text-gray-500 mt-1 break-all">{order.buyer_email}</p>}
                                 </div>
                             </div>
                             {order.message && (<div className="mt-3 p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><MessageSquare size={12} /> ข้อความ</p><p className="text-sm">{order.message}</p></div>)}
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><CreditCard size={18} className="text-[#E8A08A]" /> ข้อมูล Order</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">แพ็คเกจ</p><p className="font-medium">{order.tier_name || getTierName(order.tier_id)}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">ราคา</p><p className="font-medium text-[#E8A08A]">{order.price || '-'} บาท</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1">วันที่สร้าง</p><p className="text-sm">{order.created_at?.toLocaleString?.('th-TH') || '-'}</p></div>
@@ -931,49 +931,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                     <button onClick={() => { const d = new Date(order.expires_at || new Date()); d.setDate(d.getDate() + 365); setNewExpiresAt(d); }} className="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-50">+1 ปี</button>
                                 </div>
                             </div>
-                            {/* Config Editor */}
-                            {orderConfig && (
-                                <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-                                    <h3 className="font-semibold text-purple-800 mb-4 flex items-center gap-2"><Settings size={18} /> ตั้งค่าการแสดงผล</h3>
-                                    <div className="mb-4">
-                                        <p className="text-xs font-medium text-purple-700 mb-2">🎨 Effects</p>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {EFFECT_OPTIONS.map((effect) => (
-                                                <label key={effect.key} className={`flex flex-col items-center p-3 rounded-lg cursor-pointer border-2 transition-all ${orderConfig.effects?.[effect.key] ? 'border-purple-500 bg-purple-100' : 'border-gray-200 bg-white hover:border-purple-300'}`}>
-                                                    <input type="checkbox" className="sr-only" checked={orderConfig.effects?.[effect.key] || false} onChange={(e) => updateConfig('effects', effect.key, e.target.checked)} />
-                                                    <span className="text-lg mb-1">{effect.label.split(' ')[0]}</span>
-                                                    <span className="text-[10px] text-gray-500">{effect.label.split(' ').slice(1).join(' ')}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="mb-4">
-                                        <p className="text-xs font-medium text-purple-700 mb-2">✨ Features</p>
-                                        <div className="space-y-3">
-                                            {FEATURE_OPTIONS.map((feature) => (
-                                                <div key={feature.key} className="p-3 bg-white rounded-lg border border-gray-200">
-                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                        <input type="checkbox" className="w-4 h-4 accent-purple-500" checked={orderConfig.features?.[feature.key] || false} onChange={(e) => updateConfig('features', feature.key, e.target.checked)} />
-                                                        <span className="text-sm font-medium">{feature.label}</span>
-                                                    </label>
-                                                    {orderConfig.features?.[feature.key] && feature.hasInput && (
-                                                        <div className="mt-2">
-                                                            {feature.inputType === 'textarea' ? (
-                                                                <textarea placeholder={feature.inputLabel} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={2} value={orderConfig.features?.[feature.inputKey] || ''} onChange={(e) => updateConfig('features', feature.inputKey, e.target.value)} />
-                                                            ) : (
-                                                                <input type="text" placeholder={feature.inputLabel} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={orderConfig.features?.[feature.inputKey] || ''} onChange={(e) => updateConfig('features', feature.inputKey, e.target.value)} />
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <button onClick={handleSaveConfig} disabled={configSaving} className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-lg font-medium flex items-center justify-center gap-2">
-                                        {configSaving ? <><RefreshCw size={16} className="animate-spin" /> กำลังบันทึก...</> : <><CheckCircle size={16} /> บันทึกการตั้งค่า</>}
-                                    </button>
-                                </div>
-                            )}
+
+
                         </>) : (
                             <div className="text-center text-gray-400 py-12"><Settings size={40} className="mx-auto mb-3 opacity-40" /><p>ตั้งค่าได้เฉพาะ order ที่อนุมัติแล้ว</p></div>
                         )}

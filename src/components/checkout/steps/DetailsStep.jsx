@@ -1,11 +1,21 @@
 import { motion } from 'framer-motion';
 import { useCheckout } from '../CheckoutContext';
 import Template1Fields from '../forms/tier1/Template1Fields';
+import Template4Fields from '../forms/tier1/Template4Fields';
 import TimelineFields from '../forms/tier3/TimelineFields';
 import MusicSelection from '../forms/MusicSelection';
 
 const DetailsStep = () => {
     const { needsDetailFields, needsTimelineFields, selectedTemplate } = useCheckout();
+
+    // T1-4: Love Story — same fields but different component
+    if (selectedTemplate === 't1-4') {
+        return (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <Template4Fields />
+            </motion.div>
+        );
+    }
 
     // T1-1 and T2 templates: PIN, Target Name, Message, Sign Off
     if (needsDetailFields) {

@@ -6,6 +6,7 @@ import { mergeConfig } from '../../lib/templateConfig';
 import Tier1Template1 from '../templates/tier1/Tier1Template1';
 import Tier1Template2 from '../templates/tier1/Tier1Template2';
 import Tier1Template3 from '../templates/tier1/Tier1Template3';
+import Tier1Template4 from '../templates/tier1/Tire1Template4';
 import Tier2Template1 from '../templates/tier2/Tier2Template1';
 import Tier2Template2 from '../templates/tier2/Tier2Template2';
 import Tier2Template3 from '../templates/tier2/Tier2Template3';
@@ -14,7 +15,7 @@ import Tier3Template2 from '../templates/tier3/Tier3Template2';
 import Tier3Template3 from '../templates/tier3/Tier3Template3';
 
 const TEMPLATES = {
-    't1-1': Tier1Template1, 't1-2': Tier1Template2, 't1-3': Tier1Template3,
+    't1-1': Tier1Template1, 't1-2': Tier1Template2, 't1-3': Tier1Template3, 't1-4': Tier1Template4,
     't2-1': Tier2Template1, 't2-2': Tier2Template2, 't2-3': Tier2Template3,
     't3-1': Tier3Template1, 't3-2': Tier3Template2, 't3-3': Tier3Template3,
 };

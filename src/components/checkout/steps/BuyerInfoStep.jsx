@@ -3,12 +3,33 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCheckout } from '../CheckoutContext';
 import { useState } from 'react';
 
+// Reserved paths ที่ห้ามใช้เป็น custom link (ชนกับ route ใน App.jsx)
+const RESERVED_WORDS = [
+    'admin', 'jimdev', 'dashboard', 'extend', 'extension',
+    'api', 'app', 'www', 'mail', 'ftp', 'smtp',
+    'login', 'logout', 'register', 'signup', 'signin',
+    'checkout', 'payment', 'order', 'orders', 'cart',
+    'norastory', 'nora', 'story', 'stories',
+    'about', 'contact', 'help', 'support', 'terms', 'privacy', 'policy',
+    'index', 'home', 'main', 'root', 'public', 'static', 'assets',
+];
+
+const isReservedWord = (domain) => RESERVED_WORDS.includes(domain.toLowerCase());
+
 const BuyerInfoStep = () => {
     const { tier, formData, updateFormData, checkDomainAvailability, isDomainAvailable, setIsDomainAvailable } = useCheckout();
     const [isChecking, setIsChecking] = useState(false);
+    const [reservedError, setReservedError] = useState('');
 
     const handleCheckDomain = async () => {
         if (!formData.customDomain) return;
+        // ตรวจสอบ reserved words ก่อน
+        if (isReservedWord(formData.customDomain)) {
+            setReservedError('ชื่อนี้ถูกสงวนไว้ กรุณาเลือกชื่ออื่น');
+            setIsDomainAvailable(false);
+            return;
+        }
+        setReservedError('');
         setIsChecking(true);
         await checkDomainAvailability(formData.customDomain);
         setIsChecking(false);
@@ -74,6 +95,7 @@ const BuyerInfoStep = () => {
                                         onChange={(e) => {
                                             updateFormData({ customDomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) });
                                             setIsDomainAvailable(null); // Reset validation state on type
+                                            setReservedError(''); // Reset reserved error on type
                                         }}
                                     />
                                     {tier?.wantSpecialLink && (
@@ -96,13 +118,20 @@ const BuyerInfoStep = () => {
                                 </p>
                             )}
 
+                            {/* Reserved Word Warning */}
+                            {reservedError && (
+                                <p className="mt-2 text-xs text-red-500 flex items-center gap-1.5">
+                                    <XCircle size={14} /> {reservedError}
+                                </p>
+                            )}
+
                             {/* Status Message */}
-                            {isDomainAvailable === true && (
+                            {!reservedError && isDomainAvailable === true && (
                                 <p className="mt-2 text-xs text-green-600 flex items-center gap-1.5">
                                     <CheckCircle2 size={14} /> สามารถใช้ชื่อนี้ได้
                                 </p>
                             )}
-                            {isDomainAvailable === false && (
+                            {!reservedError && isDomainAvailable === false && (
                                 <p className="mt-2 text-xs text-red-500 flex items-center gap-1.5">
                                     <XCircle size={14} /> ชื่อนี้มีผู้ใช้งานแล้ว กรุณาเลือกชื่ออื่น
                                 </p>

@@ -51,10 +51,11 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
     // Check template tier type
     const isTier1Template1 = String(tier?.id) === '1' && selectedTemplate === 't1-1';
+    const isTier1Template4 = String(tier?.id) === '1' && selectedTemplate === 't1-4';
     const isTier2 = String(tier?.id) === '2';
     const isTier3 = String(tier?.id) === '3';
-    // Both T1-1 and T2 templates use the same detail fields (PIN, target name, message, sign off)
-    const needsDetailFields = isTier1Template1 || isTier2;
+    // T1-1, T1-4 and T2 templates use the same detail fields (PIN, target name, message, sign off)
+    const needsDetailFields = isTier1Template1 || isTier1Template4 || isTier2;
     // Tier 3 uses timeline fields
     const needsTimelineFields = isTier3;
 
@@ -87,7 +88,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
     // Step labels  
     const getStepLabels = () => {
-        return ['ข้อมูล', 'เลือกธีม', 'รายละเอียด', 'รูปภาพ', 'ชำระเงิน'];
+        return ['เลือกธีม', 'ข้อมูล', 'รายละเอียด', 'รูปภาพ', 'ชำระเงิน'];
     };
 
     // Progress step mapping

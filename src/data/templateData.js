@@ -12,14 +12,14 @@ export const TR_DATA = {
         name: 'Standard',
         description: 'สำหรับคนพิเศษ',
         price: '129',
-        features: ['15 Days', 'Premium Theme', 'Music'],
+        features: ['15 Days', 'Standard Theme', 'Music'],
         icon: Star,
     },
     3: {
         name: 'Premium',
         description: 'สำหรับโอกาสพิเศษ',
         price: '249',
-        features: ['15 Days', 'Luxury Theme', 'Gallery'],
+        features: ['15 Days', 'Premium Theme', 'Gallery'],
         icon: Star,
     },
 };
@@ -78,7 +78,7 @@ export const TEMPLATE_DATA = {
     // Tier 3 (Premium)
     't3-1': {
         id: 't3-1',
-        name: 'Love Story',
+        name: 'Premium Story',
         // description: 'หรูหราอลังการ',
         preview: '',
         usage: 'อัปโหลดรูปได้ 10 รูป ไทม์ไลน์เล่าเรื่องราว พร้อมการ์ดอวยพร'

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Package, LogOut, RefreshCw, Music } from 'lucide-react';
@@ -18,6 +18,8 @@ const AdminDashboard = () => {
     const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'music'
+    const [isLive, setIsLive] = useState(false); // real-time connected indicator
+    const unsubscribeRef = useRef(null);
     const navigate = useNavigate();
 
     // Check auth on mount
@@ -30,14 +32,17 @@ const AdminDashboard = () => {
         return () => unsubscribe();
     }, [navigate]);
 
-    // Fetch orders from Firebase
-    const fetchOrders = async () => {
+    // Subscribe to real-time orders
+    const subscribeToOrders = () => {
         setLoading(true);
-        try {
-            const ordersRef = collection(db, 'orders');
-            const q = query(ordersRef, orderBy('created_at', 'desc'));
-            const snapshot = await getDocs(q);
+        // Unsubscribe previous listener if any
+        if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+        }
+        const ordersRef = collection(db, 'orders');
+        const q = query(ordersRef, orderBy('created_at', 'desc'));
 
+        const unsubscribe = onSnapshot(q, (snapshot) => {
             const ordersList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
@@ -51,17 +56,27 @@ const AdminDashboard = () => {
                 image_edit_payment_requested_at: doc.data().image_edit_payment_requested_at?.toDate?.() || null,
                 image_edit_payment_approved_at: doc.data().image_edit_payment_approved_at?.toDate?.() || null,
             }));
-
             setOrders(ordersList);
-        } catch (error) {
-            console.error('Error fetching orders:', error);
-        } finally {
             setLoading(false);
-        }
+            setIsLive(true);
+        }, (error) => {
+            console.error('Error listening to orders:', error);
+            setLoading(false);
+            setIsLive(false);
+        });
+
+        unsubscribeRef.current = unsubscribe;
     };
 
     useEffect(() => {
-        fetchOrders();
+        subscribeToOrders();
+        // Cleanup listener on unmount
+        return () => {
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleLogout = async () => {
@@ -103,37 +118,44 @@ const AdminDashboard = () => {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-[#1A3C40] text-white shadow-lg sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#E8A08A] rounded-xl flex items-center justify-center">
-                            <Package size={20} />
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#E8A08A] rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Package size={16} className="sm:hidden" />
+                            <Package size={20} className="hidden sm:block" />
                         </div>
-                        <div>
-                            <h1 className="font-playfair text-xl">NoraStory Admin</h1>
-                            <p className="text-white/50 text-xs">Order Management</p>
+                        <div className="min-w-0">
+                            <h1 className="font-playfair text-base sm:text-xl leading-tight">NoraStory Admin</h1>
+                            <p className="text-white/50 text-[10px] sm:text-xs hidden sm:block">Order Management</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        {isLive && (
+                            <div className="flex items-center gap-1.5 text-xs text-emerald-300">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="hidden sm:inline">Live</span>
+                            </div>
+                        )}
                         <button
-                            onClick={fetchOrders}
-                            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm"
+                            onClick={subscribeToOrders}
+                            className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-sm"
                         >
                             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                            Refresh
+                            <span className="hidden sm:inline">Refresh</span>
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors text-sm"
+                            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-sm"
                         >
-                            <LogOut size={16} />
-                            Logout
+                            <LogOut size={15} />
+                            <span className="hidden sm:inline">Logout</span>
                         </button>
                     </div>
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 py-6">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
                 {/* Tabs */}
                 <div className="flex gap-4 mb-8 border-b border-gray-200">
                     <button

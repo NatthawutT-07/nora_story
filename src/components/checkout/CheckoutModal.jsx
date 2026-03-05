@@ -79,6 +79,13 @@ const CheckoutContent = () => {
         setError('');
 
         if (step === 1) {
+            // Validate template selection first
+            if (!selectedTemplate) {
+                setError('กรุณาเลือกธีม');
+                return;
+            }
+            setStep(2);
+        } else if (step === 2) {
             // Validate buyer info
             if (!formData.buyerName.trim()) {
                 setError('กรุณากรอกชื่อผู้สั่งซื้อ');
@@ -109,13 +116,6 @@ const CheckoutContent = () => {
                 }
             }
 
-            setStep(2);
-        } else if (step === 2) {
-            // Validate template selection
-            if (!selectedTemplate) {
-                setError('กรุณาเลือกธีม');
-                return;
-            }
             setStep(3); // Go to details
         } else if (step === 3) {
             // Validate template details (T1-1 and T2)
@@ -378,8 +378,8 @@ const CheckoutContent = () => {
                                 <>
                                     <div className={`text-center ${step === 5 ? 'mb-1' : 'mb-2'}`}>
                                         <h3 className="text-xl font-playfair font-bold text-[#1A3C40] mb-0.5">
-                                            {step === 1 ? 'ข้อมูลผู้สั่งซื้อ' :
-                                                step === 2 ? 'เลือกธีม' :
+                                            {step === 1 ? 'เลือกธีม' :
+                                                step === 2 ? 'ข้อมูลผู้สั่งซื้อ' :
                                                     step === 3 ? 'รายละเอียดธีม' :
                                                         step === 4 ? 'อัปโหลดรูปภาพ' : 'ชำระเงิน'}
                                         </h3>
@@ -397,8 +397,8 @@ const CheckoutContent = () => {
                                     </div>
 
                                     <div className="space-y-4">
-                                        {step === 1 && <BuyerInfoStep />}
-                                        {step === 2 && <TemplateStep />}
+                                        {step === 1 && <TemplateStep />}
+                                        {step === 2 && <BuyerInfoStep />}
                                         {step === 3 && <DetailsStep />}
                                         {step === 4 && <ImagesStep />}
                                         {step === 5 && <PaymentStep />}

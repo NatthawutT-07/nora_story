@@ -150,7 +150,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden relative">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden">
 
             {/* Watermark for Demo */}
             {isDemo && (
@@ -172,7 +172,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
                         transition={{ duration: 0.6 }}
-                        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+                        className="absolute inset-0 z-50 flex flex-col items-center justify-center"
                     >
                         <AnimatedBackground variant="default" />
                         <FloatingHearts />
@@ -280,13 +280,13 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                         initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
                         animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                         transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
-                        className="relative z-10 max-w-lg w-full"
+                        className="absolute inset-0 z-50 flex flex-col items-center justify-center px-4"
                     >
                         <AnimatedBackground variant="content" />
                         <FloatingHearts />
 
                         {/* Card */}
-                        <div className="relative bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border border-rose-100 overflow-hidden">
+                        <div className="relative z-10 w-full max-w-lg bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border border-rose-100 overflow-hidden">
                             {/* Decorative corner */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-100 to-transparent rounded-bl-full opacity-50" />
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-100 to-transparent rounded-tr-full opacity-50" />

@@ -213,7 +213,7 @@ const MusicManager = () => {
                 </div>
             </div>
 
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* UPOLAD SECTION */}
                 <div className="lg:col-span-1 border border-gray-100 rounded-xl p-5 bg-gray-50/30 self-start">
                     <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -294,8 +294,8 @@ const MusicManager = () => {
                                     <button
                                         onClick={() => togglePlay(music)}
                                         className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 transition-colors ${playingId === music.id
-                                                ? 'bg-[#E8A08A] text-white shadow-md'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-[#1A3C40] hover:text-white'
+                                            ? 'bg-[#E8A08A] text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-[#1A3C40] hover:text-white'
                                             }`}
                                     >
                                         {playingId === music.id ? <Pause size={18} /> : <Play size={18} className="ml-1" />}
@@ -350,14 +350,14 @@ const MusicManager = () => {
                                             <>
                                                 <button
                                                     onClick={() => startEdit(music)}
-                                                    className="p-1.5 text-gray-400 hover:text-[#1A3C40] hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                                    className="p-1.5 text-gray-400 hover:text-[#1A3C40] hover:bg-gray-100 rounded transition-all"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(music)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
                                                     title="Delete"
                                                 >
                                                     <Trash2 size={16} />

@@ -1,44 +1,42 @@
 import React from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
+
+const FILTERS = [
+    { key: 'all', label: 'ทั้งหมด', cls: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
+    { key: 'pending', label: 'รอตรวจสอบ', cls: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' },
+    { key: 'approved', label: 'อนุมัติ', cls: 'bg-green-100 text-green-800 hover:bg-green-200' },
+    { key: 'rejected', label: 'ปฏิเสธ', cls: 'bg-red-100 text-red-800 hover:bg-red-200' },
+    { key: 'extension_pending', label: 'ต่ออายุ', cls: 'bg-amber-100 text-amber-800 hover:bg-amber-200' },
+    { key: 'edit_pending', label: 'แก้ไข (รอชำระ)', cls: 'bg-purple-100 text-purple-800 hover:bg-purple-200' },
+];
 
 const OrderFilter = ({ filter, setFilter, searchTerm, setSearchTerm }) => {
     return (
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="ค้นหาชื่อ, Line ID, หรือ Order ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8A08A]/50 focus:border-transparent"
-                    />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Filter size={18} className="text-gray-400" />
-                    {['all', 'pending', 'approved', 'rejected', 'extension_pending', 'edit_pending'].map((f) => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
-                                ? 'bg-[#1A3C40] text-white'
-                                : (f === 'extension_pending' || f === 'edit_pending')
-                                    ? f === 'edit_pending'
-                                        ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                                        : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            {f === 'all' ? 'ทั้งหมด' :
-                                f === 'pending' ? 'รอตรวจสอบ' :
-                                    f === 'approved' ? 'อนุมัติ' :
-                                        f === 'rejected' ? 'ปฏิเสธ' :
-                                            f === 'extension_pending' ? 'คำขอต่ออายุ' :
-                                                'แก้ไข (รอชำระ)'}
-                        </button>
-                    ))}
-                </div>
+        <div className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 mb-4 sm:mb-6 space-y-3">
+            {/* Search */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                    type="text"
+                    placeholder="ค้นหาชื่อ, เบอร์, Email หรือ Order ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8A08A]/50 focus:border-transparent outline-none"
+                />
+            </div>
+
+            {/* Filter pills — horizontal scroll on mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                {FILTERS.map(({ key, label, cls }) => (
+                    <button
+                        key={key}
+                        onClick={() => setFilter(key)}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap
+                            ${filter === key ? 'bg-[#1A3C40] text-white shadow-sm' : cls}`}
+                    >
+                        {label}
+                    </button>
+                ))}
             </div>
         </div>
     );
