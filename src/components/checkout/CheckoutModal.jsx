@@ -107,8 +107,8 @@ const CheckoutContent = () => {
                     setError('กรุณาระบุชื่อลิงก์ที่ต้องการ');
                     return;
                 }
-                if (formData.customDomain.length < 5) {
-                    setError('ชื่อลิงก์ต้องมีอย่างน้อย 5 ตัวอักษร');
+                if (formData.customDomain.length < 8) {
+                    setError('ชื่อลิงก์ต้องมีอย่างน้อย 8 ตัวอักษร');
                     return;
                 }
                 if (isDomainAvailable !== true) {
@@ -318,7 +318,7 @@ const CheckoutContent = () => {
             try {
                 const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
                 if (gasUrl) {
-                    const notifyMessage = `🔔 มีออเดอร์ใหม่เข้า!\nOrder ID: ${storyId}\nแพ็คเกจ: ${tier.name}\nราคา: ${tier.price} บาท\nชื่อผู้ซื้อ: ${formData.buyerName}`;
+                    const notifyMessage = `🔔 มีออเดอร์ใหม่เข้า!\nOrder ID: ${storyId}\nแพ็คเกจ: ${tier.name}\nราคา: ${tier.price} บาท\nชื่อผู้ซื้อ: ${formData.buyerName}\nอีเมล: ${formData.buyerEmail}`;
                     fetch(gasUrl, {
                         method: 'POST',
                         mode: 'no-cors',

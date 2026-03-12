@@ -197,7 +197,7 @@ const ExtensionPage = () => {
     }, [id]);
 
     const handleCheckDomain = async () => {
-        if (!customDomain1 || (wantCustomLink && customDomain1.length < 5)) return;
+        if (!customDomain1 || (wantCustomLink && customDomain1.length < 8)) return;
 
         setIsDomainChecking(true);
         try {

@@ -116,7 +116,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const handleSaveLink = async () => {
         if (!newLinkChoice) return alert('กรุณากรอกชื่อลิงก์');
         if (!/^[a-z0-9-]+$/.test(newLinkChoice)) return alert('เฉพาะภาษาอังกฤษตัวพิมพ์เล็ก ตัวเลข และขีด (-) เท่านั้น');
-        if (newLinkType === 'custom' && newLinkChoice.length < 5) return alert('Custom Link ต้องมีอย่างน้อย 5 ตัวอักษร');
+        if (newLinkType === 'custom' && newLinkChoice.length < 8) return alert('Custom Link ต้องมีอย่างน้อย 8 ตัวอักษร');
 
         setIsSavingLink(true);
         try {

@@ -192,16 +192,23 @@ const AnimatedBackground = ({ variant = 'default' }) => {
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const wasPlayingRef = useRef(false);
 
     useEffect(() => {
         if (!audioRef.current) return;
         audioRef.current.volume = 0.4;
         const tryPlay = () => {
             audioRef.current?.play()
-                .then(() => setIsPlaying(true))
+                .then(() => {
+                    setIsPlaying(true);
+                    wasPlayingRef.current = true;
+                })
                 .catch(() => {
                     const playOnClick = () => {
-                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        audioRef.current?.play().then(() => {
+                            setIsPlaying(true);
+                            wasPlayingRef.current = true;
+                        });
                         document.removeEventListener('click', playOnClick);
                         document.removeEventListener('touchstart', playOnClick);
                     };
@@ -210,12 +217,37 @@ const MusicPlayer = ({ musicUrl }) => {
                 });
         };
         tryPlay();
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                wasPlayingRef.current = !audioRef.current?.paused;
+                audioRef.current?.pause();
+                setIsPlaying(false);
+            } else {
+                if (wasPlayingRef.current) {
+                    audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
-            else { audioRef.current.play().then(() => setIsPlaying(true)); }
+            if (isPlaying) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+                wasPlayingRef.current = false;
+            } else {
+                audioRef.current.play().then(() => {
+                    setIsPlaying(true);
+                    wasPlayingRef.current = true;
+                });
+            }
         }
     };
 

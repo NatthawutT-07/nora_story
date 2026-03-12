@@ -78,19 +78,24 @@ const ShootingStar = ({ delay }) => {
 const MusicPlayer = ({ musicUrl }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const wasPlayingRef = useRef(false);
 
     useEffect(() => {
         if (!audioRef.current) return;
         audioRef.current.volume = 0.4;
 
-        // Try autoplay
         const tryPlay = () => {
             audioRef.current?.play()
-                .then(() => setIsPlaying(true))
+                .then(() => {
+                    setIsPlaying(true);
+                    wasPlayingRef.current = true;
+                })
                 .catch(() => {
-                    // Browser blocked autoplay — play on first user interaction
                     const playOnClick = () => {
-                        audioRef.current?.play().then(() => setIsPlaying(true));
+                        audioRef.current?.play().then(() => {
+                            setIsPlaying(true);
+                            wasPlayingRef.current = true;
+                        });
                         document.removeEventListener('click', playOnClick);
                         document.removeEventListener('touchstart', playOnClick);
                     };
@@ -99,17 +104,42 @@ const MusicPlayer = ({ musicUrl }) => {
                 });
         };
         tryPlay();
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                wasPlayingRef.current = !audioRef.current?.paused;
+                audioRef.current?.pause();
+                setIsPlaying(false);
+            } else {
+                if (wasPlayingRef.current) {
+                    audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
-            if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
-            else { audioRef.current.play().then(() => setIsPlaying(true)); }
+            if (isPlaying) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+                wasPlayingRef.current = false;
+            } else {
+                audioRef.current.play().then(() => {
+                    setIsPlaying(true);
+                    wasPlayingRef.current = true;
+                });
+            }
         }
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
             <audio ref={audioRef} src={musicUrl} loop />
             <button
                 onClick={togglePlay}
@@ -127,16 +157,19 @@ const ScrollIndicator = () => {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        const handleScroll = () => {
-            if (window.scrollY > 100) {
+        const handleScroll = (e) => {
+            if (e.target && e.target.scrollTop > 100) {
                 setVisible(false);
             } else {
                 setVisible(true);
             }
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        const container = document.getElementById('t3-scroll-container');
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+            return () => container.removeEventListener('scroll', handleScroll);
+        }
     }, []);
 
     return (
@@ -146,7 +179,7 @@ const ScrollIndicator = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none"
+                    className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none"
                 >
                     <span className="text-white/50 text-[10px] uppercase tracking-[0.2em] mb-2 animate-pulse">Scroll</span>
                     <motion.div
@@ -162,7 +195,7 @@ const ScrollIndicator = () => {
 
 const TimelineNav = ({ items, activeIndex, onSelect }) => {
     return (
-        <div className="fixed top-1/2 right-2 md:right-8 transform -translate-y-1/2 z-40 flex flex-col gap-4 md:gap-6 items-end">
+        <div className="absolute top-1/2 right-2 md:right-8 transform -translate-y-1/2 z-40 flex flex-col gap-4 md:gap-6 items-end pointer-events-auto">
             <div className="absolute top-0 bottom-0 right-[5px] w-px bg-white/10 -z-10" />
             {items.map((item, idx) => (
                 <button
@@ -469,8 +502,8 @@ const Tier3Template1 = ({
     const finaleTimeline = mergedTimelines[4];
     listItems.push({
         type: 'finale',
-        label: finaleTimeline?.label || 'Forever',
-        title: finaleMessage || customMessage || finaleTimeline?.title || 'To Infinity', // Use proper priorities
+        label: finaleTimeline?.label || 'To Infinity',
+        title: finaleTimeline?.label || 'To Infinity', // ใช้ค่าขึ้นต้น (label) เป็น title หัวข้อ
         desc: '',
         images: getSectionImages(currentImageIndex, 2, defaultImages.dual)
     });
@@ -500,20 +533,20 @@ const Tier3Template1 = ({
     };
 
     return (
-        <div className="absolute inset-0 bg-[#050510] text-white overflow-x-hidden overflow-y-auto font-sans selection:bg-rose-500/30">
+        <div className="absolute inset-0 bg-[#050510] text-white overflow-hidden font-sans selection:bg-rose-500/30">
 
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80 z-0 pointer-events-none" />
             <Starfield speed={0.5} />
-            <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay" />
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay z-0" />
+            
             {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
             <ScrollIndicator />
+            <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
 
-            <div className="relative z-10 w-full min-h-full py-4 px-4 md:px-8">
-
-                <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
-
-                <div className="max-w-4xl mx-auto flex flex-col gap-2 pb-6">
-                    {listItems.map((item, index) => (
+            <div id="t3-scroll-container" className="absolute inset-0 overflow-y-auto overflow-x-hidden scroll-smooth z-10">
+                <div className="relative w-full min-h-full py-4 px-4 md:px-8">
+                    <div className="max-w-4xl mx-auto flex flex-col gap-2 pb-6">
+                        {listItems.map((item, index) => (
                         <motion.div
                             key={index}
                             ref={el => sectionRefs.current[index] = el}
@@ -534,6 +567,7 @@ const Tier3Template1 = ({
                         Made with by Nora Story
                     </div>
                 </div>
+            </div>
             </div>
 
             {/* Demo Watermark */}

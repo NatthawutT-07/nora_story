@@ -153,7 +153,7 @@ const ExtendTab = ({
                                     </div>
                                     <button
                                         onClick={handleCheckDomain}
-                                        disabled={!customDomain1 || (wantCustomLink && customDomain1.length < 5) || isDomainChecking}
+                                        disabled={!customDomain1 || (wantCustomLink && customDomain1.length < 8) || isDomainChecking}
                                         className="px-4 py-2.5 bg-[#1A3C40] hover:bg-[#2a4c50] disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 h-full"
                                     >
                                         {isDomainChecking ? <Loader2 size={16} className="animate-spin" /> : 'ตรวจสอบ'}
@@ -171,9 +171,9 @@ const ExtendTab = ({
                                             <CheckCircle2 size={14} /> สามารถใช้ชื่อนี้ได้
                                         </p>
                                     )}
-                                    {customDomain1.length > 0 && customDomain1.length < 5 && wantCustomLink && (
+                                    {customDomain1.length > 0 && customDomain1.length < 8 && wantCustomLink && (
                                         <p className="text-amber-500 font-medium ml-1">
-                                            ต้องใช้ชื่ออย่างน้อย 5 ตัวอักษร
+                                            ต้องใช้ชื่ออย่างน้อย 8 ตัวอักษร
                                         </p>
                                     )}
                                 </div>
