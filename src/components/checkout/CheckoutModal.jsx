@@ -4,6 +4,7 @@ import { X, Loader2, AlertCircle, Eye } from 'lucide-react';
 import { db, storage } from '../../firebase';
 import { doc, getDoc, serverTimestamp, increment, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
 import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
 import LivePreviewModal from './LivePreviewModal';
@@ -181,11 +182,20 @@ const CheckoutContent = () => {
                 storyId = await generateUniqueStoryId();
             }
 
-            // 2. Upload Slip
+            // 2. Upload Slip (with compression)
             const slipExt = slipFile.name.split('.').pop();
             const slipName = `${storyId}_${Date.now()}_slip.${slipExt}`;
             const slipRef = ref(storage, `slips/${slipName}`);
-            await uploadBytes(slipRef, slipFile);
+            
+            // Compress slip image
+            const slipCompressionOptions = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1200,
+                useWebWorker: true
+            };
+            const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
+            await uploadBytes(slipRef, compressedSlipFile);
+            
             const slipUrl = await getDownloadURL(slipRef);
 
             // 3. Upload Content Images (if any)
@@ -195,15 +205,34 @@ const CheckoutContent = () => {
             const maxUploads = getMaxImages() || contentFiles.length;
 
             if (contentFiles.length > 0 || maxUploads > 0) {
+                // Compression options for content images
+                const contentCompressionOptions = {
+                    maxSizeMB: 2, // Allow slightly larger file size for content to preserve quality
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                    initialQuality: 0.85
+                };
+
                 // Iterate up to maxUploads to ensure we capture all slots
                 for (let i = 0; i < maxUploads; i++) {
                     const file = contentFiles[i];
                     if (file) {
-                        const refName = `uploads/${storyId}/${i}_${file.name}`;
-                        const imgRef = ref(storage, refName);
-                        await uploadBytes(imgRef, file);
-                        const url = await getDownloadURL(imgRef);
-                        contentUrls.push(url);
+                        try {
+                            const compressedFile = await imageCompression(file, contentCompressionOptions);
+                            const refName = `uploads/${storyId}/${i}_${file.name}`;
+                            const imgRef = ref(storage, refName);
+                            await uploadBytes(imgRef, compressedFile);
+                            const url = await getDownloadURL(imgRef);
+                            contentUrls.push(url);
+                        } catch (error) {
+                            console.error(`Error compressing/uploading image ${i}:`, error);
+                            // Fallback to original file if compression fails
+                            const refName = `uploads/${storyId}/${i}_${file.name}`;
+                            const imgRef = ref(storage, refName);
+                            await uploadBytes(imgRef, file);
+                            const url = await getDownloadURL(imgRef);
+                            contentUrls.push(url);
+                        }
                     } else {
                         // Push null to preserve index position for templates (like Tier 3) that rely on specific slots
                         contentUrls.push(null);

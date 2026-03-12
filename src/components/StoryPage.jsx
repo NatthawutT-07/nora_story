@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
@@ -36,93 +37,81 @@ const TEMPLATES = {
  * 1. Path-based: norastory.com/<storyId>
  * 2. Subdomain-based: <name>.norastory.com (VIP Tier 4)
  */
+// Function defined outside component to be used with SWR
+const fetchStoryData = async (storyId) => {
+    if (!storyId) throw new Error('ไม่พบรหัสเรื่องราว');
+
+    // First try: Direct document lookup by ID
+    const docRef = doc(db, 'orders', storyId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.status === 'approved' || data.status === 'completed') {
+            // Check expiration
+            if (data.expires_at) {
+                const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
+                if (new Date() > expiresAt) {
+                    throw new Error('ลิงก์นี้หมดอายุแล้ว');
+                }
+            }
+            return { id: docSnap.id, ...data };
+        } else {
+            throw new Error('เรื่องราวนี้ยังไม่พร้อมแสดง');
+        }
+    } else {
+        // Second try: Query by custom_domain (for VIP subdomains)
+        const q = query(collection(db, 'orders'), where('custom_domain', '==', storyId));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const docData = querySnapshot.docs[0];
+            const data = docData.data();
+            if (data.status === 'approved' || data.status === 'completed') {
+                // Check expiration for subdomain too
+                if (data.expires_at) {
+                    const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
+                    if (new Date() > expiresAt) {
+                        throw new Error('ลิงก์นี้หมดอายุแล้ว');
+                    }
+                }
+                return { id: docData.id, ...data };
+            } else {
+                throw new Error('เรื่องราวนี้ยังไม่พร้อมแสดง');
+            }
+        } else {
+            throw new Error('ไม่พบเรื่องราวที่คุณกำลังมองหา');
+        }
+    }
+};
+
 const StoryPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [storyData, setStoryData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchStory = async () => {
-            setLoading(true);
-            setError(null);
+    // Check if accessing via subdomain (VIP)
+    const hostname = window.location.hostname;
+    const isSubdomain = !['localhost', 'norastory.com', 'www.norastory.com'].includes(hostname)
+        && !hostname.endsWith('.pages.dev');
 
-            try {
-                // Check if accessing via subdomain (VIP)
-                const hostname = window.location.hostname;
-                const isSubdomain = !['localhost', 'norastory.com', 'www.norastory.com'].includes(hostname)
-                    && !hostname.endsWith('.pages.dev');
+    let storyId = id;
 
-                let storyId = id;
+    // If subdomain, extract the name part
+    if (isSubdomain && hostname.includes('.norastory.com')) {
+        storyId = hostname.split('.')[0]; // e.g., 'joy' from 'joy.norastory.com'
+    }
 
-                // If subdomain, extract the name part
-                if (isSubdomain && hostname.includes('.norastory.com')) {
-                    storyId = hostname.split('.')[0]; // e.g., 'joy' from 'joy.norastory.com'
-                }
+    // Use SWR for fetching and caching
+    const { data: storyData, error: swrError, isLoading: loading } = useSWR(
+        storyId ? `story-${storyId}` : null,
+        () => fetchStoryData(storyId),
+        {
+            revalidateOnFocus: false, // ป้องกันการดึงข้อมูลเวลาเปิดกลับมาหน้าเดิม
+            dedupingInterval: 60000, // แคชข้อมูลไว้ 60 วินาที
+        }
+    );
 
-                if (!storyId) {
-                    setError('ไม่พบรหัสเรื่องราว');
-                    setLoading(false);
-                    return;
-                }
-
-                // First try: Direct document lookup by ID
-                const docRef = doc(db, 'orders', storyId);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.status === 'approved' || data.status === 'completed') {
-                        // Check expiration
-                        if (data.expires_at) {
-                            const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
-                            if (new Date() > expiresAt) {
-                                setError('ลิงก์นี้หมดอายุแล้ว');
-                                setLoading(false);
-                                return;
-                            }
-                        }
-                        setStoryData({ id: docSnap.id, ...data });
-                    } else {
-                        setError('เรื่องราวนี้ยังไม่พร้อมแสดง');
-                    }
-                } else {
-                    // Second try: Query by custom_domain (for VIP subdomains)
-                    const q = query(collection(db, 'orders'), where('custom_domain', '==', storyId));
-                    const querySnapshot = await getDocs(q);
-
-                    if (!querySnapshot.empty) {
-                        const docData = querySnapshot.docs[0];
-                        const data = docData.data();
-                        if (data.status === 'approved' || data.status === 'completed') {
-                            // Check expiration for subdomain too
-                            if (data.expires_at) {
-                                const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
-                                if (new Date() > expiresAt) {
-                                    setError('ลิงก์นี้หมดอายุแล้ว');
-                                    setLoading(false);
-                                    return;
-                                }
-                            }
-                            setStoryData({ id: docData.id, ...data });
-                        } else {
-                            setError('เรื่องราวนี้ยังไม่พร้อมแสดง');
-                        }
-                    } else {
-                        setError('ไม่พบเรื่องราวที่คุณกำลังมองหา');
-                    }
-                }
-            } catch (err) {
-                console.error('Error fetching story:', err);
-                setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStory();
-    }, [id]);
+    const error = swrError ? (swrError.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล') : null;
 
     // Loading State
     if (loading) {

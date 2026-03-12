@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 import { db, storage } from '../firebase';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, Clock, ChevronLeft, AlertCircle, Timer, Pencil, Image, FileText } from 'lucide-react';
@@ -255,7 +256,16 @@ const ExtensionPage = () => {
         try {
             const timestamp = Date.now();
             const slipRef = ref(storage, `extension_slips/${id}/${timestamp}_ext_${selectedPackage.days}d.jpg`);
-            await uploadBytes(slipRef, slipFile);
+            
+            // Compress extension slip
+            const slipCompressionOptions = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1200,
+                useWebWorker: true
+            };
+            const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
+            await uploadBytes(slipRef, compressedSlipFile);
+            
             const slipUrl = await getDownloadURL(slipRef);
 
             const orderRef = doc(db, 'orders', id);
@@ -373,10 +383,26 @@ const ExtensionPage = () => {
         setEditSubmitting(true);
         try {
             const newUrls = [];
+            
+            // Compression options for edited images
+            const imageCompressionOptions = {
+                maxSizeMB: 2,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+                initialQuality: 0.85
+            };
+            
             for (const file of editImageFiles) {
                 const timestamp = Date.now();
                 const imgRef = ref(storage, `edit_images/${id}/${timestamp}_${file.name}`);
-                await uploadBytes(imgRef, file);
+                try {
+                    const compressedFile = await imageCompression(file, imageCompressionOptions);
+                    await uploadBytes(imgRef, compressedFile);
+                } catch (error) {
+                    console.error("Error compressing edit image:", error);
+                    // Fallback to original
+                    await uploadBytes(imgRef, file);
+                }
                 const url = await getDownloadURL(imgRef);
                 newUrls.push(url);
             }
@@ -408,7 +434,16 @@ const ExtensionPage = () => {
         try {
             const timestamp = Date.now();
             const slipRef = ref(storage, `edit_slips/${id}/${timestamp}_edit_${editPayType}.jpg`);
-            await uploadBytes(slipRef, editSlipFile);
+            
+            // Compress edit payment slip
+            const slipCompressionOptions = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1200,
+                useWebWorker: true
+            };
+            const compressedSlipFile = await imageCompression(editSlipFile, slipCompressionOptions);
+            await uploadBytes(slipRef, compressedSlipFile);
+            
             const slipUrl = await getDownloadURL(slipRef);
 
             const price = editPayType === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;

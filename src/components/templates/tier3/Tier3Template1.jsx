@@ -500,7 +500,7 @@ const Tier3Template1 = ({
     };
 
     return (
-        <div className="relative min-h-screen w-full bg-[#050510] text-white overflow-x-hidden font-sans selection:bg-rose-500/30">
+        <div className="absolute inset-0 bg-[#050510] text-white overflow-x-hidden overflow-y-auto font-sans selection:bg-rose-500/30">
 
             <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,_#1a103c_0%,_#050510_100%)] opacity-80" />
             <Starfield speed={0.5} />
@@ -508,7 +508,7 @@ const Tier3Template1 = ({
             {(demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
             <ScrollIndicator />
 
-            <div className="relative z-10 w-full min-h-screen py-4 px-4 md:px-8">
+            <div className="relative z-10 w-full min-h-full py-4 px-4 md:px-8">
 
                 <TimelineNav items={listItems} activeIndex={activeSection} onSelect={scrollToSection} />
 

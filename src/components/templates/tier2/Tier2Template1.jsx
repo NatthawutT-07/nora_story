@@ -329,7 +329,7 @@ const Tier2Template1 = ({
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden relative">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden">
 
             {/* Watermark for Demo */}
             {isDemo && (
@@ -351,7 +351,7 @@ const Tier2Template1 = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, scale: 1.2, filter: "blur(20px)" }}
                         transition={{ duration: 0.8 }}
-                        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+                        className="absolute inset-0 z-50 flex flex-col items-center justify-center"
                     >
                         <AnimatedBackground variant="default" />
                         <FloatingHearts intensity={0.8} />
@@ -476,7 +476,7 @@ const Tier2Template1 = ({
                         key="content"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="fixed inset-0 z-30 flex flex-col items-center justify-center overflow-hidden p-4"
+                        className="absolute inset-0 z-30 flex flex-col items-center justify-center overflow-hidden p-4"
                     >
                         <AnimatedBackground variant="content" />
                         <FloatingHearts intensity={0.6} />
