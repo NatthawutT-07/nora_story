@@ -594,7 +594,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                                     <input
                                                         type="text"
                                                         value={newLinkChoice}
-                                                        onChange={(e) => setNewLinkChoice(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                                        maxLength={30}
+                                                        onChange={(e) => setNewLinkChoice(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30))}
                                                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#E8A08A] focus:ring-1 focus:ring-[#E8A08A]"
                                                         placeholder="ระบุชื่อลิงก์"
                                                     />

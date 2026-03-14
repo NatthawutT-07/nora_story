@@ -90,6 +90,7 @@ const BuyerInfoStep = () => {
                                         type="text"
                                         className={`flex-1 min-w-0 px-3 py-2.5 sm:py-3 ${tier?.wantSpecialLink ? 'border-y' : 'border border-l-0 rounded-r-xl'} border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-sm md:text-base ${isDomainAvailable === false ? 'border-red-300 bg-red-50' : isDomainAvailable === true ? 'border-green-300 bg-green-50' : ''}`}
                                         placeholder=""
+                                        maxLength={30}
                                         value={formData.customDomain}
                                         onChange={(e) => {
                                             updateFormData({ customDomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) });

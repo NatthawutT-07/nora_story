@@ -141,7 +141,8 @@ const ExtendTab = ({
                                         <input
                                             type="text"
                                             value={customDomain1}
-                                            onChange={(e) => setCustomDomain1(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                            maxLength={30}
+                                            onChange={(e) => setCustomDomain1(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30))}
                                             placeholder="yourname"
                                             className={`flex-1 px-3 py-2.5 text-sm outline-none min-w-0 ${domainStatus === false ? 'bg-red-50' : domainStatus === true ? 'bg-green-50' : 'bg-white'}`}
                                         />
