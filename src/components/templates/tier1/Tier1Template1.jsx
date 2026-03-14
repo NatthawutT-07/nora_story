@@ -4,7 +4,8 @@ import confetti from 'canvas-confetti';
 import { Delete, Heart, Sparkles } from 'lucide-react';
 
 // Floating Hearts Component
-const FloatingHearts = () => {
+const FloatingHearts = ({ colorTheme }) => {
+    const defaultClass = 'text-rose-300/40';
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
             {[...Array(15)].map((_, i) => (
@@ -27,7 +28,8 @@ const FloatingHearts = () => {
                         delay: Math.random() * 5,
                         ease: 'linear'
                     }}
-                    className="absolute text-rose-300/40"
+                    className={`absolute ${!colorTheme ? defaultClass : ''}`}
+                    style={colorTheme ? { color: `${colorTheme.colors?.accent || '#fda4af'}66` } : {}}
                 >
                     <Heart size={16 + Math.random() * 16} fill="currentColor" />
                 </motion.div>
@@ -37,22 +39,18 @@ const FloatingHearts = () => {
 };
 
 // Animated Background Gradient
-const AnimatedBackground = ({ variant = 'default' }) => {
-    const gradients = {
-        default: 'from-rose-50 via-pink-50 to-amber-50',
-        question: 'from-pink-100 via-rose-50 to-red-50',
-        content: 'from-amber-50 via-rose-50 to-pink-50'
-    };
+const AnimatedBackground = ({ gradientColors }) => {
+    const g = gradientColors || ['#fdf2f8', '#fff1f2', '#fef3c7'];
 
     return (
         <motion.div
-            className={`absolute inset-0 bg-gradient-to-br ${gradients[variant]}`}
+            className="absolute inset-0"
             animate={{
                 background: [
-                    'linear-gradient(135deg, #fdf2f8 0%, #fff1f2 50%, #fef3c7 100%)',
-                    'linear-gradient(135deg, #fff1f2 0%, #fef3c7 50%, #fdf2f8 100%)',
-                    'linear-gradient(135deg, #fef3c7 0%, #fdf2f8 50%, #fff1f2 100%)',
-                    'linear-gradient(135deg, #fdf2f8 0%, #fff1f2 50%, #fef3c7 100%)'
+                    `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`,
+                    `linear-gradient(135deg, ${g[1]} 0%, ${g[2]} 50%, ${g[0]} 100%)`,
+                    `linear-gradient(135deg, ${g[2]} 0%, ${g[0]} 50%, ${g[1]} 100%)`,
+                    `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`
                 ]
             }}
             transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
@@ -61,7 +59,12 @@ const AnimatedBackground = ({ variant = 'default' }) => {
 };
 
 
-const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง ที่รักของเค้า', pinCode = '1234', isDemo = false }) => {
+const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง ที่รักของเค้า', pinCode = '1234', isDemo = false, isModalPreview = false, colorTheme }) => {
+    const c = colorTheme?.colors || null;
+    const gradientColors = c?.gradient || ['#fdf2f8', '#fff1f2', '#fef3c7'];
+    const confettiColors = c?.confetti || ['#f43f5e', '#ec4899', '#f97316', '#fbbf24'];
+    const primaryColor = c?.primary || '#f43f5e';
+    const accentColor = c?.accent || '#fda4af';
     const [viewState, setViewState] = useState('LOCKED');
     const [pin, setPin] = useState("");
     const [showError, setShowError] = useState(false);
@@ -118,7 +121,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
 
         const duration = 4 * 1000;
         const animationEnd = Date.now() + duration;
-        const colors = ['#f43f5e', '#ec4899', '#f97316', '#fbbf24'];
+        const colors = confettiColors;
 
         const interval = setInterval(() => {
             const timeLeft = animationEnd - Date.now();
@@ -134,7 +137,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                 colors,
                 shapes: [heart, 'circle'],
                 scalar: 1.2,
-                zIndex: 9999
+                zIndex: 99999
             });
             confetti({
                 particleCount,
@@ -144,13 +147,13 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                 colors,
                 shapes: [heart, 'circle'],
                 scalar: 1.2,
-                zIndex: 9999
+                zIndex: 99999
             });
         }, 200);
     };
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800 overflow-hidden">
+        <div className={`${isModalPreview ? 'absolute inset-0' : 'fixed inset-0'} w-full h-full flex flex-col items-center justify-center p-4 md:p-8 text-center font-serif text-gray-800`}>
 
             {/* Watermark for Demo */}
             {isDemo && (
@@ -174,8 +177,8 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                         transition={{ duration: 0.6 }}
                         className="absolute inset-0 z-50 flex flex-col items-center justify-center"
                     >
-                        <AnimatedBackground variant="default" />
-                        <FloatingHearts />
+                        <AnimatedBackground gradientColors={gradientColors} />
+                        <FloatingHearts colorTheme={c} />
 
                         <motion.div
                             animate={showError ? { x: [-10, 10, -10, 10, 0] } : {}}
@@ -189,8 +192,8 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
                                 className="mb-6 flex justify-center"
                             >
-                                <div className="w-20 h-20 rounded-full bg-white/80 backdrop-blur-sm shadow-lg flex items-center justify-center border border-rose-100">
-                                    <Heart size={36} className="text-rose-400" fill="currentColor" />
+                                <div className="w-20 h-20 rounded-full bg-white/80 backdrop-blur-sm shadow-lg flex items-center justify-center border" style={{ borderColor: `${primaryColor}33` }}>
+                                    <Heart size={36} style={{ color: primaryColor }} fill="currentColor" />
                                 </div>
                             </motion.div>
 
@@ -201,7 +204,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                 className="text-2xl md:text-3xl text-gray-700 mb-5 font-light flex justify-center"
                             >
                                 {isDemo && (
-                                    <span className="text-sm bg-rose-100/80 text-rose-600 px-4 py-1.5 rounded-full font-sans tracking-wide">
+                                    <span className="text-sm px-4 py-1.5 rounded-full font-sans tracking-wide" style={{ backgroundColor: `${primaryColor}33`, color: primaryColor }}>
                                         รหัสผ่าน Demo: <span className="font-bold">1234</span>
                                     </span>
                                 )}
@@ -215,11 +218,11 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                         initial={{ scale: 0 }}
                                         animate={{
                                             scale: 1,
-                                            backgroundColor: i < pin.length ? '#f43f5e' : '#e5e7eb'
+                                            backgroundColor: i < pin.length ? primaryColor : '#e5e7eb'
                                         }}
                                         transition={{ delay: i * 0.05, type: "spring" }}
-                                        className={`w-4 h-4 rounded-full shadow-inner ${i < pin.length ? 'shadow-rose-200' : ''
-                                            }`}
+                                        className={`w-4 h-4 rounded-full shadow-inner`}
+                                        style={i < pin.length ? { boxShadow: `inset 0 2px 4px 0 ${primaryColor}40` } : {}}
                                     />
                                 ))}
                             </div>
@@ -237,10 +240,11 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                         initial={{ opacity: 0, scale: 0 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: 0.5 + idx * 0.03 }}
-                                        whileHover={{ scale: 1.1, backgroundColor: '#fff1f2' }}
+                                        whileHover={{ scale: 1.1, backgroundColor: `${primaryColor}1A`, color: primaryColor, borderColor: accentColor }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => handleKeyPress(num.toString())}
-                                        className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border border-rose-100 shadow-md text-xl font-medium text-gray-700 hover:text-rose-500 hover:border-rose-300 transition-colors duration-200 flex items-center justify-center"
+                                        className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border shadow-md text-xl font-medium text-gray-700 transition-colors duration-200 flex items-center justify-center"
+                                        style={{ borderColor: `${primaryColor}33` }}
                                     >
                                         {num}
                                     </motion.button>
@@ -250,10 +254,11 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     initial={{ opacity: 0, scale: 0 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.8 }}
-                                    whileHover={{ scale: 1.1 }}
+                                    whileHover={{ scale: 1.1, backgroundColor: `${primaryColor}1A`, color: primaryColor, borderColor: accentColor }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => handleKeyPress("0")}
-                                    className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border border-rose-100 shadow-md text-xl font-medium text-gray-700 hover:text-rose-500 hover:border-rose-300 transition-colors duration-200 flex items-center justify-center"
+                                    className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-sm border shadow-md text-xl font-medium text-gray-700 transition-colors duration-200 flex items-center justify-center"
+                                    style={{ borderColor: `${primaryColor}33` }}
                                 >
                                     0
                                 </motion.button>
@@ -261,10 +266,10 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     initial={{ opacity: 0, scale: 0 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.85 }}
-                                    whileHover={{ scale: 1.1 }}
+                                    whileHover={{ scale: 1.1, color: primaryColor }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleBackspace}
-                                    className="w-16 h-16 rounded-2xl bg-white/60 backdrop-blur-sm text-gray-400 hover:text-rose-500 transition-colors duration-200 flex items-center justify-center"
+                                    className="w-16 h-16 rounded-2xl bg-white/60 backdrop-blur-sm text-gray-400 transition-colors duration-200 flex items-center justify-center"
                                 >
                                     <Delete size={22} />
                                 </motion.button>
@@ -282,21 +287,22 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                         transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
                         className="absolute inset-0 z-50 flex flex-col items-center justify-center px-4"
                     >
-                        <AnimatedBackground variant="content" />
-                        <FloatingHearts />
+                        <AnimatedBackground gradientColors={gradientColors} />
+                        <FloatingHearts colorTheme={c} />
 
                         {/* Card */}
-                        <div className="relative z-10 w-full max-w-lg bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border border-rose-100 overflow-hidden">
+                        <div className="relative z-10 w-full max-w-lg bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border overflow-hidden" style={{ borderColor: `${primaryColor}33` }}>
                             {/* Decorative corner */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-rose-100 to-transparent rounded-bl-full opacity-50" />
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-100 to-transparent rounded-tr-full opacity-50" />
+                            <div className="absolute top-0 right-0 w-32 h-32 rounded-bl-full opacity-50" style={{ background: `linear-gradient(to bottom left, ${primaryColor}33, transparent)` }} />
+                            <div className="absolute bottom-0 left-0 w-24 h-24 rounded-tr-full opacity-50" style={{ background: `linear-gradient(to top right, ${accentColor}33, transparent)` }} />
 
                             {/* Top decorative line */}
                             <motion.div
                                 initial={{ scaleX: 0 }}
                                 animate={{ scaleX: 1 }}
                                 transition={{ delay: 0.5, duration: 0.8 }}
-                                className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-400 to-transparent"
+                                className="absolute top-0 left-0 w-full h-1"
+                                style={{ background: `linear-gradient(to right, transparent, ${primaryColor}, transparent)` }}
                             />
 
                             {/* Content */}
@@ -307,7 +313,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     transition={{ delay: 0.3, type: "spring" }}
                                     className="flex justify-center mb-6"
                                 >
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-lg">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${accentColor})` }}>
                                         <Heart size={28} className="text-white" fill="currentColor" />
                                     </div>
                                 </motion.div>
@@ -316,7 +322,8 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    className="text-sm tracking-[0.3em] uppercase text-rose-400 mb-6 font-medium"
+                                    className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words break-all"
+                                    style={{ color: primaryColor }}
                                 >
                                     ✨ {targetName || "For You"} ✨
                                 </motion.p>
@@ -327,11 +334,11 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.5 }}
                                         className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 80
-                                            ? "text-lg md:text-2xl"
+                                            ? "text-lg md:text-xl"
                                             : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 50
-                                                ? "text-xl md:text-3xl"
-                                                : "text-2xl md:text-4xl"
-                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words`}
+                                                ? "text-xl md:text-xl"
+                                                : "text-2xl md:text-xl"
+                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words break-all`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
                                     </motion.h1>
@@ -344,7 +351,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     className="flex items-center justify-center gap-2 text-gray-500"
                                 >
                                     <div className="w-8 h-px bg-gray-300" />
-                                    <span className="text-sm tracking-wide">{customSignOff || "รักเธอเสมอ"}</span>
+                                    <span className="text-sm tracking-wide break-words break-all">{customSignOff || "รักเธอเสมอ"}</span>
                                     <div className="w-8 h-px bg-gray-300" />
                                 </motion.div>
 
@@ -354,12 +361,13 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     transition={{ delay: 1 }}
                                     onClick={triggerConfetti}
                                     disabled={!canSendLove}
-                                    whileHover={canSendLove ? { scale: 1.05 } : {}}
+                                    whileHover={canSendLove ? { scale: 1.05, color: accentColor } : {}}
                                     whileTap={canSendLove ? { scale: 0.95 } : {}}
-                                    className={`mt-10 text-sm text-rose-400 flex items-center gap-2 mx-auto bg-rose-50 px-6 py-3 rounded-full transition-all duration-300 uppercase tracking-widest ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:text-rose-500'}`}
+                                    className={`mt-10 text-sm flex items-center gap-2 mx-auto px-6 py-3 rounded-full transition-all duration-300 uppercase tracking-widest ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                    style={{ backgroundColor: `${primaryColor}1A`, color: primaryColor }}
                                 >
                                     <Sparkles size={16} />
-                                    {canSendLove ? "ส่งความรักอีกครั้ง" : "รอสักครู่..."}
+                                    {canSendLove ? "" : ""}
                                 </motion.button>
                             </div>
                         </div>

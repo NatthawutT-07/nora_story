@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TIERS } from './data/tierData';
@@ -11,26 +11,25 @@ import InteractiveDemos from './components/InteractiveDemos';
 import DigitalCover from './components/DigitalCover';
 import QRCodeDemo from './components/QRCodeDemo';
 import TierGallery from './components/TierGallery';
-import StoryPage from './components/StoryPage';
 
-// Admin
-import AdminLogin from './components/admin/AdminLogin';
-import AdminDashboard from './components/admin/AdminDashboard';
+// Lazy load heavy page components
+const StoryPage = lazy(() => import('./components/StoryPage'));
+const ExtensionPage = lazy(() => import('./components/ExtensionPage'));
+const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 
-// Templates
-import Tier1Template1 from './components/templates/tier1/Tier1Template1';
-import Tier1Template2 from './components/templates/tier1/Tier1Template2';
-import Tier1Template3 from './components/templates/tier1/Tier1Template3';
+// Lazy load Templates
+const Tier1Template1 = lazy(() => import('./components/templates/tier1/Tier1Template1'));
+const Tier1Template2 = lazy(() => import('./components/templates/tier1/Tier1Template2'));
+const Tier1Template3 = lazy(() => import('./components/templates/tier1/Tier1Template3'));
 
-import Tier2Template1 from './components/templates/tier2/Tier2Template1';
-import Tier2Template2 from './components/templates/tier2/Tier2Template2';
-import Tier2Template3 from './components/templates/tier2/Tier2Template3';
+const Tier2Template1 = lazy(() => import('./components/templates/tier2/Tier2Template1'));
+const Tier2Template2 = lazy(() => import('./components/templates/tier2/Tier2Template2'));
+const Tier2Template3 = lazy(() => import('./components/templates/tier2/Tier2Template3'));
 
-import Tier3Template1 from './components/templates/tier3/Tier3Template1';
-import Tier3Template2 from './components/templates/tier3/Tier3Template2';
-import Tier3Template3 from './components/templates/tier3/Tier3Template3';
-
-import ExtensionPage from './components/ExtensionPage';
+const Tier3Template1 = lazy(() => import('./components/templates/tier3/Tier3Template1'));
+const Tier3Template2 = lazy(() => import('./components/templates/tier3/Tier3Template2'));
+const Tier3Template3 = lazy(() => import('./components/templates/tier3/Tier3Template3'));
 
 // Template map for dynamic rendering
 const TEMPLATE_COMPONENTS = {
@@ -191,7 +190,9 @@ function MainPage() {
               >
                 ✕ ปิด
               </button>
-              <DemoComponent isDemo={true} demoMusicUrl={currentDemoMusic} />
+              <Suspense fallback={<div className="flex items-center justify-center h-screen bg-black text-white">Loading demo...</div>}>
+                <DemoComponent isDemo={true} demoMusicUrl={currentDemoMusic} />
+              </Suspense>
             </div>
           </motion.div>
         )}
@@ -245,17 +246,24 @@ function MainPage() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<MainPage />} />
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[#1A3C40] to-[#0F2A2E] flex flex-col items-center justify-center text-white">
+        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+        <p className="text-white/60">กำลังโหลดเรื่องราวของคุณ...</p>
+      </div>
+    }>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
 
-      {/* Admin Routes */}
-      <Route path="/jimdev" element={<AdminLogin />} />
-      <Route path="/jimdev/dashboard" element={<AdminDashboard />} />
+        {/* Admin Routes */}
+        <Route path="/jimdev" element={<AdminLogin />} />
+        <Route path="/jimdev/dashboard" element={<AdminDashboard />} />
 
-      {/* Dynamic Story Page (MUST be last - catch-all) */}
-      <Route path="/extend/:id" element={<ExtensionPage />} />
-      <Route path="/:id" element={<StoryPage />} />
-    </Routes>
+        {/* Dynamic Story Page (MUST be last - catch-all) */}
+        <Route path="/extend/:id" element={<ExtensionPage />} />
+        <Route path="/:id" element={<StoryPage />} />
+      </Routes>
+    </Suspense>
   )
 }
 

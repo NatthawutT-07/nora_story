@@ -8,6 +8,7 @@ const FILTERS = [
     { key: 'rejected', label: 'ปฏิเสธ', cls: 'bg-red-100 text-red-800 hover:bg-red-200' },
     { key: 'extension_pending', label: 'ต่ออายุ', cls: 'bg-amber-100 text-amber-800 hover:bg-amber-200' },
     { key: 'edit_pending', label: 'แก้ไข (รอชำระ)', cls: 'bg-purple-100 text-purple-800 hover:bg-purple-200' },
+    { key: 'expired', label: 'หมดอายุ', cls: 'bg-gray-300 text-gray-800 hover:bg-gray-400' },
 ];
 
 const OrderFilter = ({ filter, setFilter, searchTerm, setSearchTerm }) => {

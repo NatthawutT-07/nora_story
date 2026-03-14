@@ -45,7 +45,7 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
         >
             {/* Time Column */}
             <div className="flex flex-col items-end w-20 md:w-32 pt-2 flex-shrink-0 text-right">
-                <span className="text-lg md:text-2xl font-bold text-rose-500 font-serif">{time}</span>
+                <span className="text-lg md:text-2xl font-bold text-rose-500 font-serif break-words">{time}</span>
                 <span className="text-[10px] md:text-xs text-rose-800/60 uppercase tracking-widest mt-1">Time</span>
             </div>
 
@@ -62,9 +62,9 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
                         <div className="p-2 bg-rose-100 rounded-full text-rose-500">
                             <Icon size={18} />
                         </div>
-                        <h3 className="text-lg md:text-xl font-bold text-slate-800 font-serif">{title}</h3>
+                        <h3 className="text-lg md:text-xl font-bold text-slate-800 font-serif break-words break-all">{title}</h3>
                     </div>
-                    <p className="text-slate-500 font-light leading-relaxed text-sm md:text-base">{desc}</p>
+                    <p className="text-slate-500 font-light leading-relaxed text-sm md:text-base break-words break-all">{desc}</p>
                 </div>
             </div>
         </motion.div>
@@ -154,20 +154,23 @@ const Tier3Template3 = ({
     images = [],
     musicUrl = '',
     isDemo = false,
+    colorTheme
 }) => {
+    const ct = colorTheme?.colors || null;
+    const bgColor = ct?.bg || '#fff0f3';
+    const bgAltColor = ct?.bgAlt || '#ffffff';
+
     // Default Schedule (Wedding Day)
-    const schedule = [
-        { time: "07:09", title: "แห่ขันหมาก", desc: "ขบวนแห่ขันหมากและพิธีเจรจาสู่ขอ", icon: Users },
+    const schedule = [{ time: "07:09", title: "แห่ขันหมาก", desc: "ขบวนแห่ขันหมากและพิธีเจรจาสู่ขอ", icon: Users },
         { time: "08:09", title: "พิธีหมั้น", desc: "พิธีสวมแหวนหมั้นตามประเพณีไทย", icon: Crown },
         { time: "09:09", title: "รดน้ำสังข์", desc: "พิธีหลั่งน้ำพระพุทธมนต์และประสาทพร", icon: Gift },
         { time: "11:00", title: "ฉลองมงคลสมรส", desc: "ร่วมรับประทานอาหารโต๊ะจีนและถ่ายรูปหน้างาน", icon: Heart },
-        { time: "12:00", title: "ส่งตัวเข้าหอ", desc: "พิธีส่งตัวบ่าวสาวเข้าห้องหอ", icon: Sun }
-    ];
+        { time: "12:00", title: "ส่งตัวเข้าหอ", desc: "พิธีส่งตัวบ่าวสาวเข้าห้องหอ", icon: Sun }];
 
     return (
-        <div className="min-h-screen w-full bg-[#fff0f3] relative overflow-x-hidden font-sans text-slate-700">
+        <div className="min-h-screen w-full relative overflow-x-hidden font-sans text-slate-700" style={{ backgroundColor: bgColor }}>
             {/* Background Layers */}
-            <div className="fixed inset-0 bg-gradient-to-tr from-rose-50 via-white to-pink-50 z-0" />
+            <div className="fixed inset-0 z-0" style={{ background: `radial-gradient(circle at top right, ${bgAltColor} 0%, ${bgColor} 100%)` }} />
             <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-white/80 to-transparent z-10" />
             <RoseDust />
 
@@ -196,11 +199,11 @@ const Tier3Template3 = ({
                             transition={{ delay: 0.3 }}
                             className="mt-10 rounded-2xl md:rounded-[3rem] overflow-hidden shadow-2xl border-4 md:border-8 border-white aspect-video relative group max-w-2xl mx-auto"
                         >
-                            <img src={images[0]} alt="Couple" className="w-full h-full object-cover" />
+                            <img loading="lazy" src={images[0]} alt="Couple" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-rose-900/60 via-transparent to-transparent opacity-80" />
                             <div className="absolute bottom-6 left-8 text-white text-left">
                                 <p className="text-sm font-light opacity-90 tracking-wider uppercase mb-1">Location</p>
-                                <h3 className="text-2xl font-bold font-serif">{customSignOff || "Grand Ballroom"}</h3>
+                                <h3 className="text-2xl font-bold font-serif break-words break-all">{customSignOff || "Grand Ballroom"}</h3>
                             </div>
                         </motion.div>
                     )}
@@ -230,10 +233,10 @@ const Tier3Template3 = ({
                     <div className="mb-6 flex justify-center">
                         <Sparkles className="text-rose-400 animate-pulse" />
                     </div>
-                    <p className="text-xl md:text-2xl italic text-slate-600 font-serif font-light mb-6 leading-relaxed">
+                    <p className="text-xl md:text-2xl italic text-slate-600 font-serif font-light mb-6 leading-relaxed break-words break-all">
                         "{customMessage || "We are so excited to celebrate this special day with you."}"
                     </p>
-                    <div className="text-sm font-bold tracking-widest uppercase text-rose-400">
+                    <div className="text-sm font-bold tracking-widest uppercase text-rose-400 break-words break-all">
                         {customSignOff || "With Love"}
                     </div>
                 </motion.div>

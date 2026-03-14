@@ -108,50 +108,123 @@ const EditTab = ({
                                     {tierId === 3 ? (
                                         /* Tier 3: Timeline fields */
                                         <div className="space-y-4">
-                                            {(editFormData.timelines || []).map((tl, idx) => (
-                                                <div key={idx} className="space-y-2">
-                                                    <label className="text-xs font-medium text-gray-500">Timeline {idx + 1}</label>
+                                            {/* First 3 timelines are editable */}
+                                            {(editFormData.timelines || []).slice(0, 3).map((tl, idx) => (
+                                                <div key={idx} className="p-2 sm:p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-2 sm:gap-3">
+                                                    <span className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-full bg-[#1A3C40] text-white text-xs sm:text-sm flex items-center justify-center font-bold">{idx + 1}</span>
+                                                    <label className="text-[10px] sm:text-xs font-medium text-gray-600 whitespace-nowrap shrink-0">ช่วงเวลา :</label>
+                                                    <div className="flex gap-1.5 sm:gap-2 flex-1 min-w-0">
+                                                        <input
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
+                                                            maxLength={10}
+                                                            className="flex-1 w-full px-2 py-1.5 sm:py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-xs sm:text-sm min-w-0"
+                                                            placeholder=""
+                                                            value={(tl.label || '').split(' ')[0] || ''}
+                                                            onChange={(e) => {
+                                                                const numVal = e.target.value.replace(/[^0-9]/g, '');
+                                                                const unitVal = (tl.label || ' Day').split(' ').slice(1).join(' ') || 'Day';
+                                                                const combined = numVal.trim() ? `${numVal.trim()} ${unitVal}` : '';
+                                                                
+                                                                const updated = [...editFormData.timelines];
+                                                                updated[idx] = { ...updated[idx], label: combined };
+                                                                setEditFormData(prev => ({ ...prev, timelines: updated }));
+                                                            }}
+                                                        />
+                                                        <select
+                                                            className="px-1 py-1.5 sm:px-2 sm:py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 bg-white outline-none transition-all text-[10px] sm:text-sm w-[60px] sm:w-[80px] shrink-0"
+                                                            value={(tl.label || ' Day').split(' ').slice(1).join(' ') || 'Day'}
+                                                            onChange={(e) => {
+                                                                const numVal = (tl.label || '').split(' ')[0] || '';
+                                                                const unitVal = e.target.value;
+                                                                const combined = numVal.trim() ? `${numVal.trim()} ${unitVal}` : '';
+                                                                
+                                                                const updated = [...editFormData.timelines];
+                                                                updated[idx] = { ...updated[idx], label: combined };
+                                                                setEditFormData(prev => ({ ...prev, timelines: updated }));
+                                                            }}
+                                                        >
+                                                            {['Day', 'Month', 'Year', 'วัน', 'เดือน', 'ปี'].map((u) => <option key={u} value={u}>{u}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {/* 4th timeline is fixed */}
+                                            <div className="p-2 sm:p-3 bg-gray-100/60 rounded-xl border border-gray-200/50 flex items-center gap-2 sm:gap-3 opacity-80">
+                                                <span className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-full bg-gray-400 text-white text-xs sm:text-sm flex items-center justify-center font-bold">4</span>
+                                                <div className="flex-1 flex items-center gap-2 min-w-0">
                                                     <input
                                                         type="text"
-                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A3C40]/20"
-                                                        placeholder="หัวข้อ"
-                                                        value={tl.label || ''}
-                                                        onChange={(e) => {
-                                                            const updated = [...editFormData.timelines];
-                                                            updated[idx] = { ...updated[idx], label: e.target.value };
-                                                            setEditFormData(prev => ({ ...prev, timelines: updated }));
-                                                        }}
+                                                        disabled
+                                                        className="flex-1 w-full px-2 py-1.5 sm:py-2 rounded-lg border border-gray-200 bg-gray-100/50 text-gray-400 text-xs sm:text-sm cursor-not-allowed min-w-0"
+                                                        value="Memories"
                                                     />
-                                                    <textarea
-                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A3C40]/20 resize-none"
-                                                        rows={2}
-                                                        placeholder="รายละเอียด"
-                                                        value={tl.desc || ''}
+                                                </div>
+                                                <span className="shrink-0 flex items-center gap-1 text-[10px] sm:text-xs text-gray-400">
+                                                    (ค่าเริ่มต้น)
+                                                </span>
+                                            </div>
+
+                                            {/* Finale Section */}
+                                            <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-200 space-y-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="w-6 h-6 rounded-full bg-rose-500 text-white text-xs flex items-center justify-center font-bold">5</span>
+                                                    <span className="text-xs font-medium text-rose-500">✨ การ์ดข้อความ</span>
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] sm:text-xs font-medium text-gray-600 mb-1 flex justify-between">
+                                                        <span>ขึ้นต้น</span>
+                                                        <span className={`${(editFormData.timelines?.[4]?.label?.length || 0) > 20 ? 'text-red-500' : 'text-gray-400'}`}>({editFormData.timelines?.[4]?.label?.length || 0}/20)</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        maxLength={20}
+                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 bg-white/80 transition-all"
+                                                        placeholder="To Infinity"
+                                                        value={editFormData.timelines?.[4]?.label || ''}
                                                         onChange={(e) => {
-                                                            const updated = [...editFormData.timelines];
-                                                            updated[idx] = { ...updated[idx], desc: e.target.value };
+                                                            const updated = [...(editFormData.timelines || [])];
+                                                            // Ensure array has enough elements
+                                                            while (updated.length <= 4) {
+                                                                updated.push({ label: '', desc: '' });
+                                                            }
+                                                            updated[4] = { ...updated[4], label: e.target.value.slice(0, 20) };
                                                             setEditFormData(prev => ({ ...prev, timelines: updated }));
                                                         }}
                                                     />
                                                 </div>
-                                            ))}
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-500">ข้อความ Finale</label>
-                                                <textarea
-                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A3C40]/20 resize-none mt-1"
-                                                    rows={2}
-                                                    value={editFormData.finaleMessage || ''}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, finaleMessage: e.target.value }))}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-500">ลงชื่อ Finale</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A3C40]/20 mt-1"
-                                                    value={editFormData.finaleSignOff || ''}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, finaleSignOff: e.target.value }))}
-                                                />
+
+                                                <div>
+                                                    <label className="text-[10px] sm:text-xs font-medium text-gray-600 mb-1 flex justify-between">
+                                                        <span>ข้อความถึงคนพิเศษ</span>
+                                                        <span className={`${(editFormData.finaleMessage?.length || 0) > 100 ? 'text-red-500' : 'text-gray-400'}`}>({editFormData.finaleMessage?.length || 0}/100)</span>
+                                                    </label>
+                                                    <textarea
+                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 transition-all resize-none bg-white/80 h-24"
+                                                        maxLength={100}
+                                                        placeholder=""
+                                                        value={editFormData.finaleMessage || ''}
+                                                        onChange={(e) => setEditFormData(prev => ({ ...prev, finaleMessage: e.target.value.slice(0, 100) }))}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] sm:text-xs font-medium text-gray-600 mb-1 flex justify-between">
+                                                        <span>คำลงท้าย</span>
+                                                        <span className={`${(editFormData.finaleSignOff?.length || 0) > 20 ? 'text-red-500' : 'text-gray-400'}`}>({editFormData.finaleSignOff?.length || 0}/20)</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        maxLength={20}
+                                                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-rose-400/20 focus:border-rose-400/40 transition-all bg-white/80"
+                                                        placeholder=""
+                                                        value={editFormData.finaleSignOff || ''}
+                                                        onChange={(e) => setEditFormData(prev => ({ ...prev, finaleSignOff: e.target.value.slice(0, 20) }))}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
@@ -272,38 +345,85 @@ const EditTab = ({
                                         </button>
                                     </div>
 
-                                    {/* Current images */}
-                                    {order?.content_images && order.content_images.filter(Boolean).length > 0 && (
-                                        <div className="mb-3">
-                                            <p className="text-xs text-gray-400 mb-2">รูปภาพปัจจุบัน ({order.content_images.filter(Boolean).length} รูป)</p>
-                                            <div className="flex gap-2 flex-wrap">
-                                                {order.content_images.filter(Boolean).map((url, i) => (
-                                                    <img key={i} src={url} alt={`img-${i}`} className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
-                                                ))}
-                                            </div>
+                                    {/* Current images or Local Previews */}
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs text-gray-500 font-medium">รูปภาพที่จะใช้</p>
+                                            <p className="text-[10px] text-gray-400">
+                                                {editImageFiles?.length || 0} / {tierId === 3 ? 10 : 5} รูป
+                                            </p>
                                         </div>
-                                    )}
+                                        <div className="flex gap-3 flex-wrap">
+                                            {editImageFiles && editImageFiles.length > 0 && (
+                                                editImageFiles.map((item, i) => {
+                                                    const isFile = typeof item !== 'string';
+                                                    const previewUrl = isFile ? URL.createObjectURL(item) : item;
+                                                    
+                                                    return (
+                                                        <div key={i} className="relative group">
+                                                            <img 
+                                                                src={previewUrl} 
+                                                                alt={`preview-${i}`} 
+                                                                className="w-16 h-16 rounded-xl object-cover border-2 border-[#1A3C40]/20 shadow-sm" 
+                                                                onLoad={() => {
+                                                                    if (isFile) URL.revokeObjectURL(previewUrl);
+                                                                }}
+                                                            />
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newFiles = [...editImageFiles];
+                                                                    newFiles.splice(i, 1);
+                                                                    setEditImageFiles(newFiles);
+                                                                }}
+                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 hover:scale-110 transition-all z-10"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
 
-                                    <div>
-                                        <label className="text-xs font-medium text-gray-500 mb-1 block">อัปโหลดรูปภาพใหม่</label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={(e) => setEditImageFiles(Array.from(e.target.files || []))}
-                                            className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg p-1.5 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
-                                        />
-                                        {editImageFiles && editImageFiles.length > 0 && (
-                                            <p className="text-[11px] text-green-600 mt-1">เลือกแล้ว {editImageFiles.length} ไฟล์</p>
-                                        )}
+                                            {/* Upload placeholder box */}
+                                            {(!editImageFiles || editImageFiles.length < (tierId === 3 ? 10 : 5)) && (
+                                                <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors relative group">
+                                                    <ImageIcon size={16} className="text-gray-400 mb-1 group-hover:text-[#1A3C40] transition-colors" />
+                                                    <span className="text-[9px] text-gray-400 group-hover:text-[#1A3C40] transition-colors">เลือกรูป</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        multiple
+                                                        onChange={(e) => {
+                                                            if (e.target.files && e.target.files.length > 0) {
+                                                                const maxLimit = tierId === 3 ? 10 : 5;
+                                                                const currentCount = editImageFiles?.length || 0;
+                                                                const availableSlots = maxLimit - currentCount;
+                                                                
+                                                                const newFiles = Array.from(e.target.files).slice(0, availableSlots);
+                                                                setEditImageFiles(prev => [...(prev || []), ...newFiles]);
+                                                            }
+                                                            // Reset input so same file can be selected again if needed
+                                                            e.target.value = null;
+                                                        }}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            )}
+                                            
+                                            {(!editImageFiles || editImageFiles.length === 0) && (
+                                                <div className="text-xs text-gray-400 p-3 w-full text-center mt-2">
+                                                    ยังไม่มีรูปภาพ กรุณาเพิ่มรูปภาพใหม่
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <button
                                         onClick={handleSaveImageEdit}
                                         disabled={editSubmitting || !editImageFiles || editImageFiles.length === 0}
-                                        className="w-full mt-4 py-2.5 rounded-lg bg-[#1A3C40] text-white text-sm font-medium hover:bg-[#1A3C40]/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="w-full mt-5 py-3 rounded-xl bg-[#1A3C40] text-white text-sm font-medium hover:bg-[#1A3C40]/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#1A3C40]/20"
                                     >
-                                        {editSubmitting ? <><Loader2 size={14} className="animate-spin" /> กำลังอัปโหลด...</> : 'บันทึกรูปภาพใหม่'}
+                                        {editSubmitting ? <><Loader2 size={16} className="animate-spin" /> กำลังอัปโหลด...</> : 'ยืนยันการแก้ไขรูปภาพ'}
                                     </button>
                                 </div>
                             </motion.div>
@@ -340,7 +460,7 @@ const EditTab = ({
                                         <>
                                             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative mb-3">
                                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap z-10">
-                                                    สแกนจ่าย
+                                                    สแกนเพื่อชำระเงิน
                                                 </div>
                                                 <QRCodeSVG value={payload} size={140} level="M" includeMargin={true} />
                                             </div>

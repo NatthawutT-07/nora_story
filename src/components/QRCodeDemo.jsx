@@ -18,7 +18,7 @@ const LINK_TYPES = [
         name: 'Random Link',
         description: 'ระบบสร้างลิงก์อัตโนมัติ',
         icon: RefreshCw,
-        tier: 'Tier 1-2',
+        tier: 'Tier 1',
         color: 'from-blue-500 to-cyan-500',
         bgColor: 'bg-blue-50',
         borderColor: 'border-blue-200',
@@ -29,7 +29,7 @@ const LINK_TYPES = [
         name: 'Custom Link',
         description: 'เลือกชื่อลิงก์ได้',
         icon: Link2,
-        tier: 'Tier 3',
+        tier: 'Tier 2-3',
         color: 'from-purple-500 to-pink-500',
         bgColor: 'bg-purple-50',
         borderColor: 'border-purple-200',
@@ -37,14 +37,15 @@ const LINK_TYPES = [
     },
     {
         id: 'subdomain',
-        name: 'Special Link',
+        name: 'Special Link (Coming Soon)',
         description: 'ชื่อพิเศษไม่ซ้ำใคร',
         icon: Globe,
-        tier: 'Tier 4',
-        color: 'from-amber-500 to-orange-500',
-        bgColor: 'bg-amber-50',
-        borderColor: 'border-amber-200',
+        tier: 'Tier All',
+        color: 'from-gray-400 to-gray-500',
+        bgColor: 'bg-gray-50',
+        borderColor: 'border-gray-200',
         getUrl: () => 'somsri.norastory.com',
+        disabled: true,
     },
 ];
 
@@ -235,17 +236,21 @@ const QRCodeDemo = () => {
                         {LINK_TYPES.map((type) => {
                             const Icon = type.icon;
                             const isSelected = selectedType === type.id;
+                            const isDisabled = type.disabled;
 
                             return (
                                 <motion.button
                                     key={type.id}
-                                    onClick={() => setSelectedType(type.id)}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${isSelected
-                                        ? `${type.bgColor} ${type.borderColor} shadow-lg`
-                                        : 'bg-white border-gray-100 hover:border-gray-200'
+                                    onClick={() => !isDisabled && setSelectedType(type.id)}
+                                    whileHover={!isDisabled ? { scale: 1.02 } : {}}
+                                    whileTap={!isDisabled ? { scale: 0.98 } : {}}
+                                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${isDisabled
+                                        ? 'bg-gray-50/50 border-gray-100 cursor-not-allowed opacity-60'
+                                        : isSelected
+                                            ? `${type.bgColor} ${type.borderColor} shadow-lg`
+                                            : 'bg-white border-gray-100 hover:border-gray-200'
                                         }`}
+                                    disabled={isDisabled}
                                 >
                                     <div className="flex items-start gap-3 md:gap-4">
                                         <div className={`p-2 md:p-3 rounded-xl bg-gradient-to-br ${type.color} text-white`}>
@@ -253,14 +258,14 @@ const QRCodeDemo = () => {
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-0.5 md:mb-1">
-                                                <h4 className="font-semibold text-sm md:text-base text-gray-800">{type.name}</h4>
-                                                <span className="px-1.5 py-0.5 bg-gray-100 rounded-full text-[9px] md:text-[10px] font-medium text-gray-500">
+                                                <h4 className={`font-semibold text-sm md:text-base ${isDisabled ? 'text-gray-500' : 'text-gray-800'}`}>{type.name}</h4>
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] md:text-[10px] font-medium ${isDisabled ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
                                                     {type.tier}
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-gray-500 mb-1 md:mb-2">{type.description}</p>
+                                            <p className={`text-xs md:text-sm mb-1 md:mb-2 ${isDisabled ? 'text-gray-400' : 'text-gray-500'}`}>{type.description}</p>
                                             <AnimatePresence>
-                                                {isSelected && (
+                                                {isSelected && !isDisabled && (
                                                     <motion.div
                                                         initial={{ opacity: 0, height: 0 }}
                                                         animate={{ opacity: 1, height: 'auto' }}

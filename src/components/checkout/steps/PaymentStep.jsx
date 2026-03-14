@@ -110,7 +110,7 @@ const PaymentStep = () => {
                             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative mb-2">
                                 {/* Decorative elements for PromptPay QR */}
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10">
-                                    สแกนจ่ายด้วยแอปธนาคาร
+                                    สแกนเพื่อชำระเงิน
                                 </div>
                                 <QRCodeCanvas
                                     id="qr-payment-canvas"

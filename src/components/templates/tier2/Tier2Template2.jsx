@@ -70,23 +70,19 @@ const GoldenSparkle = () => {
 };
 
 // Animated Background
-const AnimatedBackground = ({ variant = 'default' }) => {
-    const gradients = {
-        default: 'from-amber-900 via-yellow-800 to-orange-900',
-        question: 'from-yellow-900 via-amber-800 to-orange-900',
-        content: 'from-orange-900 via-amber-900 to-yellow-900'
-    };
+const AnimatedBackground = ({ gradientColors }) => {
+    const g = gradientColors || ['#451a03', '#78350f', '#92400e'];
 
     return (
         <>
             <motion.div
-                className={`absolute inset-0 bg-gradient-to-br ${gradients[variant]}`}
+                className="absolute inset-0"
                 animate={{
                     background: [
-                        'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)',
-                        'linear-gradient(135deg, #78350f 0%, #92400e 50%, #451a03 100%)',
-                        'linear-gradient(135deg, #92400e 0%, #451a03 50%, #78350f 100%)',
-                        'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)'
+                        `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`,
+                        `linear-gradient(135deg, ${g[1]} 0%, ${g[2]} 50%, ${g[0]} 100%)`,
+                        `linear-gradient(135deg, ${g[2]} 0%, ${g[0]} 50%, ${g[1]} 100%)`,
+                        `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`
                     ]
                 }}
                 transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
@@ -117,7 +113,7 @@ const MemoryGallery = ({ images = [] }) => {
             whileHover={{ scale: 1.02, rotate: 1, zIndex: 10 }}
             className={`relative rounded-xl overflow-hidden shadow-xl border-4 border-white bg-white ${className}`}
         >
-            <img src={src} alt="Memory" className="w-full h-full object-cover" />
+            <img loading="lazy" src={src} alt="Memory" className="w-full h-full object-cover" />
         </motion.div>
     );
 
@@ -282,8 +278,12 @@ const Tier2Template2 = ({
     images = [],
     musicUrl = '',
     isDemo = false,
-    demoMusicUrl = null
+    demoMusicUrl = null,
+    colorTheme
 }) => {
+    const ct = colorTheme?.colors || null;
+    const gradientColors = ct?.gradient || ['#451a03', '#78350f', '#92400e'];
+    const confettiColors = ct?.confetti || ['#fbbf24', '#f59e0b', '#d97706', '#f43f5e'];
     const showMusicPlayer = true;
     const [canSendMerit, setCanSendMerit] = useState(true);
 
@@ -310,7 +310,8 @@ const Tier2Template2 = ({
                 origin: { x: 0, y: 0.7 },
                 colors,
                 shapes: ['circle', 'square'],
-                scalar: 1.2
+                scalar: 1.2,
+                zIndex: 99999
             });
             confetti({
                 particleCount,
@@ -319,7 +320,8 @@ const Tier2Template2 = ({
                 origin: { x: 1, y: 0.7 },
                 colors,
                 shapes: ['circle', 'square'],
-                scalar: 1.2
+                scalar: 1.2,
+                zIndex: 99999
             });
         }, 180);
     };
@@ -333,7 +335,7 @@ const Tier2Template2 = ({
                     animate={{ opacity: 1 }}
                     className="fixed inset-0 z-30 flex flex-col items-center justify-start overflow-y-auto py-8 px-4"
                 >
-                    <AnimatedBackground variant="content" />
+                    <AnimatedBackground gradientColors={gradientColors} />
                     <FloatingFlowers intensity={0.6} />
                     <GoldenSparkle />
 
@@ -387,7 +389,7 @@ const Tier2Template2 = ({
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.6 }}
-                                    className="text-2xl md:text-3xl font-serif italic leading-relaxed text-amber-50 mb-8 font-light"
+                                    className="text-2xl md:text-3xl font-serif italic leading-relaxed text-amber-50 mb-8 font-light break-words break-all"
                                 >
                                     "{customMessage || "ขอกราบลาอุปสมบท เพื่อทดแทนคุณบิดามารดา และศึกษาพระธรรมวินัย"}"
                                 </motion.h1>
@@ -399,7 +401,7 @@ const Tier2Template2 = ({
                                     className="flex items-center justify-center gap-3 text-amber-200/80"
                                 >
                                     <div className="w-10 h-px bg-gradient-to-r from-transparent to-amber-400" />
-                                    <span className="text-lg tracking-wide font-medium">{customSignOff || "นาย อุปสมบท ตั้งใจ"}</span>
+                                    <span className="text-lg tracking-wide font-medium break-words break-all">{customSignOff || "นาย อุปสมบท ตั้งใจ"}</span>
                                     <div className="w-10 h-px bg-gradient-to-l from-transparent to-amber-400" />
                                 </motion.div>
 

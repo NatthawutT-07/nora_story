@@ -7,10 +7,10 @@ const tiers = TIERS.filter(t => t.id !== '4');
 
 const Pricing = ({ onSelectTier, onViewDemos }) => {
     return (
-        <section className="py-16 sm:py-28 px-4 bg-gradient-to-b from-[#FAFAFB] to-white" id="pricing">
+        <section className="py-4 sm:py-12 px-4 bg-gradient-to-b from-[#FAFAFB] to-white" id="pricing">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-10 sm:mb-14">
+                <div className="text-center mb-2 sm:mb-6">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -273,7 +273,7 @@ const TierCard = ({ tier, index, onSelectTier }) => {
                         </label>
 
                         {/* Special Link Add-on */}
-                        <label className={`
+                        {/* <label className={`
                             flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all mb-5
                             ${isPopular
                                 ? 'border border-white/15 hover:border-white/30 bg-white/5'
@@ -303,7 +303,7 @@ const TierCard = ({ tier, index, onSelectTier }) => {
                                 </p>
                             </div>
                             <span className={`text-xs font-semibold whitespace-nowrap ${isPopular ? 'text-[#E8A08A]' : 'text-[#1A3C40]'}`}>+999฿</span>
-                        </label>
+                        </label> */}
 
                         {/* CTA */}
                         <button

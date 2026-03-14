@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Eye } from 'lucide-react';
+import ColorPicker from './ColorPicker';
+import { useCheckout } from './CheckoutContext';
 
 // Import templates for inline preview
 import Tier1Template1 from '../templates/tier1/Tier1Template1';
-import Tier1Template4 from '../templates/tier1/Tire1Template4';
+
 import Tier2Template1 from '../templates/tier2/Tier2Template1';
 import Tier3Template1 from '../templates/tier3/Tier3Template1';
 
@@ -13,7 +15,7 @@ import Tier3Template1 from '../templates/tier3/Tier3Template1';
 const TEMPLATE_PREVIEWS = {
     1: [
         { id: 't1-1', number: '01', name: 'Love Card', preview: '', description: 'ข้อความลับพร้อม PIN' },
-        { id: 't1-4', number: '04', name: 'Love Story', preview: '', description: 'อนิเมชั่นบอกรัก' },
+
         { id: 't1-2', number: '02', name: 'Ordination', preview: '', description: 'การ์ดงานบวช', disabled: true },
         { id: 't1-3', number: '03', name: 'Wedding', preview: '', description: 'การ์ดงานแต่ง', disabled: true },
     ],
@@ -32,13 +34,13 @@ const TEMPLATE_PREVIEWS = {
 // Demo component map for inline preview modal
 const DEMO_TEMPLATES = {
     't1-1': Tier1Template1,
-    't1-4': Tier1Template4,
+
     't2-1': Tier2Template1,
     't3-1': Tier3Template1,
 };
 
 // Inline Full-Screen Preview Modal (Using Portal to escape parent overflow/z-index)
-const PreviewModal = ({ templateId, onClose }) => {
+const PreviewModal = ({ templateId, onClose, colorTheme }) => {
     const Component = DEMO_TEMPLATES[templateId];
     const [mounted, setMounted] = useState(false);
 
@@ -54,7 +56,7 @@ const PreviewModal = ({ templateId, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 lg:p-0"
             onClick={onClose}
         >
             <motion.div
@@ -62,22 +64,22 @@ const PreviewModal = ({ templateId, onClose }) => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                className="relative w-full max-w-sm h-[85vh] rounded-3xl overflow-hidden shadow-2xl border border-white/20 bg-gradient-to-br from-rose-50 via-purple-50 to-pink-50"
+                className="relative w-full max-w-sm h-[85vh] rounded-3xl lg:max-w-full lg:h-full lg:rounded-none overflow-hidden shadow-2xl border border-white/20 bg-gradient-to-br from-rose-50 via-purple-50 to-pink-50"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Badge */}
-                <div className="absolute top-3 left-3 z-[100] bg-black/50 backdrop-blur text-white text-[10px] px-3 py-1 rounded-full flex items-center gap-1.5 font-medium shadow-lg">
-                    <Eye size={11} /> ตัวอย่าง (Demo)
+                <div className="absolute top-3 left-3 lg:top-6 lg:left-6 z-[100] bg-black/50 backdrop-blur text-white text-[10px] lg:text-sm px-3 lg:px-4 py-1 lg:py-2 rounded-full flex items-center gap-1.5 font-medium shadow-lg">
+                    <Eye size={11} className="lg:w-4 lg:h-4" /> ตัวอย่าง (Demo)
                 </div>
                 {/* Close */}
                 <button
                     onClick={onClose}
-                    className="absolute top-3 right-3 z-[100] w-8 h-8 flex items-center justify-center bg-black/50 backdrop-blur text-white rounded-full text-lg hover:bg-black/70 transition-colors shadow-lg"
+                    className="absolute top-3 right-3 lg:top-6 lg:right-6 z-[100] w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center bg-black/50 backdrop-blur text-white rounded-full text-lg lg:text-xl hover:bg-black/70 transition-colors shadow-lg"
                 >
                     ×
                 </button>
                 {/* Template render */}
-                <div className="w-full h-full overflow-y-auto">
+                <div className="w-full h-full overflow-y-auto relative">
                     <Component
                         targetName="ที่รัก"
                         customMessage="ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ดีที่สุดในชีวิต"
@@ -86,6 +88,8 @@ const PreviewModal = ({ templateId, onClose }) => {
                         pin="1234"
                         timelines={[]}
                         isDemo={true}
+                        isModalPreview={true}
+                        colorTheme={colorTheme}
                     />
                 </div>
             </motion.div>
@@ -95,11 +99,15 @@ const PreviewModal = ({ templateId, onClose }) => {
 };
 
 const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
+    const { selectedColorTheme } = useCheckout();
     const templates = TEMPLATE_PREVIEWS[tierId] || TEMPLATE_PREVIEWS[1];
     const [previewId, setPreviewId] = useState(null);
 
     return (
         <div className="w-full">
+            {/* Color Theme Picker */}
+            <ColorPicker />
+
             {/* Template Grid */}
             <div className="grid grid-cols-2 gap-3">
                 {templates.map((template) => {
@@ -187,7 +195,11 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
             {/* Preview Modal */}
             <AnimatePresence>
                 {previewId && (
-                    <PreviewModal templateId={previewId} onClose={() => setPreviewId(null)} />
+                    <PreviewModal
+                        templateId={previewId}
+                        onClose={() => setPreviewId(null)}
+                        colorTheme={selectedColorTheme}
+                    />
                 )}
             </AnimatePresence>
         </div>

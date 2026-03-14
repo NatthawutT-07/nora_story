@@ -256,7 +256,7 @@ const ExtensionPage = () => {
         try {
             const timestamp = Date.now();
             const slipRef = ref(storage, `extension_slips/${id}/${timestamp}_ext_${selectedPackage.days}d.jpg`);
-            
+
             // Compress extension slip
             const slipCompressionOptions = {
                 maxSizeMB: 1,
@@ -265,7 +265,7 @@ const ExtensionPage = () => {
             };
             const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
             await uploadBytes(slipRef, compressedSlipFile);
-            
+
             const slipUrl = await getDownloadURL(slipRef);
 
             const orderRef = doc(db, 'orders', id);
@@ -340,7 +340,7 @@ const ExtensionPage = () => {
     };
 
     const openImageEditForm = () => {
-        setEditImageFiles([]);
+        setEditImageFiles([...(order?.content_images || [])]);
         setEditImageMode(true);
         setEditTextMode(false);
         setEditPayType(null);
@@ -383,7 +383,7 @@ const ExtensionPage = () => {
         setEditSubmitting(true);
         try {
             const newUrls = [];
-            
+
             // Compression options for edited images
             const imageCompressionOptions = {
                 maxSizeMB: 2,
@@ -391,20 +391,26 @@ const ExtensionPage = () => {
                 useWebWorker: true,
                 initialQuality: 0.85
             };
-            
-            for (const file of editImageFiles) {
-                const timestamp = Date.now();
-                const imgRef = ref(storage, `edit_images/${id}/${timestamp}_${file.name}`);
-                try {
-                    const compressedFile = await imageCompression(file, imageCompressionOptions);
-                    await uploadBytes(imgRef, compressedFile);
-                } catch (error) {
-                    console.error("Error compressing edit image:", error);
-                    // Fallback to original
-                    await uploadBytes(imgRef, file);
+
+            for (const item of editImageFiles) {
+                if (typeof item === 'string') {
+                    // It's an existing URL, keep it
+                    newUrls.push(item);
+                } else if (item instanceof File) {
+                    // It's a new file, upload it
+                    const timestamp = Date.now();
+                    const imgRef = ref(storage, `edit_images/${id}/${timestamp}_${item.name}`);
+                    try {
+                        const compressedFile = await imageCompression(item, imageCompressionOptions);
+                        await uploadBytes(imgRef, compressedFile);
+                    } catch (error) {
+                        console.error("Error compressing edit image:", error);
+                        // Fallback to original
+                        await uploadBytes(imgRef, item);
+                    }
+                    const url = await getDownloadURL(imgRef);
+                    newUrls.push(url);
                 }
-                const url = await getDownloadURL(imgRef);
-                newUrls.push(url);
             }
 
             const orderRef = doc(db, 'orders', id);
@@ -434,7 +440,7 @@ const ExtensionPage = () => {
         try {
             const timestamp = Date.now();
             const slipRef = ref(storage, `edit_slips/${id}/${timestamp}_edit_${editPayType}.jpg`);
-            
+
             // Compress edit payment slip
             const slipCompressionOptions = {
                 maxSizeMB: 1,
@@ -443,7 +449,7 @@ const ExtensionPage = () => {
             };
             const compressedSlipFile = await imageCompression(editSlipFile, slipCompressionOptions);
             await uploadBytes(slipRef, compressedSlipFile);
-            
+
             const slipUrl = await getDownloadURL(slipRef);
 
             const price = editPayType === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
@@ -514,14 +520,22 @@ const ExtensionPage = () => {
                     <h2 className="text-xl sm:text-2xl font-bold text-[#1A3C40] mb-2">แจ้งชำระเงินเรียบร้อย!</h2>
                     <p className="text-gray-500 text-sm sm:text-base mb-6">
                         เราได้รับคำขอต่ออายุ {selectedPackage.label} แล้ว<br />
-                        ทีมงานจะตรวจสอบและอัปเดตวันหมดอายุให้ภายใน 24 ชม. ครับ
+                        ทีมงานจะตรวจสอบและอัปเดตวันหมดอายุให้ภายใน 24 ชม. 
                     </p>
-                    <button
-                        onClick={() => window.location.href = `https://norastory.com/${id}`}
-                        className="w-full bg-[#1A3C40] text-white py-3 rounded-xl hover:bg-[#1A3C40]/90 transition-all text-sm sm:text-base font-medium"
-                    >
-                        กลับไปที่หน้าเว็บไซต์ของคุณ
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => window.location.href = `https://norastory.com/extend/${id}`}
+                            className="flex-1 bg-[#1A3C40] text-white py-3 rounded-xl hover:bg-[#1A3C40]/90 transition-all text-sm sm:text-base font-medium"
+                        >
+                            กลับหน้าเดิม
+                        </button>
+                        <button
+                            onClick={() => window.location.href = `https://norastory.com/${id}`}
+                            className="flex-1 bg-[#ebc2b5] text-[#1A3C40] py-3 rounded-xl hover:bg-[#d89279] transition-all text-sm sm:text-base font-medium"
+                        >
+                            ดูหน้าเว็บไซต์ของคุณ 
+                        </button>
+                    </div>
                 </motion.div>
             </div>
         );
@@ -547,7 +561,7 @@ const ExtensionPage = () => {
             {/* Header */}
             <div className="bg-[#1A3C40] text-white px-4 py-3 sm:py-4">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/70 hover:text-white transition-colors text-sm">
+                    <button onClick={() => window.location.href = `https://norastory.com/${id}`} className="flex items-center gap-1 text-white/70 hover:text-white transition-colors text-sm">
                         <ChevronLeft size={18} /> ย้อนกลับ
                     </button>
                     <h1 className="font-playfair text-base sm:text-lg">Nora Story</h1>
@@ -585,7 +599,7 @@ const ExtensionPage = () => {
                 </div>
 
                 {/* Tab Selector */}
-                <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-1">
+                <div className="flex gap-2 mb-3 sm:mb-6 overflow-x-auto pb-1">
                     {[
                         { id: 'extend', label: 'ต่ออายุ', icon: <Clock size={16} /> },
                         { id: 'editText', label: 'แก้ไขข้อความ', icon: <Pencil size={16} /> },
@@ -595,7 +609,7 @@ const ExtensionPage = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                            className={`flex items-center gap-2 px-4 py-2.5 mb-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
                                 ? 'bg-[#1A3C40] text-white shadow-md'
                                 : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
                                 }`}

@@ -1,8 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ฟังก์ชันเช็คว่าผู้ใช้ล็อกอินเป็น Admin หรือไม่
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    match /orders/{orderId} {
+      // ลูกค้า (ไม่ได้ล็อกอิน) สามารถสร้างออเดอร์ใหม่ได้ (Create) และอ่านออเดอร์ของตัวเองได้ถ้ามี ID (Get)
+      // แต่ไม่สามารถแก้ไข ลบ หรือดึงออเดอร์ทั้งหมด (List)
+      allow get: if true;
+      allow create: if true;
+      
+      // การดึงออเดอร์ทั้งหมด (List), อัปเดต, ลบ ทำได้เฉพาะ Admin ที่ล็อกอินแล้วเท่านั้น
+      allow list, update, delete: if isAdmin();
+    }
+    
+    // ตั้งค่า Default ปิดทุก Path ไว้ก่อน เพื่อความปลอดภัย
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

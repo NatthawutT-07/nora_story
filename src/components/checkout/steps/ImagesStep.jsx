@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, ImageIcon, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Camera } from 'lucide-react';
 import { useCheckout } from '../CheckoutContext';
 
 const ImagesStep = () => {
@@ -13,68 +13,13 @@ const ImagesStep = () => {
     const maxImages = getMaxImages();
     const maxFileSizeMB = Math.round(getMaxFileSize() / (1024 * 1024));
 
-    // Handle standard file upload (bulk)
-    const handleContentFilesChange = (e) => {
-        const files = Array.from(e.target.files);
-
-        if (files.length + contentFiles.length > maxImages) {
-            setError(`อัปโหลดได้สูงสุด ${maxImages} รูปเท่านั้น`);
-            return;
-        }
-
-        // Check file size for each file
-        const oversizedFile = files.find(f => f.size > getMaxFileSize());
-        if (oversizedFile) {
-            const sizeMB = (oversizedFile.size / (1024 * 1024)).toFixed(1);
-            setError(`ไฟล์ "${oversizedFile.name}" มีขนาด ${sizeMB}MB เกินลิมิต ${maxFileSizeMB}MB`);
-            return;
-        }
-
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setContentFiles([...contentFiles, ...files]);
-        setContentPreviews([...contentPreviews, ...newPreviews]);
-        setError('');
-    };
-
-    const removeContentImage = (index) => {
-        const newFiles = [...contentFiles];
-        const newPreviews = [...contentPreviews];
-        newFiles.splice(index, 1);
-        newPreviews.splice(index, 1);
-        setContentFiles(newFiles);
-        setContentPreviews(newPreviews);
-    };
-
-    // --- Tier 3 Logic ---
-    const getTimelineTitle = (index) => {
-        const tl = formData?.timelines?.[index];
-        if (tl?.label) return `Timeline ${index + 1} (${tl.label})`;
-        return `Timeline ${index + 1}`;
-    };
-
-    const tier3Sections = [
-        { title: getTimelineTitle(0), count: 1, start: 0, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
-        { title: getTimelineTitle(1), count: 1, start: 1, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
-        { title: getTimelineTitle(2), count: 1, start: 2, hint: "ภาพแนวนอน (4:3)", ratio: "4/3" },
-        {
-            title: getTimelineTitle(3),
-            count: 5,
-            start: 3,
-            hint: "5 รูป: 1 แนวตั้ง, 2 แนวนอน, 2 สี่เหลี่ยม",
-            subHints: ["แนวตั้ง (3:4)", "แนวนอน (16:9)", "สี่เหลี่ยม (1:1)", "สี่เหลี่ยม (1:1)", "แนวนอน (16:9)"],
-            subRatios: ["3/4", "16/9", "1/1", "1/1", "16/9"]
-        },
-        { title: getTimelineTitle(4), count: 2, start: 8, hint: "ภาพแนวตั้ง (3:4) — 600x800px", ratio: "3/4" },
-    ];
-
+    // --- Shared Logic ---
     const updateSlot = (index, file) => {
         if (file && file.size > getMaxFileSize()) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
             setError(`ไฟล์ "${file.name}" มีขนาด ${sizeMB}MB เกินลิมิต ${maxFileSizeMB}MB`);
             return;
         }
-
-        // Fill sparse arrays with null if needed
         const newFiles = [...contentFiles];
         while (newFiles.length <= index) newFiles.push(null);
         newFiles[index] = file;
@@ -88,130 +33,292 @@ const ImagesStep = () => {
         setError('');
     };
 
-    const handleTier3FileChange = (e, index) => {
+    const handleFileChange = (e, index) => {
         const file = e.target.files && e.target.files[0];
-        if (file) {
-            updateSlot(index, file);
-        }
+        if (file) updateSlot(index, file);
     };
 
-    const renderTier3Slot = (idx, hint, ratio) => {
-        const file = contentFiles[idx];
+    const filledCount = contentPreviews.filter(Boolean).length;
+
+    // --- Shared Upload Slot Component ---
+    const UploadSlot = ({ idx, hint, ratio, label, accentColor = '#1A3C40' }) => {
         const preview = contentPreviews[idx];
         const isFilled = !!preview;
 
         return (
-            <div key={idx} className="relative group">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                className="relative group"
+            >
                 {isFilled ? (
-                    <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm" style={{ aspectRatio: ratio || 'square' }}>
+                    <div className="relative w-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow" style={{ aspectRatio: ratio || '1/1' }}>
                         <img src={preview} className="w-full h-full object-cover" alt="" />
-
-                        {/* Remove button */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                         <button
                             onClick={() => updateSlot(idx, null)}
-                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors z-10"
+                            className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-red-500 p-1.5 rounded-full shadow-lg hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10"
                         >
                             <X size={12} />
                         </button>
+                        {label && (
+                            <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/50 to-transparent">
+                                <p className="text-[9px] sm:text-[10px] text-white/90 font-medium truncate">{label}</p>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <label
-                        className="w-full rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#E8A08A] hover:bg-[#E8A08A]/5 transition-all relative bg-gray-50/50 group-hover:bg-white"
-                        style={{ aspectRatio: ratio || 'square' }}
+                        className="w-full rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-opacity-60 transition-all relative bg-gray-50/30 group"
+                        style={{ aspectRatio: ratio || '1/1', borderColor: `${accentColor}30` }}
                     >
-                        <ImageIcon className="w-5 h-5 text-gray-300 mb-1 group-hover:text-[#E8A08A] transition-colors" />
-                        <span className="text-[10px] text-gray-400 group-hover:text-[#E8A08A]">เลือกรูป</span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleTier3FileChange(e, idx)}
-                            className="hidden"
-                        />
+                        <div className="flex flex-col items-center gap-1.5 p-2">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: `${accentColor}10` }}>
+                                <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors" style={{ color: `${accentColor}90` }} />
+                            </div>
+                            <span className="text-[9px] sm:text-[10px] font-medium transition-colors" style={{ color: `${accentColor}80` }}>เลือกรูป</span>
+                            {hint && <span className="text-[8px] sm:text-[9px] text-gray-400 text-center leading-tight px-1">{hint}</span>}
+                        </div>
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, idx)} className="hidden" />
                     </label>
                 )}
-                <div className="mt-1 text-center">
-                    <p className="text-[10px] text-gray-400 truncate px-1">{hint}</p>
-                </div>
-            </div>
+            </motion.div>
         );
     };
 
+    // --- Tier 3 (T3-1) Timeline Layout ---
     if (isTier3) {
+        const getTimelineLabel = (index) => {
+            const tl = formData?.timelines?.[index];
+            return tl?.label || `Timeline ${index + 1}`;
+        };
+
+        const tier3Sections = [
+            {
+                title: getTimelineLabel(0),
+                sectionNum: 1,
+                count: 1,
+                start: 0,
+                hint: "4:3",
+                ratio: "4/3",
+                color: '#1A3C40' // Single color for all sections
+            },
+            {
+                title: getTimelineLabel(1),
+                sectionNum: 2,
+                count: 1,
+                start: 1,
+                hint: "4:3",
+                ratio: "4/3",
+                color: '#1A3C40'
+            },
+            {
+                title: getTimelineLabel(2),
+                sectionNum: 3,
+                count: 1,
+                start: 2,
+                hint: "4:3",
+                ratio: "4/3",
+                color: '#1A3C40'
+            },
+            {
+                title: getTimelineLabel(3),
+                sectionNum: 4,
+                count: 5,
+                start: 3,
+                hint: "4:3",
+                ratio: "4/3",
+                color: '#1A3C40'
+            },
+            {
+                title: getTimelineLabel(4),
+                sectionNum: 5,
+                count: 2,
+                start: 8,
+                hint: "4:3",
+                ratio: "4/3",
+                color: '#1A3C40'
+            },
+        ];
+
         return (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <div className="space-y-6 mb-6">
-                    {/* Header info */}
-                    <div className="text-center mb-2">
-                        <p className="text-[10px] text-gray-400">
-                            *อัปโหลดรูปภาพตาม Timeline (ขนาดไฟล์ไม่เกิน 4MB ต่อรูป)
-                        </p>
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                {/* Progress bar */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600 font-medium">อัปโหลดรูปภาพ</span>
+                        <span className="font-semibold" style={{ color: '#1A3C40' }}>{filledCount}/{maxImages}</span>
                     </div>
+                    <div className="w-full h-2 bg-gray-100/80 rounded-full overflow-hidden border border-gray-200/50">
+                        <motion.div
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: '#1A3C40' }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(filledCount / maxImages) * 100}%` }}
+                            transition={{ duration: 0.5 }}
+                        />
+                    </div>
+                    <p className="text-[10px] text-gray-400 text-center">ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป</p>
+                </div>
 
-                    {tier3Sections.map((section, sIdx) => (
-                        <div key={sIdx} className="space-y-3">
-                            <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                <span className="w-6 h-6 rounded-full bg-[#1A3C40] text-white text-xs flex items-center justify-center font-bold">
-                                    {sIdx + 1}
-                                </span>
-                                <div>
-                                    <h3 className="text-sm font-bold text-gray-700">{section.title}</h3>
-                                    <p className="text-xs text-gray-400">{section.hint}</p>
+                {/* Timeline Sections */}
+                <div className="space-y-5">
+                    {tier3Sections.map((section, sIdx) => {
+                        const sectionFilledCount = Array.from({ length: section.count }).filter((_, k) => contentPreviews[section.start + k]).length;
+                        const isComplete = sectionFilledCount === section.count;
+
+                        return (
+                            <motion.div
+                                key={sIdx}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: sIdx * 0.08 }}
+                                className="rounded-2xl border overflow-hidden transition-all"
+                                style={{
+                                    borderColor: isComplete ? `${section.color}40` : '#e5e7eb',
+                                    backgroundColor: isComplete ? `${section.color}05` : '#f8fafc' // Slightly cooler gray/blue
+                                }}
+                            >
+                                {/* Section Header */}
+                                <div className="flex items-center gap-2.5 px-3 py-2.5 sm:px-4 sm:py-3" style={{ borderBottom: `1px solid ${isComplete ? `${section.color}20` : '#f1f5f9'}` }}>
+                                    <div
+                                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-bold shadow-sm"
+                                        style={{ backgroundColor: section.color }}
+                                    >
+                                        {section.sectionNum}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-xs sm:text-sm font-bold text-gray-700 truncate">{section.title}</h3>
+                                        <p className="text-[10px] text-gray-400">
+                                            {section.count} รูป — {section.ratio}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        {isComplete ? (
+                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ color: section.color, backgroundColor: `${section.color}15` }}>
+                                                ครบแล้ว
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-gray-400">{sectionFilledCount}/{section.count}</span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className={`grid gap-3 ${section.count > 2 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
-                                {Array.from({ length: section.count }).map((_, k) => {
-                                    const slotIndex = section.start + k;
-                                    // Use specific sub-hint/ratio if available, else general
-                                    const hint = section.subHints ? section.subHints[k] : `รูปที่ ${k + 1}`;
-                                    const ratio = section.subRatios ? section.subRatios[k] : section.ratio;
-                                    return renderTier3Slot(slotIndex, hint, ratio);
-                                })}
-                            </div>
-                        </div>
-                    ))}
+                                {/* Section Content */}
+                                <div className="p-2.5 sm:p-3 relative z-10">
+                                    {section.sectionNum === 4 ? (
+                                        // Custom cross layout for Section 4 (Memories)
+                                        <div className="relative w-full max-w-md mx-auto aspect-[4/3.2] my-4">
+                                            {/* Top Left */}
+                                            <div className="absolute top-0 left-0 w-[44%] z-10 transform hover:z-50 hover:scale-105 transition-all duration-300">
+                                                <UploadSlot idx={section.start} hint={section.hint} ratio={section.ratio} label="รูปที่ 1" accentColor="#1A3C40" />
+                                            </div>
+                                            {/* Top Right */}
+                                            <div className="absolute top-0 right-0 w-[44%] z-10 transform hover:z-50 hover:scale-105 transition-all duration-300">
+                                                <UploadSlot idx={section.start + 1} hint={section.hint} ratio={section.ratio} label="รูปที่ 2" accentColor="#1A3C40" />
+                                            </div>
+                                            {/* Bottom Left */}
+                                            <div className="absolute bottom-0 left-0 w-[44%] z-10 transform hover:z-50 hover:scale-105 transition-all duration-300">
+                                                <UploadSlot idx={section.start + 3} hint={section.hint} ratio={section.ratio} label="รูปที่ 4" accentColor="#1A3C40" />
+                                            </div>
+                                            {/* Bottom Right */}
+                                            <div className="absolute bottom-0 right-0 w-[44%] z-10 transform hover:z-50 hover:scale-105 transition-all duration-300">
+                                                <UploadSlot idx={section.start + 4} hint={section.hint} ratio={section.ratio} label="รูปที่ 5" accentColor="#1A3C40" />
+                                            </div>
+                                            {/* Center (Overlapping) */}
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48%] z-20 transform hover:z-50 hover:scale-105 transition-all duration-300 shadow-2xl rounded-2xl bg-white p-1 md:p-1.5">
+                                                <UploadSlot idx={section.start + 2} hint={section.hint} ratio={section.ratio} label="รูปที่ 3 (ตรงกลาง)" accentColor="#1A3C40" />
+                                            </div>
+                                        </div>
+                                    ) : section.sectionNum === 5 ? (
+                                        // Custom overlap layout for Section 5 (Finale)
+                                        <div className="relative w-full max-w-xs mx-auto aspect-[4/3.5] my-4">
+                                            {/* Top Left */}
+                                            <div className="absolute top-0 left-0 w-[65%] z-10 transform hover:z-50 hover:scale-105 transition-all duration-300">
+                                                <UploadSlot idx={section.start} hint={section.hint} ratio={section.ratio} label="รูปที่ 1" accentColor="#1A3C40" />
+                                            </div>
+                                            {/* Bottom Right */}
+                                            <div className="absolute bottom-0 right-0 w-[65%] z-20 transform hover:z-50 hover:scale-105 transition-all duration-300 shadow-2xl rounded-2xl bg-white p-1 md:p-1.5">
+                                                <UploadSlot idx={section.start + 1} hint={section.hint} ratio={section.ratio} label="รูปที่ 2" accentColor="#1A3C40" />
+                                            </div>
+                                        </div>
+                                    ) : section.count === 1 ? (
+                                        <div className="max-w-xs mx-auto">
+                                            <UploadSlot
+                                                idx={section.start}
+                                                hint={section.hint}
+                                                ratio={section.ratio}
+                                                accentColor="#1A3C40"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                            {Array.from({ length: section.count }).map((_, k) => (
+                                                <UploadSlot
+                                                    key={k}
+                                                    idx={section.start + k}
+                                                    hint={section.hint}
+                                                    ratio={section.ratio}
+                                                    label={`รูปที่ ${k + 1}`}
+                                                    accentColor="#1A3C40"
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </motion.div>
         );
     }
 
-    // --- Standard (Tier 1/2) — Slot-based like Tier 3 ---
+    // --- Standard (Tier 1/2) ---
     const tier2Sections = [
-        { title: 'รูปภาพที่ 1', hint: 'ภาพแนวตั้ง (3:4)', ratio: '3/4' },
-        { title: 'รูปภาพที่ 2', hint: 'ภาพแนวนอน (16:9)', ratio: '16/9' },
-        { title: 'รูปภาพที่ 3', hint: 'สี่เหลี่ยม (1:1)', ratio: '1/1' },
-        { title: 'รูปภาพที่ 4', hint: 'ภาพแนวนอน (4:3)', ratio: '4/3' },
-        { title: 'รูปภาพที่ 5', hint: 'ภาพแนวตั้ง (3:4)', ratio: '3/4' },
+        { title: 'รูปภาพที่ 1', hint: '3:4', ratio: '3/4' },
+        { title: 'รูปภาพที่ 2', hint: '16:9', ratio: '16/9' },
+        { title: 'รูปภาพที่ 3', hint: '1:1', ratio: '1/1' },
+        { title: 'รูปภาพที่ 4', hint: '4:3', ratio: '4/3' },
+        { title: 'รูปภาพที่ 5', hint: '3:4', ratio: '3/4' },
     ];
-
-    // For Tier 1 (single image templates)
     const tier1Section = [
-        { title: 'รูปภาพ', hint: 'สี่เหลี่ยม (1:1)', ratio: '1/1' },
+        { title: 'รูปภาพ', hint: '1:1', ratio: '1/1' },
     ];
-
     const sections = maxImages <= 1 ? tier1Section : tier2Sections.slice(0, maxImages);
 
     return (
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="space-y-4 mb-4">
-                {/* Header info */}
-                <div className="text-center mb-2">
-                    <p className="text-[10px] text-gray-400">
-                        *อัปโหลดรูปภาพ (ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป)
-                    </p>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+            {/* Progress bar */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600 font-medium">อัปโหลดรูปภาพ</span>
+                    <span className="font-semibold" style={{ color: '#1A3C40' }}>{filledCount}/{maxImages}</span>
                 </div>
+                <div className="w-full h-2 bg-gray-100/80 rounded-full overflow-hidden border border-gray-200/50">
+                    <motion.div
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: '#1A3C40' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(filledCount / maxImages) * 100}%` }}
+                        transition={{ duration: 0.5 }}
+                    />
+                </div>
+                <p className="text-[10px] text-gray-400 text-center">ขนาดไฟล์ไม่เกิน {maxFileSizeMB}MB ต่อรูป</p>
+            </div>
 
-                <div className={`grid gap-3 ${maxImages <= 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
-                    {sections.map((section, idx) => (
-                        renderTier3Slot(idx, section.hint, section.ratio)
-                    ))}
-                </div>
+            {/* Image Grid */}
+            <div className={`grid gap-2.5 sm:gap-3 ${maxImages <= 1 ? 'grid-cols-1 max-w-xs mx-auto' : 'grid-cols-2 sm:grid-cols-3'}`}>
+                {sections.map((section, idx) => (
+                    <UploadSlot key={idx} idx={idx} hint={section.hint} ratio={section.ratio} label={section.title} accentColor="#1A3C40" />
+                ))}
+            </div>
 
-                {/* Info Banner */}
-                <div className="flex items-start gap-2 bg-blue-50 text-blue-600 p-3 rounded-xl text-xs">
-                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                    <span>ใส่รูปภาพที่ต้องการให้ปรากฏในเว็บไซต์ของคุณ คุณสามารถอัปโหลดได้สูงสุด {maxImages} รูป</span>
-                </div>
+            {/* Info Banner */}
+            <div className="flex items-start gap-2.5 bg-blue-50/80 text-blue-600 p-3 rounded-xl text-xs border border-blue-100/50">
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                <span>อัปโหลดรูปภาพที่ต้องการให้ปรากฏในเว็บไซต์ สูงสุด {maxImages} รูป</span>
             </div>
         </motion.div>
     );

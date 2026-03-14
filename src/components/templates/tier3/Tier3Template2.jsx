@@ -46,7 +46,7 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
         >
             {/* Time Column */}
             <div className="flex flex-col items-end w-24 md:w-32 pt-2 flex-shrink-0">
-                <span className="text-xl md:text-2xl font-bold text-amber-600 font-serif">{time}</span>
+                <span className="text-xl md:text-2xl font-bold text-amber-600 font-serif break-words">{time}</span>
                 <span className="text-xs text-amber-800/60 uppercase tracking-widest mt-1">Time</span>
             </div>
 
@@ -63,9 +63,9 @@ const TimelineEvent = ({ time, title, desc, icon: Icon, index }) => {
                         <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
                             <Icon size={18} />
                         </div>
-                        <h3 className="text-lg md:text-xl font-bold text-gray-800">{title}</h3>
+                        <h3 className="text-lg md:text-xl font-bold text-gray-800 break-words break-all">{title}</h3>
                     </div>
-                    <p className="text-gray-600 font-light leading-relaxed">{desc}</p>
+                    <p className="text-gray-600 font-light leading-relaxed break-words break-all">{desc}</p>
                 </div>
             </div>
         </motion.div>
@@ -155,16 +155,19 @@ const Tier3Template2 = ({
     images = [],
     musicUrl = '',
     isDemo = false,
-    demoMusicUrl = null
+    demoMusicUrl = null,
+    colorTheme
 }) => {
+    const ct = colorTheme?.colors || null;
+    const bgColor = ct?.bg || '#FCF8F3';
+    const bgAltColor = ct?.bgAlt || '#FFF8E1';
+
     // Default Schedule (Sacred Timeline)
-    const schedule = [
-        { time: "07:30", title: "พิธีปลงผมนาค", desc: "ขอเชิญญาติมิตรและผู้มีจิตศรัทธาร่วมพิธีปลงผมนาค ณ ลานพิธี", icon: UserCheck },
+    const schedule = [{ time: "07:30", title: "พิธีปลงผมนาค", desc: "ขอเชิญญาติมิตรและผู้มีจิตศรัทธาร่วมพิธีปลงผมนาค ณ ลานพิธี", icon: UserCheck },
         { time: "09:00", title: "ทำขวัญนาค", desc: "พิธีทำขวัญนาคเพื่อความเป็นสิริมงคล", icon: Sparkles },
         { time: "10:30", title: "แห่นาคเข้าโบสถ์", desc: "เคลื่อนขบวนแห่นาคเวียนรอบอุโบสถ 3 รอบ", icon: Calendar },
         { time: "11:00", title: "พิธีอุปสมบท", desc: "นาคเข้าสู่ร่มกาสาวพัสตร์ เป็นพระภิกษุสงฆ์", icon: Sun },
-        { time: "12:00", title: "ฉลองพระใหม่", desc: "ร่วมถวายภัตตาหารเพลและรับประทานอาหารร่วมกัน", icon: Flower }
-    ];
+        { time: "12:00", title: "ฉลองพระใหม่", desc: "ร่วมถวายภัตตาหารเพลและรับประทานอาหารร่วมกัน", icon: Flower }];
 
     // Helper icon mapping if needed, used generic ones above
     // Let's define the UserCheck since used it
@@ -190,9 +193,9 @@ const Tier3Template2 = ({
     }
 
     return (
-        <div className="min-h-screen w-full bg-[#FCF8F3] relative overflow-hidden font-serif text-[#5D4037]">
+        <div className="min-h-screen w-full relative overflow-hidden font-serif text-[#5D4037]" style={{ backgroundColor: bgColor }}>
             {/* Background Layers */}
-            <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-[#FFF8E1] to-orange-50 z-0" />
+            <div className="fixed inset-0 z-0" style={{ background: `radial-gradient(circle at 50% 50%, ${bgAltColor} 0%, ${bgColor} 100%)` }} />
             <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-10" />
             <GoldenDust />
 
@@ -225,11 +228,11 @@ const Tier3Template2 = ({
                             transition={{ delay: 0.3 }}
                             className="mt-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-white aspect-video relative group"
                         >
-                            <img src={images[0]} alt="Venue" className="w-full h-full object-cover" />
+                            <img loading="lazy" src={images[0]} alt="Venue" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
                             <div className="absolute bottom-4 left-4 text-white text-left">
                                 <p className="text-sm font-light opacity-90">สถานที่จัดงาน</p>
-                                <h3 className="text-xl font-bold">{customSignOff || "วัด..."}</h3>
+                                <h3 className="text-xl font-bold break-words break-all">{customSignOff || "วัด..."}</h3>
                             </div>
                         </motion.div>
                     )}
@@ -256,7 +259,7 @@ const Tier3Template2 = ({
                     viewport={{ once: true }}
                     className="text-center mt-10 md:mt-20 p-6 md:p-8 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/60"
                 >
-                    <p className="text-xl italic text-amber-800 font-light mb-4">
+                    <p className="text-xl italic text-amber-800 font-light mb-4 break-words break-all">
                         "{customMessage || "ขอเชิญร่วมอนุโมทนาบุญ ในงานพิธีอุปสมบทครั้งนี้"}"
                     </p>
                     <div className="flex justify-center text-amber-400 gap-2">

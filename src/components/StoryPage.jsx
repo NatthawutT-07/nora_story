@@ -1,31 +1,31 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import useSWR from 'swr';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Add-ons
 import { mergeConfig } from '../lib/templateConfig';
+import { findPaletteById } from '../lib/colorPalettes';
 
 // Import all templates
-import Tier1Template1 from './templates/tier1/Tier1Template1';
-import Tier1Template2 from './templates/tier1/Tier1Template2';
-import Tier1Template3 from './templates/tier1/Tier1Template3';
-import Tier1Template4 from './templates/tier1/Tire1Template4';
+const Tier1Template1 = lazy(() => import('./templates/tier1/Tier1Template1'));
+const Tier1Template2 = lazy(() => import('./templates/tier1/Tier1Template2'));
+const Tier1Template3 = lazy(() => import('./templates/tier1/Tier1Template3'));
 
-import Tier2Template1 from './templates/tier2/Tier2Template1';
-import Tier2Template2 from './templates/tier2/Tier2Template2';
-import Tier2Template3 from './templates/tier2/Tier2Template3';
+const Tier2Template1 = lazy(() => import('./templates/tier2/Tier2Template1'));
+const Tier2Template2 = lazy(() => import('./templates/tier2/Tier2Template2'));
+const Tier2Template3 = lazy(() => import('./templates/tier2/Tier2Template3'));
 
-import Tier3Template1 from './templates/tier3/Tier3Template1';
-import Tier3Template2 from './templates/tier3/Tier3Template2';
-import Tier3Template3 from './templates/tier3/Tier3Template3';
+const Tier3Template1 = lazy(() => import('./templates/tier3/Tier3Template1'));
+const Tier3Template2 = lazy(() => import('./templates/tier3/Tier3Template2'));
+const Tier3Template3 = lazy(() => import('./templates/tier3/Tier3Template3'));
 
 // Template mapping
 const TEMPLATES = {
     't1-1': Tier1Template1,
     't1-2': Tier1Template2, 't1-3': Tier1Template3,
-    't1-4': Tier1Template4,
+
     't2-1': Tier2Template1, 't2-2': Tier2Template2, 't2-3': Tier2Template3,
     // 't2-4': Tier2Template4, 't2-5': Tier2Template5, 't2-6': Tier2Template6,
     't3-1': Tier3Template1, 't3-2': Tier3Template2, 't3-3': Tier3Template3,
@@ -152,27 +152,31 @@ const StoryPage = () => {
             const config = mergeConfig(storyData.config);
 
             // Template content with effects and features
-            const templateContent = (
-                <div className="relative">
-
-                    {/* Main Template */}
-                    <TemplateComponent
-                        customTitle={storyData.customer_name}
-                        customMessage={storyData.message}
-                        customSignOff={storyData.sign_off}
-                        targetName={storyData.target_name}
-                        pin={storyData.pin_code}
-                        timelines={storyData.timelines || []}
-                        finaleMessage={storyData.finale_message}
-                        finaleSignOff={storyData.finale_sign_off}
-                        images={storyData.content_images || []}
-                        musicUrl={storyData.music_url}
-                        config={config} // Pass config for dynamic styling
-                    />
+            return (
+                <div className="relative z-10 w-full min-h-screen">
+                    <Suspense fallback={
+                        <div className="min-h-screen bg-gradient-to-br from-[#1A3C40] to-[#0F2A2E] flex flex-col items-center justify-center text-white">
+                            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+                            <p className="text-white/60">กำลังโหลดเรื่องราวของคุณ...</p>
+                        </div>
+                    }>
+                        <TemplateComponent
+                            customTitle={storyData.customer_name}
+                            customMessage={storyData.message}
+                            customSignOff={storyData.sign_off}
+                            targetName={storyData.target_name}
+                            pin={storyData.pin_code}
+                            timelines={storyData.timelines || []}
+                            finaleMessage={storyData.finale_message}
+                            finaleSignOff={storyData.finale_sign_off}
+                            images={storyData.content_images || []}
+                            musicUrl={storyData.music_url}
+                            colorTheme={storyData.color_theme_id ? findPaletteById(storyData.color_theme_id) : null}
+                            config={config}
+                        />
+                    </Suspense>
                 </div>
             );
-
-            return templateContent;
         }
     }
 

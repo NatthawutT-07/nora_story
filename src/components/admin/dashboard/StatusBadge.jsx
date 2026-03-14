@@ -6,18 +6,21 @@ const StatusBadge = ({ status }) => {
         pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
         approved: 'bg-green-100 text-green-700 border-green-200',
         rejected: 'bg-red-100 text-red-700 border-red-200',
+        expired: 'bg-gray-100 text-gray-500 border-gray-200',
     };
 
     const icons = {
         pending: <Clock size={14} />,
         approved: <CheckCircle size={14} />,
         rejected: <XCircle size={14} />,
+        expired: <Clock size={14} />,
     };
 
     const labels = {
         pending: 'รอตรวจสอบ',
         approved: 'อนุมัติแล้ว',
         rejected: 'ปฏิเสธ',
+        expired: 'หมดอายุ',
     };
 
     return (

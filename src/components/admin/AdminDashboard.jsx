@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { collection, onSnapshot, orderBy, query, limit, doc, deleteDoc } from 'firebase/firestore';
+import { ref, listAll, deleteObject } from 'firebase/storage';
+import { db, auth, storage } from '../../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Package, LogOut, RefreshCw, Music } from 'lucide-react';
 
@@ -10,6 +11,7 @@ import OrderFilter from './dashboard/OrderFilter';
 import OrdersTable from './dashboard/OrdersTable';
 import OrderDetailModal from './dashboard/OrderDetailModal';
 import MusicManager from './dashboard/MusicManager';
+import DeleteConfirmModal from './dashboard/DeleteConfirmModal';
 
 const AdminDashboard = () => {
     const [orders, setOrders] = useState([]);
@@ -19,6 +21,8 @@ const AdminDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'music'
     const [isLive, setIsLive] = useState(false); // real-time connected indicator
+    const [deleteTarget, setDeleteTarget] = useState(null); // order to delete
+    const [deleting, setDeleting] = useState(false);
     const unsubscribeRef = useRef(null);
     const navigate = useNavigate();
 
@@ -40,7 +44,8 @@ const AdminDashboard = () => {
             unsubscribeRef.current();
         }
         const ordersRef = collection(db, 'orders');
-        const q = query(ordersRef, orderBy('created_at', 'desc'));
+        // Add limit(100) to prevent performance issues and massive Firebase reads as the app scales
+        const q = query(ordersRef, orderBy('created_at', 'desc'), limit(100));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const ordersList = snapshot.docs.map(doc => ({
@@ -94,15 +99,66 @@ const AdminDashboard = () => {
         setSelectedOrder(updatedOrder);
     };
 
+    // Delete order: remove Storage files + Firestore doc
+    const handleDeleteOrder = async (order) => {
+        setDeleting(true);
+        try {
+            // 1. Delete files in /uploads/{orderId}/
+            try {
+                const uploadsRef = ref(storage, `uploads/${order.id}`);
+                const uploadsList = await listAll(uploadsRef);
+                const deletePromises = uploadsList.items.map(item => deleteObject(item));
+                await Promise.all(deletePromises);
+            } catch (e) {
+                console.warn('No upload files found or error deleting uploads:', e.message);
+            }
+
+            // 2. Delete slip file if exists
+            if (order.slip_url || order.slipUrl) {
+                try {
+                    const slipUrl = order.slip_url || order.slipUrl;
+                    // Extract path from full URL
+                    const pathMatch = slipUrl.match(/\/o\/(.+?)\?/);
+                    if (pathMatch) {
+                        const slipPath = decodeURIComponent(pathMatch[1]);
+                        const slipRef = ref(storage, slipPath);
+                        await deleteObject(slipRef);
+                    }
+                } catch (e) {
+                    console.warn('Error deleting slip:', e.message);
+                }
+            }
+
+            // 3. Delete Firestore document
+            await deleteDoc(doc(db, 'orders', order.id));
+
+            // Remove from local state
+            setOrders(prev => prev.filter(o => o.id !== order.id));
+            setDeleteTarget(null);
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            alert('ลบ Order ไม่สำเร็จ: ' + error.message);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     // Filter orders
     const filteredOrders = orders.filter(order => {
         let matchesFilter = true;
+        
+        // Determine if order is expired
+        const isExpired = order.expires_at && new Date() > order.expires_at;
+
         if (filter === 'extension_pending') {
             matchesFilter = order.extension_status === 'pending';
         } else if (filter === 'edit_pending') {
             matchesFilter = order.text_edit_payment_status === 'pending' || order.image_edit_payment_status === 'pending';
+        } else if (filter === 'expired') {
+            matchesFilter = isExpired;
         } else if (filter !== 'all') {
-            matchesFilter = order.status === filter;
+            // For 'pending', 'approved', 'rejected', we only match if they are NOT expired (unless they explicitly want expired)
+            matchesFilter = order.status === filter && !isExpired;
         }
 
         const matchesSearch =
@@ -186,6 +242,7 @@ const AdminDashboard = () => {
                             orders={filteredOrders}
                             loading={loading}
                             onSelectOrder={setSelectedOrder}
+                            onDeleteOrder={setDeleteTarget}
                         />
                     </>
                 ) : (
@@ -198,6 +255,14 @@ const AdminDashboard = () => {
                     order={selectedOrder}
                     onClose={() => setSelectedOrder(null)}
                     onUpdate={handleOrderUpdate}
+                />
+            )}
+            {deleteTarget && (
+                <DeleteConfirmModal
+                    order={deleteTarget}
+                    onConfirm={handleDeleteOrder}
+                    onCancel={() => setDeleteTarget(null)}
+                    deleting={deleting}
                 />
             )}
         </div>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { getPalettesForTier } from '../../lib/colorPalettes';
 
 const CheckoutContext = createContext(null);
 
@@ -16,6 +17,24 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     // Steps: 1=Buyer Info, 2=Template Selection, 3=Template Details, 4=Images, 5=Payment, 6=Success
     const [step, setStep] = useState(1);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [selectedColorTheme, setSelectedColorTheme] = useState(() => {
+        const palettes = getPalettesForTier(tier?.id);
+        // For Tier 2, use a bright color instead of the dark default
+        if (String(tier?.id) === '2') {
+            return {
+                id: 'bright-rose',
+                name: 'Bright Rose',
+                colors: {
+                    bg: '#fdf2f8', bgAlt: '#fff1f2',
+                    primary: '#f43f5e', secondary: '#fb7185', accent: '#fda4af',
+                    text: '#881337', textLight: '#9f1239',
+                    gradient: ['#4c1d95', '#be185d', '#f43f5e'],
+                    confetti: ['#f43f5e', '#ec4899', '#f97316', '#fbbf24'],
+                }
+            };
+        }
+        return palettes[0] || null;
+    });
     const [slipFile, setSlipFile] = useState(null);
     const [slipPreview, setSlipPreview] = useState(null);
     const [contentFiles, setContentFiles] = useState([]);
@@ -51,11 +70,11 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
     // Check template tier type
     const isTier1Template1 = String(tier?.id) === '1' && selectedTemplate === 't1-1';
-    const isTier1Template4 = String(tier?.id) === '1' && selectedTemplate === 't1-4';
     const isTier2 = String(tier?.id) === '2';
     const isTier3 = String(tier?.id) === '3';
-    // T1-1, T1-4 and T2 templates use the same detail fields (PIN, target name, message, sign off)
-    const needsDetailFields = isTier1Template1 || isTier1Template4 || isTier2;
+    // Tier 1 uses Template1Fields (for t1-1) or no extra details if we removed t1-4.
+    // T2 templates use Template1Fields as well.
+    const needsDetailFields = isTier1Template1 || isTier2;
     // Tier 3 uses timeline fields
     const needsTimelineFields = isTier3;
 
@@ -76,23 +95,27 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         return 4 * 1024 * 1024; // 4MB
     };
 
-    // Check if this template needs image upload
+    // Step calculation based on whether images are needed
     const needsImageStep = () => {
-        if (!tier) return false;
-        if (String(tier?.id) === '1' && selectedTemplate === 't1-1') return false;
-        return true;
+        return getMaxImages() > 0;
     };
 
-    // Always 5 visual steps (details + images for all, or just details for t1-1)
-    const getTotalSteps = () => 5;
+    // Dynamic total steps: 4 if no images, 5 if images needed
+    const getTotalSteps = () => needsImageStep() ? 5 : 4;
 
-    // Step labels  
+    // Step labels - skip 'รูปภาพ' if not needed
     const getStepLabels = () => {
-        return ['เลือกธีม', 'ข้อมูล', 'รายละเอียด', 'รูปภาพ', 'ชำระเงิน'];
+        if (needsImageStep()) {
+            return ['เลือกธีม', 'ข้อมูล', 'รายละเอียด', 'รูปภาพ', 'ชำระเงิน'];
+        }
+        return ['เลือกธีม', 'ข้อมูล', 'รายละเอียด', 'ชำระเงิน'];
     };
 
-    // Progress step mapping
+    // Progress step mapping - adjusts when skipping image step
     const getProgressStep = () => {
+        if (!needsImageStep() && step >= 4) {
+            return step - 1; // Shift step numbers when skipping image step
+        }
         return step;
     };
 
@@ -138,6 +161,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
             finaleSignOff: '',
         });
         setSelectedTemplate(null);
+        const palettes = getPalettesForTier(tier?.id);
+        setSelectedColorTheme(palettes[0] || null);
         setStoryId(null);
         setQrExpired(false);
     };
@@ -156,6 +181,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         updateFormData,
         selectedTemplate,
         setSelectedTemplate,
+        selectedColorTheme,
+        setSelectedColorTheme,
         slipFile,
         setSlipFile,
         slipPreview,

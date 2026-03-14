@@ -1,26 +1,52 @@
 import { motion } from 'framer-motion';
 import { useCheckout } from '../CheckoutContext';
 import Template1Fields from '../forms/tier1/Template1Fields';
-import Template4Fields from '../forms/tier1/Template4Fields';
+import { Wand2 } from 'lucide-react';
 import TimelineFields from '../forms/tier3/TimelineFields';
 import MusicSelection from '../forms/MusicSelection';
 
 const DetailsStep = () => {
-    const { needsDetailFields, needsTimelineFields, selectedTemplate } = useCheckout();
+    const { needsDetailFields, needsTimelineFields, selectedTemplate, updateFormData } = useCheckout();
 
-    // T1-4: Love Story — same fields but different component
-    if (selectedTemplate === 't1-4') {
-        return (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <Template4Fields />
-            </motion.div>
-        );
-    }
+    const handleDemoFill = () => {
+        if (needsDetailFields) {
+            updateFormData({
+                pin: '1234',
+                targetName: 'ที่รัก',
+                message: 'ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย',
+                signOff: 'รักเสมอ'
+            });
+        }
+        if (needsTimelineFields) {
+            updateFormData({
+                timelines: [
+                    { label: '1 Month', desc: '' },
+                    { label: '1 Year', desc: '' },
+                    { label: '3 Years', desc: '' },
+                    { label: 'Memories', desc: '' },
+                    { label: 'To Infinity', desc: '' },
+                ],
+                finaleMessage: 'ขอบคุณที่เข้ามาในชีวิต และทำให้ทุกวันมีความหมาย',
+                finaleSignOff: 'รักที่สุด'
+            });
+        }
+    };
+
+    const DemoButton = () => (
+        <button
+            onClick={handleDemoFill}
+            className="mb-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-50 text-purple-600 text-sm font-medium hover:bg-purple-100 transition-colors border border-purple-100"
+        >
+            <Wand2 size={16} />
+            ทดลองกรอกข้อมูลอัตโนมัติ (Demo)
+        </button>
+    );
 
     // T1-1 and T2 templates: PIN, Target Name, Message, Sign Off
     if (needsDetailFields) {
         return (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                {/* <DemoButton /> */}
                 <Template1Fields />
                 {selectedTemplate !== 't1-1' && <MusicSelection />}
             </motion.div>
@@ -31,6 +57,7 @@ const DetailsStep = () => {
     if (needsTimelineFields) {
         return (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                {/* <DemoButton /> */}
                 <TimelineFields />
                 <MusicSelection />
             </motion.div>

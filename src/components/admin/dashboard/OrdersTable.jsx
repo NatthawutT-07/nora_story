@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Eye, RefreshCw } from 'lucide-react';
+import { Package, Eye, RefreshCw, Trash2 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 const AlertBadges = ({ order }) => (
@@ -22,7 +22,7 @@ const AlertBadges = ({ order }) => (
     </>
 );
 
-const OrdersTable = ({ orders, loading, onSelectOrder }) => {
+const OrdersTable = ({ orders, loading, onSelectOrder, onDeleteOrder }) => {
     if (loading) {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-400">
@@ -81,12 +81,20 @@ const OrdersTable = ({ orders, loading, onSelectOrder }) => {
                                     {order.created_at?.toLocaleDateString?.('th-TH') || '-'}
                                 </span>
                             </div>
-                            <button
-                                onClick={() => onSelectOrder(order)}
-                                className="flex items-center gap-1.5 bg-[#1A3C40] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#2a4c50] transition-colors"
-                            >
-                                <Eye size={13} /> ดู
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => onSelectOrder(order)}
+                                    className="flex items-center gap-1.5 bg-[#1A3C40] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#2a4c50] transition-colors"
+                                >
+                                    <Eye size={13} /> ดู
+                                </button>
+                                <button
+                                    onClick={() => onDeleteOrder(order)}
+                                    className="flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+                                >
+                                    <Trash2 size={13} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -137,13 +145,21 @@ const OrdersTable = ({ orders, loading, onSelectOrder }) => {
                                         {order.created_at?.toLocaleDateString?.('th-TH') || '-'}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => onSelectOrder(order)}
-                                            className="inline-flex items-center gap-1 text-[#E8A08A] hover:text-[#d89279] text-sm font-medium"
-                                        >
-                                            <Eye size={16} />
-                                            ดูรายละเอียด
-                                        </button>
+                                        <div className="flex items-center gap-3 justify-end">
+                                            <button
+                                                onClick={() => onSelectOrder(order)}
+                                                className="inline-flex items-center gap-1 text-[#E8A08A] hover:text-[#d89279] text-sm font-medium"
+                                            >
+                                                <Eye size={16} />
+                                                ดูรายละเอียด
+                                            </button>
+                                            <button
+                                                onClick={() => onDeleteOrder(order)}
+                                                className="inline-flex items-center gap-1 text-red-400 hover:text-red-600 text-sm font-medium transition-colors"
+                                            >
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

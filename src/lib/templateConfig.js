@@ -82,7 +82,7 @@ export const ALL_TEMPLATES = [
     { id: 't1-1', name: 'Tier 1 - Sunrise Glow' },
     { id: 't1-2', name: 'Tier 1 - Moonlight' },
     { id: 't1-3', name: 'Tier 1 - Cherry Blossom' },
-    { id: 't1-4', name: 'Tier 1 - Ocean Breeze' },
+
     { id: 't1-5', name: 'Tier 1 - Golden Hour' },
     { id: 't1-6', name: 'Tier 1 - Starry Night' },
     { id: 't1-7', name: 'Tier 1 - Rose Garden' },

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Delete, Heart, Sparkles, Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
+import { Delete, Heart, Sparkles, Clock, MapPin, Calendar, Play, Pause, Volume2, VolumeX, Music, Search } from 'lucide-react';
+import { getStorage, ref, listAll, getDownloadURL } from 'firebase/storage';
 
 // Floating Images Component
 const FloatingImages = ({ images = [] }) => {
@@ -78,7 +79,7 @@ const FloatingImages = ({ images = [] }) => {
                     className="absolute w-28 h-28 md:w-48 md:h-48 rounded-xl border-4 border-white/20 shadow-xl overflow-hidden"
                     style={positions[i % positions.length]}
                 >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
                 </motion.div>
             ))}
         </div>
@@ -153,32 +154,36 @@ const SparkleEffect = () => {
 };
 
 // Animated Background - Premium
-const AnimatedBackground = ({ variant = 'default' }) => {
-    const gradients = {
-        default: 'from-purple-900 via-rose-900 to-pink-900',
-        question: 'from-rose-900 via-pink-800 to-purple-900',
-        content: 'from-slate-900 via-purple-900 to-rose-900'
-    };
+const AnimatedBackground = ({ gradientColors }) => {
+    // Brighter default colors - purple to pink to rose gradient
+    const g = gradientColors || ['#4c1d95', '#be185d', '#f43f5e'];
 
     return (
         <>
             <motion.div
-                className={`absolute inset-0 bg-gradient-to-br ${gradients[variant]}`}
+                className="absolute inset-0"
                 animate={{
                     background: [
-                        'linear-gradient(135deg, #1e1b4b 0%, #831843 50%, #be185d 100%)',
-                        'linear-gradient(135deg, #831843 0%, #be185d 50%, #1e1b4b 100%)',
-                        'linear-gradient(135deg, #be185d 0%, #1e1b4b 50%, #831843 100%)',
-                        'linear-gradient(135deg, #1e1b4b 0%, #831843 50%, #be185d 100%)'
+                        `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`,
+                        `linear-gradient(135deg, ${g[1]} 0%, ${g[2]} 50%, ${g[0]} 100%)`,
+                        `linear-gradient(135deg, ${g[2]} 0%, ${g[0]} 50%, ${g[1]} 100%)`,
+                        `linear-gradient(135deg, ${g[0]} 0%, ${g[1]} 50%, ${g[2]} 100%)`
                     ]
                 }}
                 transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+            />
+            {/* Soft glow overlay for brightness */}
+            <div
+                className="absolute inset-0 opacity-30"
+                style={{
+                    background: 'radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(255,200,200,0.3) 0%, transparent 50%)'
+                }}
             />
             {/* Subtle grid overlay */}
             <div
                 className="absolute inset-0 opacity-10"
                 style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)',
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)',
                     backgroundSize: '40px 40px'
                 }}
             />
@@ -189,7 +194,7 @@ const AnimatedBackground = ({ variant = 'default' }) => {
 
 
 // Music Player Component
-const MusicPlayer = ({ musicUrl }) => {
+const MusicPlayer = ({ musicUrl, isModalPreview, themeColors }) => {
     const audioRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const wasPlayingRef = useRef(false);
@@ -217,7 +222,9 @@ const MusicPlayer = ({ musicUrl }) => {
                 });
         };
         tryPlay();
+    }, [musicUrl]);
 
+    useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 wasPlayingRef.current = !audioRef.current?.paused;
@@ -225,7 +232,7 @@ const MusicPlayer = ({ musicUrl }) => {
                 setIsPlaying(false);
             } else {
                 if (wasPlayingRef.current) {
-                    audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
+                    audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => { });
                 }
             }
         };
@@ -252,11 +259,12 @@ const MusicPlayer = ({ musicUrl }) => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className={`${isModalPreview ? 'absolute' : 'fixed'} bottom-6 right-6 z-[100]`}>
             <audio ref={audioRef} src={musicUrl} loop />
             <button
                 onClick={togglePlay}
-                className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-300 ${isPlaying ? 'bg-rose-500/20 text-rose-300' : 'bg-white/5 text-white/50'}`}
+                className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all duration-300 ${isPlaying ? '' : 'bg-white/5 text-white/50'}`}
+                style={isPlaying ? { backgroundColor: `${themeColors.primary}33`, color: themeColors.accent } : {}}
             >
                 {isPlaying ? <Pause size={18} /> : <Music size={18} />}
             </button>
@@ -266,30 +274,64 @@ const MusicPlayer = ({ musicUrl }) => {
 
 
 const Tier2Template1 = ({
-    pin = "1234",
-    targetName = "คุณ",
+    pinCode = "1234",
+    targetName = "ถึง ที่รักของเค้า",
     customMessage,
     customSignOff,
     images = [],
     musicUrl,
     isDemo = false,
-    demoMusicUrl = null
+    isModalPreview = false,
+    demoMusicUrl = null,
+    colorTheme
 }) => {
-    const [viewState, setViewState] = useState('LOCKED');
-    const [pinInput, setPinInput] = useState(""); // Renamed from 'pin' state
-    const [isPinError, setIsPinError] = useState(false); // Renamed from 'showError'
-    const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+    const ct = colorTheme?.colors || null;
+    const themeColors = {
+        primary: ct?.primary || '#f43f5e',
+        secondary: ct?.secondary || '#ec4899',
+        accent: ct?.accent || '#fda4af',
+        gradient: ct?.gradient || ['#4c1d95', '#be185d', '#f43f5e']
+    };
+    // Brighter, more vibrant gradient - less dark and gloomy
+    const gradientColors = themeColors.gradient;
+    const confettiColors = ct?.confetti || ['#f43f5e', '#ec4899', '#f97316', '#fbbf24', '#a855f7'];
+    const [viewState, setViewState] = useState(pinCode ? 'LOCKED' : 'CONTENT');
+    const [pinInput, setPinInput] = useState('');
+    const [showError, setShowError] = useState(false);
+    const initialAudioUrl = (isDemo && !demoMusicUrl) ? null : (demoMusicUrl || musicUrl || '');
+    const [demoAudioUrl, setDemoAudioUrl] = useState(initialAudioUrl);
+    const [showMusicPlayer, setShowMusicPlayer] = useState(true);
 
 
     useEffect(() => {
+        if (isDemo && !demoMusicUrl) {
+            const fetchRandomMusic = async () => {
+                try {
+                    const storage = getStorage();
+                    const musicRef = ref(storage, 'music');
+                    const musicList = await listAll(musicRef);
+                    if (musicList.items.length > 0) {
+                        const randomItem = musicList.items[Math.floor(Math.random() * musicList.items.length)];
+                        const url = await getDownloadURL(randomItem);
+                        setDemoAudioUrl(url);
+                    }
+                } catch (error) {
+                    console.error("Error fetching demo music:", error);
+                }
+            };
+            fetchRandomMusic();
+        }
+    }, [isDemo, demoMusicUrl]);
+
+    useEffect(() => {
         if (pinInput.length === 4) { // Use pinInput
-            if (pinInput === pin) { // Compare pinInput state with pin prop
+            if (pinInput === pinCode) { // Compare pinInput state with pin prop
                 handleUnlock();
             } else {
                 handleError();
             }
         }
-    }, [pinInput, pin]); // Add pin to dependency array
+    }, [pinInput, pinCode]); // Add pin to dependency array
 
     const handleUnlock = () => {
         setViewState('CONTENT');
@@ -298,10 +340,10 @@ const Tier2Template1 = ({
     };
 
     const handleError = () => {
-        setIsPinError(true); // Use isPinError
+        setShowError(true); // Use showError
         setTimeout(() => {
             setPinInput(""); // Use setPinInput
-            setIsPinError(false); // Use isPinError
+            setShowError(false); // Use showError
         }, 500);
     };
 
@@ -321,7 +363,7 @@ const Tier2Template1 = ({
         if (!canSendLove) return;
 
         setCanSendLove(false);
-        setTimeout(() => setCanSendLove(true), 5000);
+        setTimeout(() => setCanSendLove(true), 3500);
 
         const heart = confetti.shapeFromPath({
             path: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
@@ -329,7 +371,7 @@ const Tier2Template1 = ({
 
         const duration = 5 * 1000;
         const animationEnd = Date.now() + duration;
-        const colors = ['#f43f5e', '#ec4899', '#f97316', '#fbbf24', '#a855f7'];
+        const colors = confettiColors;
 
         const interval = setInterval(() => {
             const timeLeft = animationEnd - Date.now();
@@ -345,7 +387,7 @@ const Tier2Template1 = ({
                 colors,
                 shapes: [heart, 'circle', 'star'],
                 scalar: 1.3,
-                zIndex: 9999
+                zIndex: 99999
             });
             confetti({
                 particleCount,
@@ -355,13 +397,13 @@ const Tier2Template1 = ({
                 colors,
                 shapes: [heart, 'circle', 'star'],
                 scalar: 1.3,
-                zIndex: 9999
+                zIndex: 99999
             });
         }, 180);
     };
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center text-white overflow-hidden">
+        <div className={`${isModalPreview ? 'absolute inset-0' : 'fixed inset-0'} w-full h-full text-white`}>
 
             {/* Watermark for Demo */}
             {isDemo && (
@@ -385,12 +427,12 @@ const Tier2Template1 = ({
                         transition={{ duration: 0.8 }}
                         className="absolute inset-0 z-50 flex flex-col items-center justify-center"
                     >
-                        <AnimatedBackground variant="default" />
+                        <AnimatedBackground gradientColors={gradientColors} />
                         <FloatingHearts intensity={0.8} />
                         <SparkleEffect />
 
                         <motion.div
-                            animate={isPinError ? { x: [-15, 15, -15, 15, 0] } : {}} // Use isPinError
+                            animate={showError ? { x: [-15, 15, -15, 15, 0] } : {}} // Use showError
                             transition={{ duration: 0.4 }}
                             className="relative z-10 w-full max-w-sm px-6"
                         >
@@ -405,20 +447,22 @@ const Tier2Template1 = ({
                                     <motion.div
                                         animate={{
                                             boxShadow: [
-                                                '0 0 20px rgba(244,63,94,0.3)',
-                                                '0 0 40px rgba(244,63,94,0.5)',
-                                                '0 0 20px rgba(244,63,94,0.3)'
+                                                `0 0 20px ${themeColors.primary}4D`,
+                                                `0 0 40px ${themeColors.primary}80`,
+                                                `0 0 20px ${themeColors.primary}4D`
                                             ]
                                         }}
                                         transition={{ duration: 2, repeat: Infinity }}
-                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-2xl"
+                                        className="w-24 h-24 rounded-full flex items-center justify-center shadow-2xl"
+                                        style={{ background: `linear-gradient(to bottom right, ${themeColors.primary}, ${themeColors.secondary})` }}
                                     >
                                         <Heart size={44} className="text-white" fill="currentColor" />
                                     </motion.div>
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                                         transition={{ duration: 2, repeat: Infinity }}
-                                        className="absolute inset-0 rounded-full border-2 border-rose-400"
+                                        className="absolute inset-0 rounded-full border-2"
+                                        style={{ borderColor: themeColors.accent }}
                                     />
                                 </div>
                             </motion.div>
@@ -430,7 +474,7 @@ const Tier2Template1 = ({
                                     animate={{ opacity: 1, y: 0 }}
                                     className="mb-4 flex justify-center"
                                 >
-                                    <span className="text-sm bg-rose-500/20 border border-rose-400/30 text-rose-200 px-4 py-1.5 rounded-full font-sans tracking-wide backdrop-blur-sm">
+                                    <span className="text-sm px-4 py-1.5 rounded-full font-sans tracking-wide backdrop-blur-sm" style={{ backgroundColor: `${themeColors.primary}33`, borderColor: `${themeColors.accent}4D`, color: themeColors.accent, borderStyle: 'solid', borderWidth: '1px' }}>
                                         รหัสผ่าน Demo: <span className="font-bold">1234</span>
                                     </span>
                                 </motion.div>
@@ -444,8 +488,8 @@ const Tier2Template1 = ({
                                         initial={{ scale: 0 }}
                                         animate={{
                                             scale: 1,
-                                            backgroundColor: i < pinInput.length ? '#f43f5e' : 'rgba(255,255,255,0.2)', // Use pinInput
-                                            boxShadow: i < pinInput.length ? '0 0 15px rgba(244,63,94,0.6)' : 'none' // Use pinInput
+                                            backgroundColor: i < pinInput.length ? themeColors.primary : 'rgba(255,255,255,0.2)', // Use pinInput
+                                            boxShadow: i < pinInput.length ? `0 0 15px ${themeColors.primary}99` : 'none' // Use pinInput
                                         }}
                                         transition={{ delay: i * 0.05, type: "spring" }}
                                         className="w-5 h-5 rounded-full"
@@ -466,10 +510,10 @@ const Tier2Template1 = ({
                                         initial={{ opacity: 0, scale: 0 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: 0.6 + idx * 0.03 }}
-                                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(244,63,94,0.3)' }}
+                                        whileHover={{ scale: 1.1, backgroundColor: `${themeColors.primary}4D`, borderColor: themeColors.accent }}
                                         whileTap={{ scale: 0.9 }}
                                         onClick={() => handleKeyPress(num.toString())}
-                                        className="w-18 h-18 aspect-square rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-2xl font-medium text-white hover:border-rose-400 transition-all flex items-center justify-center"
+                                        className="w-18 h-18 aspect-square rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-2xl font-medium text-white transition-all flex items-center justify-center"
                                     >
                                         {num}
                                     </motion.button>
@@ -479,10 +523,10 @@ const Tier2Template1 = ({
                                     initial={{ opacity: 0, scale: 0 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.9 }}
-                                    whileHover={{ scale: 1.1 }}
+                                    whileHover={{ scale: 1.1, backgroundColor: `${themeColors.primary}4D`, borderColor: themeColors.accent }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => handleKeyPress("0")}
-                                    className="w-18 h-18 aspect-square rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-2xl font-medium text-white hover:border-rose-400 transition-all flex items-center justify-center"
+                                    className="w-18 h-18 aspect-square rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-2xl font-medium text-white transition-all flex items-center justify-center"
                                 >
                                     0
                                 </motion.button>
@@ -490,12 +534,12 @@ const Tier2Template1 = ({
                                     initial={{ opacity: 0, scale: 0 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.95 }}
-                                    whileHover={{ scale: 1.1 }}
+                                    whileHover={{ scale: 1.1, color: themeColors.accent }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={handleBackspace}
-                                    className="aspect-square rounded-2xl bg-white/5 text-white/50 hover:text-rose-400 transition-all flex items-center justify-center"
+                                    className="w-16 h-16 aspect-square rounded-2xl bg-white/5 text-white/50 transition-all flex items-center justify-center"
                                 >
-                                    <Delete size={24} />
+                                    <Delete size={20} />
                                 </motion.button>
                             </motion.div>
                         </motion.div>
@@ -510,7 +554,7 @@ const Tier2Template1 = ({
                         animate={{ opacity: 1 }}
                         className="absolute inset-0 z-30 flex flex-col items-center justify-center overflow-hidden p-4"
                     >
-                        <AnimatedBackground variant="content" />
+                        <AnimatedBackground gradientColors={gradientColors} />
                         <FloatingHearts intensity={0.6} />
                         <SparkleEffect />
 
@@ -527,16 +571,16 @@ const Tier2Template1 = ({
                                 className="relative bg-white/10 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-white/20 shadow-2xl overflow-hidden"
                             >
                                 {/* Decorative Elements */}
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-rose-500/20 to-transparent rounded-bl-full" />
-                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-tr-full" />
+                                <div className="absolute top-0 right-0 w-40 h-40 rounded-bl-full" style={{ background: `linear-gradient(to bottom left, ${themeColors.primary}33, transparent)` }} />
+                                <div className="absolute bottom-0 left-0 w-32 h-32 rounded-tr-full" style={{ background: `linear-gradient(to top right, ${themeColors.secondary}33, transparent)` }} />
 
                                 {/* Glowing Border */}
                                 <motion.div
                                     animate={{
                                         boxShadow: [
-                                            '0 0 20px rgba(244,63,94,0.2)',
-                                            '0 0 40px rgba(244,63,94,0.3)',
-                                            '0 0 20px rgba(244,63,94,0.2)'
+                                            `0 0 20px ${themeColors.primary}33`,
+                                            `0 0 40px ${themeColors.primary}4D`,
+                                            `0 0 20px ${themeColors.primary}33`
                                         ]
                                     }}
                                     transition={{ duration: 3, repeat: Infinity }}
@@ -551,7 +595,7 @@ const Tier2Template1 = ({
                                         transition={{ delay: 0.4, type: "spring" }}
                                         className="flex justify-center mb-6"
                                     >
-                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/30">
+                                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(to bottom right, ${themeColors.primary}, ${themeColors.secondary})`, boxShadow: `0 10px 15px -3px ${themeColors.primary}4D` }}>
                                             <Heart size={28} className="text-white" fill="currentColor" />
                                         </div>
                                     </motion.div>
@@ -559,8 +603,9 @@ const Tier2Template1 = ({
                                     <motion.p
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.5 }}
-                                        className="text-sm tracking-[0.3em] uppercase text-rose-300 mb-6 font-medium"
+                                        transition={{ delay: 0.4 }}
+                                        className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words break-all"
+                                        style={{ color: themeColors.accent }}
                                     >
                                         ✨ {targetName || "For You"} ✨
                                     </motion.p>
@@ -570,11 +615,11 @@ const Tier2Template1 = ({
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.6 }}
                                         className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 80
-                                            ? "text-lg md:text-2xl"
+                                            ? "text-base md:text-xl"
                                             : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 50
-                                                ? "text-xl md:text-3xl"
-                                                : "text-2xl md:text-4xl"
-                                            } font-serif italic leading-relaxed text-white mb-8 max-w-[90%] mx-auto break-words`}
+                                                ? "text-lg md:text-xl"
+                                                : "text-xl md:text-xl"
+                                            } font-serif italic leading-relaxed text-white mb-6 px-4 break-words break-all text-center`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
                                     </motion.h1>
@@ -583,11 +628,12 @@ const Tier2Template1 = ({
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.8 }}
-                                        className="flex items-center justify-center gap-3 text-rose-200"
+                                        className="flex items-center justify-center gap-3"
+                                        style={{ color: themeColors.accent }}
                                     >
-                                        <div className="w-10 h-px bg-gradient-to-r from-transparent to-rose-400" />
-                                        <span className="text-sm tracking-wide font-medium">{customSignOff || "รักเธอเสมอ"}</span>
-                                        <div className="w-10 h-px bg-gradient-to-l from-transparent to-rose-400" />
+                                        <div className="w-10 h-px" style={{ background: `linear-gradient(to right, transparent, ${themeColors.accent})` }} />
+                                        <span className="text-sm tracking-wide font-medium break-words break-all">{customSignOff || "รักเธอเสมอ"}</span>
+                                        <div className="w-10 h-px" style={{ background: `linear-gradient(to left, transparent, ${themeColors.accent})` }} />
                                     </motion.div>
 
                                     <motion.button
@@ -596,22 +642,23 @@ const Tier2Template1 = ({
                                         transition={{ delay: 1 }}
                                         onClick={triggerConfetti}
                                         disabled={!canSendLove}
-                                        whileHover={canSendLove ? { scale: 1.05 } : {}}
+                                        whileHover={canSendLove ? { scale: 1.05, color: themeColors.accent } : {}}
                                         whileTap={canSendLove ? { scale: 0.95 } : {}}
-                                        className={`mt-10 text-sm text-white hover:text-rose-200 transition-colors duration-300 uppercase tracking-widest flex items-center gap-2 mx-auto bg-gradient-to-r from-rose-500/30 to-pink-500/30 px-6 py-3 rounded-full border border-white/20 ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                        className={`mt-10 text-sm text-white transition-colors duration-300 uppercase tracking-widest flex items-center gap-2 mx-auto px-6 py-3 rounded-full border border-white/20 ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                        style={{ background: `linear-gradient(to right, ${themeColors.primary}4D, ${themeColors.secondary}4D)` }}
                                     >
                                         <Sparkles size={16} />
-                                        {canSendLove ? "ส่งความรักอีกครั้ง" : "รอสักครู่..."}
+                                        {canSendLove ? "" : ""}
                                     </motion.button>
                                 </div>
                             </motion.div>
                         </div>
-
-                        {/* Music Player */}
-                        {showMusicPlayer && (demoMusicUrl || musicUrl) && <MusicPlayer musicUrl={demoMusicUrl || musicUrl} />}
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Render Music Player Outside AnimatePresence to Play on Lock Screen */}
+            {showMusicPlayer && (demoAudioUrl) && <MusicPlayer musicUrl={demoAudioUrl} themeColors={themeColors} />}
 
             {
                 viewState === 'CONTENT' && (
@@ -619,7 +666,7 @@ const Tier2Template1 = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 2 }}
-                        className="fixed bottom-4 text-xs text-white/30 z-10 flex items-center gap-1"
+                        className={`${isModalPreview ? 'absolute' : 'fixed'} bottom-4 text-xs text-white/30 z-10 flex items-center gap-1`}
                     >
                         Made with by Nora Story
                     </motion.div>

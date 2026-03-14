@@ -1,0 +1,1 @@
+const fs = require('fs'); let c = fs.readFileSync('src/components/checkout/CheckoutModal.jsx', 'utf8'); c = c.replace(/throw new Error\('เธเธทเนเธญ.*?'\)/, \	hrow new Error('ชื่อลิงก์นี้ถูกทำรายการไปแล้ว กรุณาเริ่มทำรายการอีกครั้งด้วยชื่อลิงก์อื่น')\); fs.writeFileSync('src/components/checkout/CheckoutModal.jsx', c);

@@ -27,7 +27,7 @@ const Template1Fields = () => {
                     type="text"
                     maxLength={4}
                     className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 text-center text-2xl tracking-[0.5em] font-mono outline-none transition-all"
-                    placeholder="1234"
+                    placeholder="****"
                     value={formData.pin}
                     onChange={(e) => updateFormData({ pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
                 />
@@ -47,7 +47,7 @@ const Template1Fields = () => {
                     type="text"
                     maxLength={20}
                     className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 outline-none transition-all text-sm md:text-base"
-                    placeholder="ชื่อแฟน, ชื่อคนที่รัก, ชื่อหวานใจ"
+                    placeholder=""
                     value={formData.targetName}
                     onChange={(e) => updateFormData({ targetName: e.target.value })}
                 />
@@ -65,7 +65,7 @@ const Template1Fields = () => {
                 <textarea
                     maxLength={100}
                     className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 h-32 md:h-40 resize-none outline-none transition-all text-sm md:text-base"
-                    placeholder="ข้อความที่อยากบอกคนรับ..."
+                    placeholder=""
                     value={formData.message}
                     onChange={(e) => updateFormData({ message: e.target.value.slice(0, 100) })}
                 />
@@ -85,7 +85,7 @@ const Template1Fields = () => {
                     type="text"
                     maxLength={20}
                     className="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E8A08A]/50 bg-gray-50 outline-none transition-all text-sm md:text-base"
-                    placeholder="รักเธอเสมอ, คนที่รักเธอที่สุด"
+                    placeholder=""
                     value={formData.signOff}
                     onChange={(e) => updateFormData({ signOff: e.target.value })}
                 />

@@ -1,4 +1,4 @@
-import { Check, Globe, Sparkles, CreditCard, Loader2, CheckCircle2, XCircle, Timer } from 'lucide-react';
+import { Check, Globe, Sparkles, CreditCard, Loader2, CheckCircle2, CheckCircle, XCircle, Timer } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import generatePayload from 'promptpay-qr';
 
@@ -57,7 +57,7 @@ const ExtendTab = ({
                 </div>
 
                 {/* Link Add-on Upsells — only show if not already purchased */}
-                {!order?.want_special_link && !order?.want_custom_link && !order?.want_custom_domain && !order?.custom_domain && !order?.extension_requested_special_link && !order?.extension_requested_custom_link && (
+                {/* {!order?.want_special_link && !order?.want_custom_link && !order?.want_custom_domain && !order?.custom_domain && !order?.extension_requested_special_link && !order?.extension_requested_custom_link && (
                     <div className="space-y-3">
                         <div
                             onClick={() => {
@@ -114,7 +114,7 @@ const ExtendTab = ({
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Input Fields */}
                 {(wantSpecialLink || wantCustomLink) && !order?.want_special_link && !order?.want_custom_link && !order?.want_custom_domain && !order?.custom_domain && !order?.extension_requested_special_link && !order?.extension_requested_custom_link && (
@@ -183,7 +183,7 @@ const ExtendTab = ({
                 )}
 
                 {/* Show badge if already purchased */}
-                {(order?.want_special_link || order?.want_custom_link || order?.want_custom_domain || order?.custom_domain || order?.extension_requested_special_link || order?.extension_requested_custom_link) && (
+                {/* {(order?.want_special_link || order?.want_custom_link || order?.want_custom_domain || order?.custom_domain || order?.extension_requested_special_link || order?.extension_requested_custom_link) && (
                     <div className="rounded-xl p-4 border-2 border-green-200 bg-green-50">
                         <div className="flex items-center gap-3">
                             <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
@@ -193,7 +193,7 @@ const ExtendTab = ({
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Expiry Preview */}
                 {expiryDate && selectedPackage && (
@@ -228,7 +228,7 @@ const ExtendTab = ({
                         return payload && isQrVisible ? (
                             <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative mb-3 sm:mb-4">
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10 box-shadow">
-                                    สแกนจ่ายด้วยแอปธนาคาร
+                                    สแกนเพื่อชำระเงิน
                                 </div>
                                 <QRCodeSVG
                                     value={payload}

@@ -82,8 +82,8 @@ const Tier1Template4 = ({
         const interval = setInterval(() => {
             if (Date.now() > end) return clearInterval(interval);
             const tl = (end - Date.now()) / duration;
-            confetti({ particleCount: 4 * tl, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors, zIndex: 9999 });
-            confetti({ particleCount: 4 * tl, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors, zIndex: 9999 });
+            confetti({ particleCount: 4 * tl, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors, zIndex: 99999 });
+            confetti({ particleCount: 4 * tl, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors, zIndex: 99999 });
         }, 200);
     };
 

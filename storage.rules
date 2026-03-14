@@ -1,8 +1,41 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // ฟังก์ชันเช็คว่าล็อกอินเป็น Admin
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // กฎสำหรับโฟลเดอร์ slips (สลิปโอนเงิน)
+    match /slips/{slipFile} {
+      // ลูกค้าอัปโหลดได้เฉพาะไฟล์รูป ขนาดไม่เกิน 5MB
+      allow create: if request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      // เฉพาะแอดมินเท่านั้นที่สามารถอ่านหรือลบสลิปได้ (ป้องกันคนอื่นมาดูสลิป)
+      allow read, update, delete: if isAdmin();
+    }
+
+    // กฎสำหรับโฟลเดอร์ uploads (รูปภาพเนื้อหาของลูกค้า)
+    match /uploads/{storyId}/{fileName} {
+      // ลูกค้าอัปโหลดรูปภาพเนื้อหาได้ ขนาดไม่เกิน 5MB (หรือตามที่ตกลง)
+      allow create: if request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      
+      // การแสดงผลบนหน้าเว็บ (อ่าน) ให้สิทธิ์ทุกคนอ่านได้ (เพราะต้องโชว์ใน Story)
+      allow read: if true;
+      
+      // ลบ/อัปเดต/list ต้องเป็นแอดมินเท่านั้น
+      allow update, delete, list: if isAdmin();
+    }
+
+    // อนุญาตให้แอดมิน list ไฟล์ในโฟลเดอร์ uploads (สำหรับ listAll)
+    match /uploads/{storyId} {
+      allow list: if isAdmin();
+    }
+
+    // ปิดการเข้าถึง Path อื่นๆ ที่ไม่ได้ระบุ
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
