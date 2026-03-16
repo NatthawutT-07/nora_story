@@ -295,6 +295,22 @@ const ExtensionPage = () => {
 
             await updateDoc(orderRef, updates);
 
+            // Notify Admin via LINE
+            try {
+                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
+                if (gasUrl) {
+                    const notifyMessage = `🔄 ขอต่ออายุลิงก์\nOrder ID: ${id}\nแพ็คเกจต่ออายุ: ${selectedPackage.label}\nราคา: ${totalPrice} บาท`;
+                    fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: notifyMessage })
+                    }).catch(e => console.error("LINE Notify Proxy error:", e));
+                }
+            } catch (err) {
+                console.error("Failed to notify LINE admin.", err);
+            }
+
             setIsSuccess(true);
         } catch (err) {
             console.error(err);
@@ -367,6 +383,22 @@ const ExtensionPage = () => {
             setOrder(prev => ({ ...prev, ...updates }));
             setEditTextMode(false);
             showToast('แก้ไขข้อความเรียบร้อยแล้ว!', 'success');
+
+            // Notify Admin via LINE
+            try {
+                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
+                if (gasUrl) {
+                    const notifyMessage = `📝 มีการแก้ไขข้อความใหม่!\nOrder ID: ${id}`;
+                    fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: notifyMessage })
+                    }).catch(e => console.error("LINE Notify Proxy error:", e));
+                }
+            } catch (err) {
+                console.error("Failed to notify LINE admin.", err);
+            }
         } catch (err) {
             console.error(err);
             showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
@@ -423,6 +455,22 @@ const ExtensionPage = () => {
             setEditImageMode(false);
             setEditImageFiles([]);
             showToast('แก้ไขรูปภาพเรียบร้อยแล้ว!', 'success');
+
+            // Notify Admin via LINE
+            try {
+                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
+                if (gasUrl) {
+                    const notifyMessage = `📸 มีการแก้ไขรูปภาพใหม่!\nOrder ID: ${id}`;
+                    fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: notifyMessage })
+                    }).catch(e => console.error("LINE Notify Proxy error:", e));
+                }
+            } catch (err) {
+                console.error("Failed to notify LINE admin.", err);
+            }
         } catch (err) {
             console.error(err);
             showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
@@ -468,6 +516,24 @@ const ExtensionPage = () => {
                     requested_at: new Date().toISOString()
                 })
             });
+
+            // Notify Admin via LINE
+            try {
+                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
+                if (gasUrl) {
+                    const editTypeName = editPayType === 'text' ? 'ข้อความ' : 'รูปภาพ';
+                    const notifyMessage = `📝 แจ้งชำระเงินค่าแก้ไข${editTypeName}\nOrder ID: ${id}\nราคา: ${price} บาท`;
+                    fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: notifyMessage })
+                    }).catch(e => console.error("LINE Notify Proxy error:", e));
+                }
+            } catch (err) {
+                console.error("Failed to notify LINE admin.", err);
+            }
+
             setOrder(prev => {
                 const next = {
                     ...prev,
