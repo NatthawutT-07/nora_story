@@ -13,16 +13,44 @@ const PaymentStep = () => {
     const [fileError, setFileError] = useState('');
     const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
 
-    const downloadQr = () => {
+    const downloadQr = async () => {
         const canvas = document.getElementById("qr-payment-canvas");
         if (!canvas) return;
-        const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
-        downloadLink.download = `Promptpay_NoraStory_${amount}Thb.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const pngUrl = canvas.toDataURL("image/png");
+
+        const fallbackDownload = () => {
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl.replace("image/png", "image/octet-stream");
+            downloadLink.download = `Promptpay_NoraStory_${amount}Thb.png`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        };
+
+        try {
+            // Check if Web Share API is supported and can share files
+            if (navigator.canShare) {
+                const res = await fetch(pngUrl);
+                const blob = await res.blob();
+                const file = new File([blob], `Promptpay_NoraStory_${amount}Thb.png`, { type: 'image/png' });
+
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'QR Code สำหรับชำระเงิน NoraStory',
+                    });
+                    return; // Successfully shared
+                }
+            }
+            // Fallback for browsers that don't support file sharing
+            fallbackDownload();
+        } catch (error) {
+            console.error('Error sharing:', error);
+            // Only fallback if it's not a user cancellation
+            if (error.name !== 'AbortError') {
+                fallbackDownload();
+            }
+        }
     };
 
     const qrRef = useRef(null);

@@ -44,8 +44,7 @@ const FloatingImages = ({ images = [] }) => {
         { top: '20%', right: '20%', rotate: 8 },
         { bottom: '20%', left: '15%', rotate: -5 },
         { bottom: '25%', right: '18%', rotate: 5 },
-        { top: '45%', left: '10%', rotate: -12 },
-        { top: '50%', right: '10%', rotate: 12 },
+        { top: '45%', left: '10%', rotate: -12 }
     ];
 
     // Mobile: 3 Top, 2 Bottom - Pushed closer to center but still framing content
@@ -76,7 +75,7 @@ const FloatingImages = ({ images = [] }) => {
                         scale: { delay: 0.5 + i * 0.2, duration: 1, type: "spring" },
                         y: { duration: 4 + i, repeat: Infinity, ease: "easeInOut" }
                     }}
-                    className="absolute w-28 h-28 md:w-48 md:h-48 rounded-xl border-4 border-white/20 shadow-xl overflow-hidden"
+                    className="absolute w-28 h-28 md:w-48 md:h-48 rounded-xl border-4 border-white/20 shadow-xl overflow-hidden aspect-square"
                     style={positions[i % positions.length]}
                 >
                     <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />

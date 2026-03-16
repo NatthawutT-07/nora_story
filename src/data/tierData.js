@@ -14,7 +14,7 @@ export const TIERS = [
             'Random Link + QR Code',
             'รองรับทุกอุปกรณ์',
             'ดูแลหลังการขาย',
-            'เเก้ไขข้อความได้ 1 ครั้ง'
+            'เเก้ไขข้อความได้ฟรี 1 ครั้ง',
         ],
         gradient: 'from-slate-500 to-slate-600',
         bgGradient: 'from-slate-50 to-white',
@@ -39,8 +39,8 @@ export const TIERS = [
             'animation เพิ่มเติม',
             'Background Music',
             'Random Link + QR Code',
-            'เเก้ไขข้อความได้ 1 ครั้ง',
-            'เเก้ไขรูปภาพได้ 1 ครั้ง'
+            'เเก้ไขข้อความได้ฟรี 1 ครั้ง',
+            'เเก้ไขรูปภาพได้ฟรี 1 ครั้ง'
         ],
 
         gradient: 'from-[#6E8898] to-[#4B616E]', // More elegant muted blue/teal
@@ -67,8 +67,8 @@ export const TIERS = [
             'Custom Link เลือกชื่อเอง',
             'Background Music',
             'Priority Support',
-            'เเก้ไขข้อความได้ 2 ครั้ง',
-            'เเก้ไขรูปภาพได้ 1 ครั้ง'
+            'เเก้ไขข้อความได้ฟรี 3 ครั้ง',
+            'เเก้ไขรูปภาพได้ฟรี 1 ครั้ง'
         ],
         highlight: true,
         tag: 'POPULAR',

@@ -166,8 +166,9 @@ const TierCard = ({ tier, index, onSelectTier }) => {
             style={{ perspective: '1000px' }}
         >
             <motion.div
-                className="w-full h-full relative preserve-3d transition-transform duration-500"
+                className="w-full h-full relative preserve-3d"
                 animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 20 }}
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* --- FRONT OF CARD --- */}
@@ -339,7 +340,7 @@ const TierCard = ({ tier, index, onSelectTier }) => {
                 {/* --- BACK OF CARD (Extension Pricing) --- */}
                 <div
                     className={`
-                        absolute inset-0 backface-hidden flex flex-col rounded-2xl p-6 sm:p-7 cursor-pointer
+                        absolute inset-0 backface-hidden flex flex-col rounded-2xl p-6 sm:p-7 pt-8 sm:pt-10 cursor-pointer
                         ${isPopular
                             ? 'bg-[#152f33] text-white border border-[#1A3C40]'
                             : 'bg-gray-50 border border-gray-200'

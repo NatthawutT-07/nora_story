@@ -1,5 +1,5 @@
-import { Check, Globe, Sparkles, CreditCard, Loader2, CheckCircle2, CheckCircle, XCircle, Timer } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Check, Globe, Sparkles, CreditCard, Loader2, CheckCircle2, CheckCircle, XCircle, Timer, Download } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import generatePayload from 'promptpay-qr';
 
 const ExtendTab = ({
@@ -25,6 +25,45 @@ const ExtendTab = ({
     isSubmitting,
     handleSubmit
 }) => {
+    const downloadQr = async () => {
+        const canvas = document.getElementById("qr-extend-canvas");
+        if (!canvas) return;
+        const pngUrl = canvas.toDataURL("image/png");
+
+        const totalAmount = (selectedPackage?.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
+
+        const fallbackDownload = () => {
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl.replace("image/png", "image/octet-stream");
+            downloadLink.download = `Promptpay_NoraStory_${totalAmount}Thb.png`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        };
+
+        try {
+            if (navigator.canShare) {
+                const res = await fetch(pngUrl);
+                const blob = await res.blob();
+                const file = new File([blob], `Promptpay_NoraStory_${totalAmount}Thb.png`, { type: 'image/png' });
+
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'QR Code สำหรับต่ออายุ NoraStory',
+                    });
+                    return;
+                }
+            }
+            fallbackDownload();
+        } catch (error) {
+            console.error('Error sharing:', error);
+            if (error.name !== 'AbortError') {
+                fallbackDownload();
+            }
+        }
+    };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
             {/* Left: Package Selection */}
@@ -231,7 +270,8 @@ const ExtendTab = ({
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10 box-shadow">
                                     สแกนเพื่อชำระเงิน
                                 </div>
-                                <QRCodeSVG
+                                <QRCodeCanvas
+                                    id="qr-extend-canvas"
                                     value={payload}
                                     size={160}
                                     level="M"
@@ -244,6 +284,15 @@ const ExtendTab = ({
                                         หมดอายุใน {Math.floor(qrTimeLeft / 60)}:{(qrTimeLeft % 60).toString().padStart(2, '0')} นาที
                                     </div>
                                 )}
+                                <div className="mt-4 flex justify-center">
+                                    <button
+                                        onClick={downloadQr}
+                                        className="flex py-2 px-6 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-xl justify-center items-center gap-2 text-sm font-semibold transition-colors shadow-sm w-full"
+                                    >
+                                        <Download size={16} />
+                                        บันทึก QR Code
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="h-40 w-40 bg-white rounded-xl flex items-center justify-center text-center text-gray-400 text-xs mb-3 border border-dashed border-gray-200 p-4">

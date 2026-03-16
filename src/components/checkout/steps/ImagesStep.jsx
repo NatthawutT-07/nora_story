@@ -7,7 +7,7 @@ const ImagesStep = () => {
         contentFiles, setContentFiles,
         contentPreviews, setContentPreviews,
         getMaxImages, getMaxFileSize, setError,
-        isTier3, formData
+        isTier3, isTier2, formData, selectedTemplate
     } = useCheckout();
 
     const maxImages = getMaxImages();
@@ -276,13 +276,26 @@ const ImagesStep = () => {
     }
 
     // --- Standard (Tier 1/2) ---
-    const tier2Sections = [
-        { title: 'รูปภาพที่ 1', hint: '3:4', ratio: '3/4' },
-        { title: 'รูปภาพที่ 2', hint: '16:9', ratio: '16/9' },
-        { title: 'รูปภาพที่ 3', hint: '1:1', ratio: '1/1' },
-        { title: 'รูปภาพที่ 4', hint: '4:3', ratio: '4/3' },
-        { title: 'รูปภาพที่ 5', hint: '3:4', ratio: '3/4' },
-    ];
+    const getTier2Sections = () => {
+        if (isTier2) {
+            return [
+                { title: 'รูปภาพที่ 1', hint: '1:1', ratio: '1/1' },
+                { title: 'รูปภาพที่ 2', hint: '1:1', ratio: '1/1' },
+                { title: 'รูปภาพที่ 3', hint: '1:1', ratio: '1/1' },
+                { title: 'รูปภาพที่ 4', hint: '1:1', ratio: '1/1' },
+                { title: 'รูปภาพที่ 5', hint: '1:1', ratio: '1/1' },
+            ];
+        }
+        return [
+            { title: 'รูปภาพที่ 1', hint: '3:4', ratio: '3/4' },
+            { title: 'รูปภาพที่ 2', hint: '16:9', ratio: '16/9' },
+            { title: 'รูปภาพที่ 3', hint: '1:1', ratio: '1/1' },
+            { title: 'รูปภาพที่ 4', hint: '4:3', ratio: '4/3' },
+            { title: 'รูปภาพที่ 5', hint: '3:4', ratio: '3/4' },
+        ];
+    };
+
+    const tier2Sections = getTier2Sections();
     const tier1Section = [
         { title: 'รูปภาพ', hint: '1:1', ratio: '1/1' },
     ];

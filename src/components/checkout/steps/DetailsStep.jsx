@@ -40,7 +40,7 @@ const DetailsStep = () => {
             <Wand2 size={16} />
             ทดลองกรอกข้อมูลอัตโนมัติ (Demo)
         </button>
-    );
+    );  
 
     // T1-1 and T2 templates: PIN, Target Name, Message, Sign Off
     if (needsDetailFields) {
