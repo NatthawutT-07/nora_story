@@ -48,9 +48,9 @@ const Tier1Template4 = ({
     isDemo = false,
 }) => {
     // support both prop names
-    const CORRECT_PIN = pinProp || pinCode || '1234';
+    const CORRECT_PIN = pinProp || pinCode || (isDemo ? '1234' : null);
 
-    const [viewState, setViewState] = useState('LOCKED');
+    const [viewState, setViewState] = useState(CORRECT_PIN ? 'LOCKED' : 'CONTENT');
     const [pin, setPin] = useState('');
     const [showError, setShowError] = useState(false);
     const [canSendLove, setCanSendLove] = useState(true);

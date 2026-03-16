@@ -273,28 +273,38 @@ const MusicPlayer = ({ musicUrl, isModalPreview, themeColors }) => {
 
 
 const Tier2Template1 = ({
-    pinCode = "1234",
+    pin: pinProp,
+    pinCode,
     targetName = "ถึง ที่รักของเค้า",
     customMessage,
     customSignOff,
+    isDemo = false,
+    demoMusicUrl = null,
     images = [],
     musicUrl,
-    isDemo = false,
-    isModalPreview = false,
-    demoMusicUrl = null,
-    colorTheme
+    colorTheme,
+    config
 }) => {
-    const ct = colorTheme?.colors || null;
+    // support both prop names
+    const CORRECT_PIN = pinProp || pinCode || (isDemo ? '1234' : null);
+
+    // Merge default color theme if none provided
+    const ct = colorTheme?.colors || DEFAULT_COLOR_THEME.colors;
+    
+    // Convert to proper format for our template
     const themeColors = {
-        primary: ct?.primary || '#f43f5e',
-        secondary: ct?.secondary || '#ec4899',
-        accent: ct?.accent || '#fda4af',
-        gradient: ct?.gradient || ['#4c1d95', '#be185d', '#f43f5e']
+        primary: ct.primary,
+        secondary: ct.gradient[1] || ct.primary,
+        accent: ct.accent,
+        background: ct.background || '#ffffff',
+        text: ct.text || '#1f2937',
+        gradient: ct.gradient
     };
+
     // Brighter, more vibrant gradient - less dark and gloomy
     const gradientColors = themeColors.gradient;
     const confettiColors = ct?.confetti || ['#f43f5e', '#ec4899', '#f97316', '#fbbf24', '#a855f7'];
-    const [viewState, setViewState] = useState(pinCode ? 'LOCKED' : 'CONTENT');
+    const [viewState, setViewState] = useState(CORRECT_PIN ? 'LOCKED' : 'CONTENT');
     const [pinInput, setPinInput] = useState('');
     const [showError, setShowError] = useState(false);
     const initialAudioUrl = (isDemo && !demoMusicUrl) ? null : (demoMusicUrl || musicUrl || '');
@@ -324,13 +334,13 @@ const Tier2Template1 = ({
 
     useEffect(() => {
         if (pinInput.length === 4) { // Use pinInput
-            if (pinInput === pinCode) { // Compare pinInput state with pin prop
+            if (pinInput === CORRECT_PIN) { // Compare pinInput state with CORRECT_PIN
                 handleUnlock();
             } else {
                 handleError();
             }
         }
-    }, [pinInput, pinCode]); // Add pin to dependency array
+    }, [pinInput, CORRECT_PIN]); // Add CORRECT_PIN to dependency array
 
     const handleUnlock = () => {
         setViewState('CONTENT');

@@ -59,17 +59,18 @@ const AnimatedBackground = ({ gradientColors }) => {
 };
 
 
-const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง ที่รักของเค้า', pinCode = '1234', isDemo = false, isModalPreview = false, colorTheme }) => {
+const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง ที่รักของเค้า', pin: pinProp, pinCode, isDemo = false, isModalPreview = false, colorTheme }) => {
     const c = colorTheme?.colors || null;
     const gradientColors = c?.gradient || ['#fdf2f8', '#fff1f2', '#fef3c7'];
     const confettiColors = c?.confetti || ['#f43f5e', '#ec4899', '#f97316', '#fbbf24'];
     const primaryColor = c?.primary || '#f43f5e';
     const accentColor = c?.accent || '#fda4af';
-    const [viewState, setViewState] = useState('LOCKED');
+    
+    const CORRECT_PIN = pinProp || pinCode || (isDemo ? '1234' : null);
+    
+    const [viewState, setViewState] = useState(CORRECT_PIN ? 'LOCKED' : 'CONTENT');
     const [pin, setPin] = useState("");
     const [showError, setShowError] = useState(false);
-
-    const CORRECT_PIN = pinCode;
 
     useEffect(() => {
         if (pin.length === 4) {
@@ -79,7 +80,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                 handleError();
             }
         }
-    }, [pin]);
+    }, [pin, CORRECT_PIN]);
 
     const handleUnlock = () => {
         setViewState('CONTENT');

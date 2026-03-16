@@ -225,8 +225,8 @@ const CheckoutContent = () => {
                 return await getDownloadURL(slipRef);
             };
 
-            let contentUrls = [];
             const maxUploads = getMaxImages() || contentFiles.length;
+            let contentUrls = Array(maxUploads).fill(null);
             const contentUploadPromises = [];
 
             if (contentFiles.length > 0 || maxUploads > 0) {
@@ -271,10 +271,10 @@ const CheckoutContent = () => {
             ]);
 
             if (uploadResults && uploadResults.length > 0) {
-                // Sort by index to maintain original order and map to just URLs
-                contentUrls = uploadResults
-                    .sort((a, b) => a.index - b.index)
-                    .map(result => result.url);
+                // Place uploaded URLs into their original indices, leaving nulls for empty slots
+                uploadResults.forEach(result => {
+                    contentUrls[result.index] = result.url;
+                });
             }
 
             // 4. Save Order via Transaction to prevent overwrites
