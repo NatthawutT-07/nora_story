@@ -6,6 +6,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Stats collection - allow read for everyone, write only for admin
+    match /stats/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Music collection - allow read for everyone, write only for admin
+    match /music/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /orders/{orderId} {
       // ลูกค้า (ไม่ได้ล็อกอิน) สามารถสร้างออเดอร์ใหม่ได้ (Create) และอ่านออเดอร์ของตัวเองได้ถ้ามี ID (Get)
       // แต่ไม่สามารถแก้ไข ลบ หรือดึงออเดอร์ทั้งหมด (List)
