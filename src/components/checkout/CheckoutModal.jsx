@@ -207,27 +207,27 @@ const CheckoutContent = () => {
                 storyId = await generateUniqueStoryId();
             }
 
-            // 2. Upload Slip (with compression)
+            // 2 & 3. Upload Slip and Content Images Concurrently
             const slipExt = slipFile.name.split('.').pop();
             const slipName = `${storyId}_${Date.now()}_slip.${slipExt}`;
             const slipRef = ref(storage, `slips/${slipName}`);
-            
+
             // Compress slip image
             const slipCompressionOptions = {
                 maxSizeMB: 1,
                 maxWidthOrHeight: 1200,
                 useWebWorker: true
             };
-            const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
-            await uploadBytes(slipRef, compressedSlipFile);
-            
-            const slipUrl = await getDownloadURL(slipRef);
 
-            // 3. Upload Content Images (if any)
-            const contentUrls = [];
-            // Use maxImages from our utility if possible, or just use contentFiles length but we need to respect indices.
-            // For Tier 3, we want to preserve indices 0-9 even if some are null
+            const uploadSlipPromise = async () => {
+                const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
+                await uploadBytes(slipRef, compressedSlipFile);
+                return await getDownloadURL(slipRef);
+            };
+
+            let contentUrls = [];
             const maxUploads = getMaxImages() || contentFiles.length;
+            const contentUploadPromises = [];
 
             if (contentFiles.length > 0 || maxUploads > 0) {
                 // Compression options for content images
@@ -238,31 +238,43 @@ const CheckoutContent = () => {
                     initialQuality: 0.85
                 };
 
-                // Iterate up to maxUploads to ensure we capture all slots
                 for (let i = 0; i < maxUploads; i++) {
                     const file = contentFiles[i];
                     if (file) {
-                        try {
-                            const compressedFile = await imageCompression(file, contentCompressionOptions);
-                            const refName = `uploads/${storyId}/${i}_${file.name}`;
-                            const imgRef = ref(storage, refName);
-                            await uploadBytes(imgRef, compressedFile);
-                            const url = await getDownloadURL(imgRef);
-                            contentUrls.push(url);
-                        } catch (error) {
-                            console.error(`Error compressing/uploading image ${i}:`, error);
-                            // Fallback to original file if compression fails
-                            const refName = `uploads/${storyId}/${i}_${file.name}`;
-                            const imgRef = ref(storage, refName);
-                            await uploadBytes(imgRef, file);
-                            const url = await getDownloadURL(imgRef);
-                            contentUrls.push(url);
-                        }
-                    } else {
-                        // Push null to preserve index position for templates (like Tier 3) that rely on specific slots
-                        contentUrls.push(null);
+                        const uploadPromise = async () => {
+                            try {
+                                const compressedFile = await imageCompression(file, contentCompressionOptions);
+                                const refName = `uploads/${storyId}/${i}_${file.name}`;
+                                const imgRef = ref(storage, refName);
+                                await uploadBytes(imgRef, compressedFile);
+                                const url = await getDownloadURL(imgRef);
+                                return { index: i, url };
+                            } catch (error) {
+                                console.error(`Error compressing/uploading image ${i}:`, error);
+                                // Fallback to original file if compression fails
+                                const refName = `uploads/${storyId}/${i}_${file.name}`;
+                                const imgRef = ref(storage, refName);
+                                await uploadBytes(imgRef, file);
+                                const url = await getDownloadURL(imgRef);
+                                return { index: i, url };
+                            }
+                        };
+                        contentUploadPromises.push(uploadPromise());
                     }
                 }
+            }
+
+            // Wait for both slip and content images to upload concurrently
+            const [slipUrl, uploadResults] = await Promise.all([
+                uploadSlipPromise(),
+                Promise.all(contentUploadPromises)
+            ]);
+
+            if (uploadResults && uploadResults.length > 0) {
+                // Sort by index to maintain original order and map to just URLs
+                contentUrls = uploadResults
+                    .sort((a, b) => a.index - b.index)
+                    .map(result => result.url);
             }
 
             // 4. Save Order via Transaction to prevent overwrites

@@ -277,14 +277,14 @@ const DualLayout = ({ chapter, customMessage, customSignOff, onConfetti, canSend
 
         {/* Finale Message Section if needed */}
         {onConfetti && (
-            <div className="relative z-30 max-w-2xl w-full bg-black/60 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[3rem] text-center shadow-2xl mt-8 mx-auto">
-                <h2 className="text-xl font-bold mb-4 text-white break-words break-all">{chapter.title}</h2>
-                <p className="text-sm text-white/90 leading-relaxed font-light italic mb-6 break-words break-all">
+            <div className="relative z-30 max-w-2xl w-full bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[3rem] text-center shadow-2xl mt-8 mx-auto min-h-[250px]">
+                <h2 className="text-sm font-bold mb-3 text-white break-words break-all">{chapter.title}</h2>
+                <p className="text-xs text-white/90 leading-relaxed font-light italic mb-5 break-words">
                     "{customMessage || "ทุกเรื่องราวของเรา คือความทรงจำที่ฉันอยากเก็บรักษาไว้ตลอดไป"}"
                 </p>
-                <div className="flex flex-col items-center gap-2 mb-6">
+                <div className="flex flex-col items-center gap-2 mb-5">
                     <div className="w-12 h-1 bg-gradient-to-r from-transparent via-current to-transparent" style={{ color: themeColors.primary }} />
-                    <span className="font-medium break-words break-all" style={{ color: themeColors.accent }}>{customSignOff || "รักเสมอนะ"}</span>
+                    <span className="text-sm font-medium break-words" style={{ color: themeColors.accent }}>{customSignOff || "รักเสมอนะ"}</span>
                 </div>
                 <button
                     onClick={onConfetti}

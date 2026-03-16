@@ -104,10 +104,9 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
 
     const getTierName = (tierId) => {
         const tiers = {
-            1: 'Basic Memory',
-            2: 'Standard Love',
-            3: 'Premium Valentine',
-            4: 'Lifetime Archive'
+            1: 'Trial',
+            2: 'Standard',
+            3: 'Premium'
         };
         return tiers[tierId] || `Tier ${tierId}`;
     };

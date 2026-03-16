@@ -291,7 +291,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                         <FloatingHearts colorTheme={c} />
 
                         {/* Card */}
-                        <div className="relative z-10 w-full max-w-lg bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border overflow-hidden" style={{ borderColor: `${primaryColor}33` }}>
+                        <div className="relative z-10 w-full max-w-lg bg-white/90 backdrop-blur-md p-8 md:p-12 rounded-3xl shadow-2xl border overflow-hidden min-h-[400px]" style={{ borderColor: `${primaryColor}33` }}>
                             {/* Decorative corner */}
                             <div className="absolute top-0 right-0 w-32 h-32 rounded-bl-full opacity-50" style={{ background: `linear-gradient(to bottom left, ${primaryColor}33, transparent)` }} />
                             <div className="absolute bottom-0 left-0 w-24 h-24 rounded-tr-full opacity-50" style={{ background: `linear-gradient(to top right, ${accentColor}33, transparent)` }} />
@@ -322,7 +322,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words break-all"
+                                    className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words"
                                     style={{ color: primaryColor }}
                                 >
                                     ✨ {targetName || "For You"} ✨
@@ -338,7 +338,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                             : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 50
                                                 ? "text-xl md:text-xl"
                                                 : "text-2xl md:text-xl"
-                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words break-all`}
+                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
                                     </motion.h1>
@@ -351,7 +351,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     className="flex items-center justify-center gap-2 text-gray-500"
                                 >
                                     <div className="w-8 h-px bg-gray-300" />
-                                    <span className="text-sm tracking-wide break-words break-all">{customSignOff || "รักเธอเสมอ"}</span>
+                                    <span className="text-sm tracking-wide break-words">{customSignOff || "รักเธอเสมอ"}</span>
                                     <div className="w-8 h-px bg-gray-300" />
                                 </motion.div>
 

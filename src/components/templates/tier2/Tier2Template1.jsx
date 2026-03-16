@@ -567,7 +567,7 @@ const Tier2Template1 = ({
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="relative bg-white/10 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-white/20 shadow-2xl overflow-hidden"
+                                className="relative bg-white/10 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-white/20 shadow-2xl overflow-hidden min-h-[400px]"
                             >
                                 {/* Decorative Elements */}
                                 <div className="absolute top-0 right-0 w-40 h-40 rounded-bl-full" style={{ background: `linear-gradient(to bottom left, ${themeColors.primary}33, transparent)` }} />
@@ -603,7 +603,7 @@ const Tier2Template1 = ({
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.4 }}
-                                        className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words break-all"
+                                        className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words"
                                         style={{ color: themeColors.accent }}
                                     >
                                         ✨ {targetName || "For You"} ✨
@@ -618,7 +618,7 @@ const Tier2Template1 = ({
                                             : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 50
                                                 ? "text-lg md:text-xl"
                                                 : "text-xl md:text-xl"
-                                            } font-serif italic leading-relaxed text-white mb-6 px-4 break-words break-all text-center`}
+                                            } font-serif italic leading-relaxed text-white mb-6 px-4 break-words text-center`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
                                     </motion.h1>
@@ -631,7 +631,7 @@ const Tier2Template1 = ({
                                         style={{ color: themeColors.accent }}
                                     >
                                         <div className="w-10 h-px" style={{ background: `linear-gradient(to right, transparent, ${themeColors.accent})` }} />
-                                        <span className="text-sm tracking-wide font-medium break-words break-all">{customSignOff || "รักเธอเสมอ"}</span>
+                                        <span className="text-sm tracking-wide font-medium break-words">{customSignOff || "รักเธอเสมอ"}</span>
                                         <div className="w-10 h-px" style={{ background: `linear-gradient(to left, transparent, ${themeColors.accent})` }} />
                                     </motion.div>
 
