@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../../firebase';
 import {
     User,
     Edit2,
@@ -25,6 +23,17 @@ import {
     FEATURE_OPTIONS,
     TIER_DURATIONS
 } from '../../../lib/templateConfig';
+import {
+    adminUpdateOrderLink,
+    adminApproveOrder,
+    adminRejectOrder,
+    adminUpdateOrderContent,
+    adminApproveExtension,
+    adminRejectExtension,
+    adminApproveEditPayment,
+    adminRejectEditPayment,
+    adminUpdateExpiry
+} from '../../../api/functions';
 
 const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const [modalTab, setModalTab] = useState('info'); // info, content, images, settings
@@ -119,30 +128,17 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
 
         setIsSavingLink(true);
         try {
-            const ordersRef = collection(db, 'orders');
-            const q = query(ordersRef, where('custom_domain', '==', newLinkChoice));
-            const querySnapshot = await getDocs(q);
+            const result = await adminUpdateOrderLink({
+                orderId: order.id,
+                customDomain: newLinkChoice,
+                linkType: newLinkType
+            });
 
-            const isDuplicate = !querySnapshot.empty && querySnapshot.docs.some(d => d.id !== order.id);
-            if (isDuplicate || newLinkChoice === order.id) {
-                alert('ชื่อลิงก์นี้มีคนใช้งานแล้ว กรุณาเลือกชื่ออื่น');
+            if (!result.success) {
+                alert(result.error || 'ชื่อลิงก์นี้มีคนใช้งานแล้ว กรุณาเลือกชื่ออื่น');
                 setIsSavingLink(false);
                 return;
             }
-
-            const storyUrl = newLinkType === 'special'
-                ? `https://${newLinkChoice}.norastory.com`
-                : `https://norastory.com/${newLinkChoice}`;
-
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
-                custom_domain: newLinkChoice,
-                link_type: newLinkType,
-                want_special_link: newLinkType === 'special',
-                want_custom_link: newLinkType === 'custom',
-                story_url: storyUrl,
-                updatedAt: new Date()
-            });
 
             onUpdate({
                 ...order,
@@ -150,7 +146,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 link_type: newLinkType,
                 want_special_link: newLinkType === 'special',
                 want_custom_link: newLinkType === 'custom',
-                story_url: storyUrl
+                story_url: result.storyUrl
             });
             setIsEditingLink(false);
             alert('อัปเดตลิงก์สำเร็จ');
@@ -169,27 +165,23 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
             return;
         }
 
-        const tierId = order.tier_id || 1;
-        const durationDays = TIER_DURATIONS[tierId] || 3;
-        const approvedAt = new Date();
-        const expiresAt = new Date(approvedAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
-
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
-                status: 'approved',
-                template_id: templateId,
-                approved_at: approvedAt,
-                expires_at: expiresAt,
-                updatedAt: new Date()
+            const result = await adminApproveOrder({
+                orderId: order.id,
+                templateId
             });
+
+            if (!result.success) {
+                alert(result.error || 'เกิดข้อผิดพลาดในการอนุมัติ');
+                return;
+            }
 
             onUpdate({
                 ...order,
                 status: 'approved',
                 template_id: templateId,
-                approved_at: approvedAt,
-                expires_at: expiresAt
+                approved_at: result.approvedAt,
+                expires_at: result.expiresAt
             });
         } catch (error) {
             console.error(error);
@@ -199,8 +191,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
 
     const handleReject = async () => {
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, { status: 'rejected', updatedAt: new Date() });
+            await adminRejectOrder(order.id);
             onUpdate({ ...order, status: 'rejected' });
         } catch (error) {
             console.error(error);
@@ -210,8 +201,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const handleSaveContent = async () => {
         setContentSaving(true);
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
+            await adminUpdateOrderContent({
+                orderId: order.id,
                 buyer_name: editContent.buyer_name,
                 buyer_phone: editContent.buyer_phone,
                 buyer_email: editContent.buyer_email,
@@ -221,8 +212,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 sign_off: editContent.sign_off,
                 timelines: editContent.timelines,
                 finale_message: editContent.finale_message,
-                finale_sign_off: editContent.finale_sign_off,
-                updatedAt: new Date()
+                finale_sign_off: editContent.finale_sign_off
             });
             onUpdate({ ...order, ...editContent });
             alert('บันทึกเรียบร้อยแล้ว ✅');
@@ -238,21 +228,19 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
         if (!confirm(`ยืนยันการต่ออายุ ${order.extension_requested_days} วัน?`)) return;
 
         try {
-            const currentExpire = order.expires_at ? new Date(order.expires_at) : new Date();
-            const baseDate = currentExpire < new Date() ? new Date() : currentExpire;
-            const newDate = new Date(baseDate);
-            newDate.setDate(newDate.getDate() + parseInt(order.extension_requested_days));
-
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
-                expires_at: newDate,
-                extension_status: 'approved',
-                extension_approved_at: new Date()
+            const result = await adminApproveExtension({
+                orderId: order.id,
+                requestedDays: order.extension_requested_days
             });
+
+            if (!result.success) {
+                alert(result.error || 'เกิดข้อผิดพลาด');
+                return;
+            }
 
             onUpdate({
                 ...order,
-                expires_at: newDate,
+                expires_at: result.newExpiresAt,
                 extension_status: 'approved'
             });
             alert('ต่ออายุเรียบร้อยแล้ว');
@@ -265,11 +253,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const handleRejectExtension = async () => {
         if (!confirm('ยืนยันการปฏิเสธคำขอต่ออายุ?')) return;
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
-                extension_status: 'rejected',
-                extension_rejected_at: new Date()
-            });
+            await adminRejectExtension(order.id);
             onUpdate({ ...order, extension_status: 'rejected', extension_rejected_at: new Date() });
             alert('ปฏิเสธคำขอต่ออายุแล้ว');
         } catch (error) {
@@ -283,20 +267,22 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
         if (!confirm(`ยืนยันการอนุมัติการชำระเงินแก้ไข${editType}?`)) return;
 
         try {
-            const orderRef = doc(db, 'orders', order.id);
+            await adminApproveEditPayment({
+                orderId: order.id,
+                editType: type
+            });
+
             const updates = {
                 [`${type}_edit_payment_status`]: 'approved',
                 [`${type}_edit_payment_approved_at`]: new Date(),
             };
 
-            // Reset the edit counter so the customer can edit again
             if (type === 'text') {
                 updates.text_edits_used = Math.max(0, (order.text_edits_used || 0) - 1);
             } else {
                 updates.image_edits_used = Math.max(0, (order.image_edits_used || 0) - 1);
             }
 
-            await updateDoc(orderRef, updates);
             onUpdate({ ...order, ...updates });
             alert(`อนุมัติการแก้ไข${editType}เรียบร้อยแล้ว ✅`);
         } catch (error) {
@@ -309,11 +295,11 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
         const editType = type === 'text' ? 'ข้อความ' : 'รูปภาพ';
         if (!confirm(`ยืนยันการปฏิเสธการชำระเงินแก้ไข${editType}?`)) return;
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, {
-                [`${type}_edit_payment_status`]: 'rejected',
-                [`${type}_edit_payment_rejected_at`]: new Date()
+            await adminRejectEditPayment({
+                orderId: order.id,
+                editType: type
             });
+            
             onUpdate({ ...order, [`${type}_edit_payment_status`]: 'rejected', [`${type}_edit_payment_rejected_at`]: new Date() });
             alert(`ปฏิเสธการชำระเงินแก้ไข${editType}แล้ว`);
         } catch (error) {
@@ -325,8 +311,10 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
     const handleUpdateExpiry = async () => {
         if (!newExpiresAt) return;
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, { expires_at: newExpiresAt });
+            await adminUpdateExpiry({
+                orderId: order.id,
+                newExpiresAt: newExpiresAt.toISOString()
+            });
             onUpdate({ ...order, expires_at: newExpiresAt });
             alert('อัปเดตวันหมดอายุแล้ว');
         } catch (error) {
@@ -339,8 +327,10 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
         if (!orderConfig) return;
         setConfigSaving(true);
         try {
-            const orderRef = doc(db, 'orders', order.id);
-            await updateDoc(orderRef, { config: orderConfig });
+            await adminUpdateOrderContent({
+                orderId: order.id,
+                config: orderConfig
+            });
             onUpdate({ ...order, config: orderConfig });
             alert('บันทึกการตั้งค่าแล้ว');
         } catch (error) {

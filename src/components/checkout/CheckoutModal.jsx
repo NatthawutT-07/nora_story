@@ -2,12 +2,13 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, AlertCircle, Eye } from 'lucide-react';
 import { db, storage } from '../../firebase';
-import { doc, getDoc, serverTimestamp, increment, runTransaction } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
 import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
 import LivePreviewModal from './LivePreviewModal';
+import { createOrder } from '../../api/functions';
 
 // Generate random 15-character alphanumeric ID for story URLs
 const generateRandomId = () => {
@@ -199,60 +200,50 @@ const CheckoutContent = () => {
         setError('');
 
         try {
-            // 1. Generate unique Story ID or use Custom Domain
-            let storyId;
-            if (tier?.wantSpecialLink || tier?.wantCustomLink) {
-                storyId = formData.customDomain;
-            } else {
-                storyId = await generateUniqueStoryId();
-            }
+            // 1. Upload Slip Image
+            let slipUrl = '';
+            if (slipFile) {
+                const slipExt = slipFile.name.split('.').pop();
+                const slipName = `temp_${Date.now()}_slip.${slipExt}`;
+                const slipRef = ref(storage, `slips/${slipName}`);
 
-            // 2 & 3. Upload Slip and Content Images Concurrently
-            const slipExt = slipFile.name.split('.').pop();
-            const slipName = `${storyId}_${Date.now()}_slip.${slipExt}`;
-            const slipRef = ref(storage, `slips/${slipName}`);
+                const slipCompressionOptions = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1200,
+                    useWebWorker: true
+                };
 
-            // Compress slip image
-            const slipCompressionOptions = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1200,
-                useWebWorker: true
-            };
-
-            const uploadSlipPromise = async () => {
                 const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
                 await uploadBytes(slipRef, compressedSlipFile);
-                return await getDownloadURL(slipRef);
-            };
+                slipUrl = await getDownloadURL(slipRef);
+            }
 
+            // 2. Upload Content Images (if any)
             const maxUploads = getMaxImages() || contentFiles.length;
             let contentUrls = Array(maxUploads).fill(null);
-            const contentUploadPromises = [];
-
-            if (contentFiles.length > 0 || maxUploads > 0) {
-                // Compression options for content images
+            if ((contentFiles.length > 0 || maxUploads > 0)) {
                 const contentCompressionOptions = {
-                    maxSizeMB: 2, // Allow slightly larger file size for content to preserve quality
+                    maxSizeMB: 2,
                     maxWidthOrHeight: 1920,
                     useWebWorker: true,
                     initialQuality: 0.85
                 };
 
+                const contentUploadPromises = [];
                 for (let i = 0; i < maxUploads; i++) {
                     const file = contentFiles[i];
                     if (file) {
                         const uploadPromise = async () => {
                             try {
                                 const compressedFile = await imageCompression(file, contentCompressionOptions);
-                                const refName = `uploads/${storyId}/${i}_${file.name}`;
+                                const refName = `temp_${Date.now()}_${i}_${file.name}`;
                                 const imgRef = ref(storage, refName);
                                 await uploadBytes(imgRef, compressedFile);
                                 const url = await getDownloadURL(imgRef);
                                 return { index: i, url };
                             } catch (error) {
                                 console.error(`Error compressing/uploading image ${i}:`, error);
-                                // Fallback to original file if compression fails
-                                const refName = `uploads/${storyId}/${i}_${file.name}`;
+                                const refName = `temp_${Date.now()}_${i}_${file.name}`;
                                 const imgRef = ref(storage, refName);
                                 await uploadBytes(imgRef, file);
                                 const url = await getDownloadURL(imgRef);
@@ -262,110 +253,48 @@ const CheckoutContent = () => {
                         contentUploadPromises.push(uploadPromise());
                     }
                 }
-            }
 
-            // Wait for both slip and content images to upload concurrently
-            const [slipUrl, uploadResults] = await Promise.all([
-                uploadSlipPromise(),
-                Promise.all(contentUploadPromises)
-            ]);
-
-            if (uploadResults && uploadResults.length > 0) {
-                // Place uploaded URLs into their original indices, leaving nulls for empty slots
-                uploadResults.forEach(result => {
-                    contentUrls[result.index] = result.url;
-                });
-            }
-
-            // 4. Save Order via Transaction to prevent overwrites
-            const orderRef = doc(db, 'orders', storyId);
-
-            await runTransaction(db, async (transaction) => {
-                const orderDoc = await transaction.get(orderRef);
-                if (orderDoc.exists()) {
-                    throw new Error('�����ԧ����١����¡������� ��س����������¡���ա���駴��ª����ԧ�����');
+                if (contentUploadPromises.length > 0) {
+                    const uploadResults = await Promise.all(contentUploadPromises);
+                    uploadResults.forEach(res => {
+                        contentUrls[res.index] = res.url;
+                    });
                 }
-
-                transaction.set(orderRef, {
-                    tier_id: tier.id,
-                    tier_name: tier.name,
-                    price: tier.price,
-
-                    // Buyer info
-                    buyer_name: formData.buyerName,
-                    buyer_email: formData.buyerEmail,
-                    buyer_phone: formData.buyerPhone,
-
-                    // Tier 1 Template 1 specific
-                    pin_code: needsDetailFields ? formData.pin : null,
-                    target_name: needsDetailFields ? formData.targetName : null,
-                    sign_off: needsDetailFields ? formData.signOff : null,
-                    message: needsDetailFields ? formData.message : null,
-
-                    // Tier 3: Timeline data
-                    timelines: needsTimelineFields ? formData.timelines : null,
-                    finale_message: needsTimelineFields ? formData.finaleMessage : null,
-                    finale_sign_off: needsTimelineFields ? formData.finaleSignOff : null,
-
-                    // Special Link / Custom Domain
-                    custom_domain: (tier?.wantSpecialLink || tier?.wantCustomLink) ? formData.customDomain : null,
-                    want_special_link: !!tier?.wantSpecialLink,
-                    want_custom_link: !!tier?.wantCustomLink,
-                    link_type: tier?.wantSpecialLink ? 'special' : (tier?.wantCustomLink ? 'custom' : 'random'),
-
-                    selected_template_id: selectedTemplate,
-                    template_id: null,
-                    slip_url: slipUrl,
-                    content_images: contentUrls,
-                    music_url: formData.musicUrl || null,
-                    color_theme_id: selectedColorTheme?.id || null,
-                    status: 'pending',
-                    created_at: serverTimestamp(),
-                    platform: 'web',
-                    story_url: tier?.wantSpecialLink ? `https://${storyId}.norastory.com` : `https://norastory.com/${storyId}`,
-
-                    // Edit tracking
-                    text_edits_used: 0,
-                    image_edits_used: 0,
-                    text_edit_payment_status: null,
-                    text_edit_payment_slip_url: null,
-                    text_edit_payment_price: null,
-                    image_edit_payment_status: null,
-                    image_edit_payment_slip_url: null,
-                    image_edit_payment_price: null,
-                });
-            });
-
-            // 5. Update Global User Counter
-            try {
-                const statsRef = doc(db, 'stats', 'users');
-                await runTransaction(db, async (transaction) => {
-                    const statDoc = await transaction.get(statsRef);
-                    if (!statDoc.exists()) {
-                        transaction.set(statsRef, { count: 1 });
-                    } else {
-                        const newCount = (statDoc.data().count || 0) + 1;
-                        transaction.update(statsRef, { count: newCount });
-                    }
-                });
-            } catch (statErr) {
-                console.error("Error updating user stats (non-critical):", statErr);
             }
 
-            // 6. Notify Admin via LINE (Google Apps Script Proxy)
-            try {
-                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
-                if (gasUrl) {
-                    const notifyMessage = `🔔 มีออเดอร์ใหม่เข้า!\nOrder ID: ${storyId}\nแพ็คเกจ: ${tier.name}\nราคา: ${tier.price} บาท\nชื่อผู้ซื้อ: ${formData.buyerName}\nอีเมล: ${formData.buyerEmail}`;
-                    fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: notifyMessage })
-                    }).catch(e => console.error("LINE Notify Proxy error:", e));
-                }
-            } catch (err) {
-                console.error("Failed to notify LINE admin.", err);
+            // 3. Prepare order data for Cloud Function
+            const orderData = {
+                tierId: tier.id,
+                tierName: tier.name,
+                price: tier.price,
+                buyerName: formData.buyerName,
+                buyerEmail: formData.buyerEmail,
+                buyerPhone: formData.buyerPhone,
+                needsDetailFields,
+                pin: formData.pin,
+                targetName: formData.targetName,
+                signOff: formData.signOff,
+                message: formData.message,
+                needsTimelineFields,
+                timelines: formData.timelines,
+                finaleMessage: formData.finaleMessage,
+                finaleSignOff: formData.finaleSignOff,
+                wantSpecialLink: tier?.wantSpecialLink,
+                wantCustomLink: tier?.wantCustomLink,
+                customDomain: formData.customDomain,
+                selectedTemplate,
+                slipUrl,
+                contentImages: contentUrls, // Added here
+                musicUrl: formData.musicUrl,
+                colorThemeId: selectedColorTheme?.id,
+                platform: 'web'
+            };
+
+            // 4. Call Cloud Function to create order
+            const result = await createOrder(orderData);
+
+            if (!result.success) {
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ');
             }
 
             setStep(6); // Success

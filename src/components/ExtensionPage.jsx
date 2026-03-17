@@ -11,6 +11,7 @@ import { useToast } from './ui/Toast';
 import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
+import { requestExtension, saveTextEdit, saveImageEdit, submitEditPayment } from '../api/functions';
 
 // Build extension packages from tierData.js so pricing stays in sync
 const EXTENSION_PACKAGES_BY_TIER = {};
@@ -268,47 +269,19 @@ const ExtensionPage = () => {
 
             const slipUrl = await getDownloadURL(slipRef);
 
-            const orderRef = doc(db, 'orders', id);
-            const totalPrice = selectedPackage.price + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
-            const updates = {
-                extension_status: 'pending',
-                extension_slip_url: slipUrl,
-                extension_requested_days: selectedPackage.days,
-                extension_requested_price: totalPrice,
-                extension_requested_special_link: wantSpecialLink,
-                extension_requested_custom_link: wantCustomLink,
-                extension_requested_at: serverTimestamp(),
-                extension_approved_at: deleteField(),
-                extension_rejected_at: deleteField(),
-                payment_slips_history: arrayUnion({
-                    url: slipUrl,
-                    type: 'extension',
-                    amount: totalPrice,
-                    requested_at: new Date().toISOString()
-                })
+            const extensionData = {
+                orderId: id,
+                packageDays: selectedPackage.days,
+                slipUrl,
+                wantSpecialLink,
+                wantCustomLink,
+                customDomain1
             };
 
-            if (wantSpecialLink || wantCustomLink) {
-                updates.custom_domain_choice_1 = customDomain1;
-                // choice 2 no longer used
-            }
+            const result = await requestExtension(extensionData);
 
-            await updateDoc(orderRef, updates);
-
-            // Notify Admin via LINE
-            try {
-                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
-                if (gasUrl) {
-                    const notifyMessage = `🔄 ขอต่ออายุลิงก์\nOrder ID: ${id}\nแพ็คเกจต่ออายุ: ${selectedPackage.label}\nราคา: ${totalPrice} บาท`;
-                    fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: notifyMessage })
-                    }).catch(e => console.error("LINE Notify Proxy error:", e));
-                }
-            } catch (err) {
-                console.error("Failed to notify LINE admin.", err);
+            if (!result.success) {
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการต่ออายุ');
             }
 
             setIsSuccess(true);
@@ -365,40 +338,34 @@ const ExtensionPage = () => {
     const handleSaveTextEdit = async () => {
         setEditSubmitting(true);
         try {
-            const orderRef = doc(db, 'orders', id);
-            const updates = { text_edits_used: (order?.text_edits_used || 0) + 1 };
+            const editData = {
+                orderId: id,
+                ...(tierId === 3 ? {
+                    timelines: editFormData.timelines,
+                    finaleMessage: editFormData.finaleMessage,
+                    finaleSignOff: editFormData.finaleSignOff
+                } : {
+                    pin: editFormData.pin,
+                    message: editFormData.message,
+                    targetName: editFormData.targetName,
+                    signOff: editFormData.signOff
+                })
+            };
 
-            if (tierId === 3) {
-                updates.timelines = editFormData.timelines;
-                updates.finale_message = editFormData.finaleMessage;
-                updates.finale_sign_off = editFormData.finaleSignOff;
-            } else {
-                updates.pin_code = editFormData.pin;
-                updates.message = editFormData.message;
-                updates.target_name = editFormData.targetName;
-                updates.sign_off = editFormData.signOff;
+            const result = await saveTextEdit(editData);
+
+            if (!result.success) {
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการแก้ไขข้อความ');
             }
 
-            await updateDoc(orderRef, updates);
-            setOrder(prev => ({ ...prev, ...updates }));
+            setOrder(prev => ({ 
+                ...prev, 
+                text_edits_used: (prev.text_edits_used || 0) + 1,
+                ...editData 
+            }));
             setEditTextMode(false);
             showToast('แก้ไขข้อความเรียบร้อยแล้ว!', 'success');
 
-            // Notify Admin via LINE
-            try {
-                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
-                if (gasUrl) {
-                    const notifyMessage = `📝 มีการแก้ไขข้อความใหม่!\nOrder ID: ${id}`;
-                    fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: notifyMessage })
-                    }).catch(e => console.error("LINE Notify Proxy error:", e));
-                }
-            } catch (err) {
-                console.error("Failed to notify LINE admin.", err);
-            }
         } catch (err) {
             console.error(err);
             showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
@@ -445,32 +412,24 @@ const ExtensionPage = () => {
                 }
             }
 
-            const orderRef = doc(db, 'orders', id);
-            const updates = {
-                image_edits_used: (order?.image_edits_used || 0) + 1,
-                content_images: newUrls,
-            };
-            await updateDoc(orderRef, updates);
-            setOrder(prev => ({ ...prev, ...updates }));
+            const result = await saveImageEdit({
+                orderId: id,
+                contentImages: newUrls
+            });
+
+            if (!result.success) {
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการแก้ไขรูปภาพ');
+            }
+
+            setOrder(prev => ({ 
+                ...prev, 
+                image_edits_used: (prev.image_edits_used || 0) + 1,
+                content_images: newUrls 
+            }));
             setEditImageMode(false);
             setEditImageFiles([]);
             showToast('แก้ไขรูปภาพเรียบร้อยแล้ว!', 'success');
 
-            // Notify Admin via LINE
-            try {
-                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
-                if (gasUrl) {
-                    const notifyMessage = `📸 มีการแก้ไขรูปภาพใหม่!\nOrder ID: ${id}`;
-                    fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: notifyMessage })
-                    }).catch(e => console.error("LINE Notify Proxy error:", e));
-                }
-            } catch (err) {
-                console.error("Failed to notify LINE admin.", err);
-            }
         } catch (err) {
             console.error(err);
             showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
@@ -500,38 +459,14 @@ const ExtensionPage = () => {
 
             const slipUrl = await getDownloadURL(slipRef);
 
-            const price = editPayType === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
-            const orderRef = doc(db, 'orders', id);
-            await updateDoc(orderRef, {
-                [`${editPayType}_edit_payment_status`]: 'pending',
-                [`${editPayType}_edit_payment_slip_url`]: slipUrl,
-                [`${editPayType}_edit_payment_price`]: price,
-                [`${editPayType}_edit_payment_requested_at`]: serverTimestamp(),
-                [`${editPayType}_edit_payment_approved_at`]: deleteField(),
-                [`${editPayType}_edit_payment_rejected_at`]: deleteField(),
-                payment_slips_history: arrayUnion({
-                    url: slipUrl,
-                    type: editPayType,
-                    amount: price,
-                    requested_at: new Date().toISOString()
-                })
+            const result = await submitEditPayment({
+                orderId: id,
+                editType: editPayType,
+                slipUrl
             });
 
-            // Notify Admin via LINE
-            try {
-                const gasUrl = import.meta.env.VITE_LINE_NOTIFY_GAS_URL;
-                if (gasUrl) {
-                    const editTypeName = editPayType === 'text' ? 'ข้อความ' : 'รูปภาพ';
-                    const notifyMessage = `📝 แจ้งชำระเงินค่าแก้ไข${editTypeName}\nOrder ID: ${id}\nราคา: ${price} บาท`;
-                    fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: notifyMessage })
-                    }).catch(e => console.error("LINE Notify Proxy error:", e));
-                }
-            } catch (err) {
-                console.error("Failed to notify LINE admin.", err);
+            if (!result.success) {
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการแจ้งชำระเงิน');
             }
 
             setOrder(prev => {
@@ -539,7 +474,7 @@ const ExtensionPage = () => {
                     ...prev,
                     [`${editPayType}_edit_payment_status`]: 'pending',
                     [`${editPayType}_edit_payment_slip_url`]: slipUrl,
-                    [`${editPayType}_edit_payment_price`]: price,
+                    [`${editPayType}_edit_payment_price`]: result.price,
                     [`${editPayType}_edit_payment_requested_at`]: new Date()
                 };
                 delete next[`${editPayType}_edit_payment_approved_at`];
