@@ -12,7 +12,7 @@ service cloud.firestore {
     // Fallback: ตรวจสอบ Admin จาก Email Whitelist (สำหรับ initial setup)
     function isAdminEmail() {
       return request.auth != null && 
-        request.auth.token.email in ['admin@norastory.com'];
+        request.auth.token.email in ['admin@norastory.com', 'mymymy0526@gmail.com'];
     }
     
     // Combined admin check

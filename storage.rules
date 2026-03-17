@@ -11,7 +11,7 @@ service firebase.storage {
     
     function isAdminEmail() {
       return request.auth != null && 
-        request.auth.token.email in ['admin@norastory.com'];
+        request.auth.token.email in ['admin@norastory.com', 'mymymy0526@gmail.com'];
     }
     
     function hasAdminAccess() {
@@ -30,8 +30,10 @@ service firebase.storage {
     match /slips/{slipFile} {
       // Anyone can upload (for checkout)
       allow create: if isValidImage();
-      // Only admin can read/delete (privacy protection)
-      allow read, update, delete: if hasAdminAccess();
+      // Public read is required for the client to get the download URL immediately after upload
+      allow read: if true;
+      // Only admin can modify/delete
+      allow update, delete: if hasAdminAccess();
     }
 
     // ============================================
@@ -55,7 +57,9 @@ service firebase.storage {
     // ============================================
     match /extension_slips/{orderId}/{fileName} {
       allow create: if isValidImage();
-      allow read, update, delete: if hasAdminAccess();
+      // Public read is required for getDownloadURL()
+      allow read: if true;
+      allow update, delete: if hasAdminAccess();
     }
 
     // ============================================
@@ -63,7 +67,9 @@ service firebase.storage {
     // ============================================
     match /edit_slips/{orderId}/{fileName} {
       allow create: if isValidImage();
-      allow read, update, delete: if hasAdminAccess();
+      // Public read is required for getDownloadURL()
+      allow read: if true;
+      allow update, delete: if hasAdminAccess();
     }
 
     // ============================================
