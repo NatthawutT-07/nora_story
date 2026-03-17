@@ -3,6 +3,19 @@
         "rules": "firestore.rules",
         "indexes": "firestore.indexes.json"
     },
+    "functions": [
+        {
+            "source": "../Backend",
+            "codebase": "default",
+            "ignore": [
+                "node_modules",
+                ".git",
+                "firebase-debug.log",
+                "firebase-debug.*.log"
+            ],
+            "predeploy": []
+        }
+    ],
     "hosting": {
         "public": "dist",
         "ignore": [
@@ -19,5 +32,19 @@
     },
     "storage": {
         "rules": "storage.rules"
+    },
+    "emulators": {
+        "functions": {
+            "port": 5001
+        },
+        "firestore": {
+            "port": 8080
+        },
+        "storage": {
+            "port": 9199
+        },
+        "ui": {
+            "enabled": true
+        }
     }
 }
