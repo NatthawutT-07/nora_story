@@ -2,12 +2,8 @@
  * Firebase Cloud Functions API
  * Helper module สำหรับเรียกใช้ Cloud Functions จาก Frontend
  */
-import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
-import { initializeApp, getApps } from 'firebase/app';
-
-// Get the Firebase app instance
-const app = getApps()[0];
-const functions = getFunctions(app, 'asia-southeast1'); // Use your region
+import { httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { functions } from '../firebase';
 
 // Connect to emulator in development (uncomment when testing locally)
 // if (import.meta.env.DEV) {

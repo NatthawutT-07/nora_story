@@ -21,7 +21,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
-const functions = getFunctions(app, 'asia-southeast1');
+const functions = getFunctions(app); // Default is us-central1
 
 // Connect to emulator in development (uncomment when testing locally)
 // if (import.meta.env.DEV) {
