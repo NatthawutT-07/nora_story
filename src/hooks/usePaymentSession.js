@@ -21,7 +21,7 @@ const PAYMENT_SESSION_STATUS = {
  */
 const usePaymentSession = (sessionId, expiresAt) => {
     const [status, setStatus] = useState(PAYMENT_SESSION_STATUS.PENDING);
-    const [secondsLeft, setSecondsLeft] = useState(0);
+    const [secondsLeft, setSecondsLeft] = useState(null);
     const countdownRef = useRef(null);
     const unsubscribeRef = useRef(null);
 
@@ -88,7 +88,7 @@ const usePaymentSession = (sessionId, expiresAt) => {
     return {
         status,
         secondsLeft,
-        isExpired: status === PAYMENT_SESSION_STATUS.EXPIRED || secondsLeft <= 0,
+        isExpired: status === PAYMENT_SESSION_STATUS.EXPIRED || (secondsLeft !== null && secondsLeft <= 0),
         isPaid: status === PAYMENT_SESSION_STATUS.PAID || status === PAYMENT_SESSION_STATUS.COMPLETED,
     };
 };

@@ -61,7 +61,8 @@ const CheckoutContent = () => {
         getMaxImages,
         isDomainAvailable,
         qrExpired,
-        selectedColorTheme
+        selectedColorTheme,
+        paymentSessionActive,
     } = useCheckout();
 
     const [showExitWarning, setShowExitWarning] = useState(false);
@@ -235,15 +236,17 @@ const CheckoutContent = () => {
                     if (file) {
                         const uploadPromise = async () => {
                             try {
+                                const folder = formData.customDomain || formData.buyerPhone || 'temp_group';
                                 const compressedFile = await imageCompression(file, contentCompressionOptions);
-                                const refName = `temp_${Date.now()}_${i}_${file.name}`;
+                                const refName = `uploads/${folder}/${Date.now()}_${i}_${file.name}`;
                                 const imgRef = ref(storage, refName);
                                 await uploadBytes(imgRef, compressedFile);
                                 const url = await getDownloadURL(imgRef);
                                 return { index: i, url };
                             } catch (error) {
                                 console.error(`Error compressing/uploading image ${i}:`, error);
-                                const refName = `temp_${Date.now()}_${i}_${file.name}`;
+                                const folder = formData.customDomain || formData.buyerPhone || 'temp_group';
+                                const refName = `uploads/${folder}/${Date.now()}_${i}_${file.name}`;
                                 const imgRef = ref(storage, refName);
                                 await uploadBytes(imgRef, file);
                                 const url = await getDownloadURL(imgRef);
@@ -427,7 +430,12 @@ const CheckoutContent = () => {
                                                             setStep(step - 1);
                                                         }
                                                     }}
-                                                    className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition-colors"
+                                                    disabled={step === 5 && paymentSessionActive}
+                                                    className={`flex-1 py-3.5 rounded-xl font-medium transition-colors ${
+                                                        step === 5 && paymentSessionActive
+                                                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
                                                 >
                                                     ย้อนกลับ
                                                 </button>

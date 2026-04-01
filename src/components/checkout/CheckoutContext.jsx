@@ -45,6 +45,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     const [storyId, setStoryId] = useState(null);
     const [isDomainAvailable, setIsDomainAvailable] = useState(null);
     const [qrExpired, setQrExpired] = useState(false);
+    const [paymentSessionActive, setPaymentSessionActive] = useState(false);
 
     const [formData, setFormData] = useState({
         buyerName: '',
@@ -204,6 +205,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         checkDomainAvailability,
         qrExpired,
         setQrExpired,
+        paymentSessionActive,
+        setPaymentSessionActive,
 
         // Computed
         isTier1Template1,

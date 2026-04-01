@@ -42,9 +42,23 @@ const OmisePaymentStep = () => {
         setStoryId,
         qrExpired,
         setQrExpired,
+        setPaymentSessionActive,
     } = useCheckout();
 
-    const [mode, setMode] = useState(MODE.SELECT);
+    const [mode, setModeInternal] = useState(MODE.SELECT);
+
+    // ซิงค์ paymentSessionActive กับ mode
+    const setMode = (newMode) => {
+        setModeInternal(newMode);
+        setPaymentSessionActive(
+            newMode === MODE.PROMPTPAY || newMode === MODE.CARD || newMode === MODE.SUBMITTING || newMode === MODE.STARTING
+        );
+    };
+
+    // Reset on unmount (user navigated away)
+    useEffect(() => {
+        return () => setPaymentSessionActive(false);
+    }, []);
     const [sessionId, setSessionId] = useState(null);
     const [expiresAt, setExpiresAt] = useState(null);
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -52,7 +66,12 @@ const OmisePaymentStep = () => {
     const [imageUrls, setImageUrls] = useState(null);
     const [fileError, setFileError] = useState('');
     const [slipTimeLeft, setSlipTimeLeft] = useState(900);
+    const [submitRetryCount, setSubmitRetryCount] = useState(0);
+    const [manualChecking, setManualChecking] = useState(false);
+    const [cardForm, setCardForm] = useState({ name: '', number: '', expMonth: '', expYear: '', cvc: '' });
+    const [cardProcessing, setCardProcessing] = useState(false);
     const isSubmitCalledRef = useRef(false);
+    const isStartingRef = useRef(false);
     const imageUploadPromiseRef = useRef(null);
 
     const { status, secondsLeft, isExpired, isPaid } = usePaymentSession(sessionId, expiresAt);
@@ -101,6 +120,8 @@ const OmisePaymentStep = () => {
     // Start Session Helpers
     // ============================================
     const startSession = async (paymentMethod) => {
+        if (isStartingRef.current) return; // Guard: ป้องกันกดซ้ำ
+        isStartingRef.current = true;
         setLocalError('');
         setMode(MODE.STARTING);
         try {
@@ -120,14 +141,21 @@ const OmisePaymentStep = () => {
         } catch (err) {
             setLocalError(err.message || 'ไม่สามารถสร้างรายการชำระเงินได้ กรุณาลองใหม่');
             setMode(MODE.SELECT);
+        } finally {
+            isStartingRef.current = false;
         }
     };
 
     // ============================================
-    // Card Payment via Omise.js
+    // Card Payment via Omise.js (inline form)
     // ============================================
-    const handleOmiseCardOpen = () => {
-        if (!window.OmiseCard) {
+    const handleCardSubmit = async () => {
+        if (cardProcessing) return;
+        if (!cardForm.number || !cardForm.name || !cardForm.expMonth || !cardForm.expYear || !cardForm.cvc) {
+            setLocalError('กรุณากรอกข้อมูลบัตรให้ครบถ้วน');
+            return;
+        }
+        if (!window.Omise) {
             setLocalError('Omise.js ยังโหลดไม่สมบูรณ์ กรุณารีเฟรชหน้าแล้วลองใหม่');
             return;
         }
@@ -136,25 +164,39 @@ const OmisePaymentStep = () => {
             setLocalError('ยังไม่ได้ตั้งค่า Omise Public Key');
             return;
         }
-        window.OmiseCard.configure({ publicKey });
-        window.OmiseCard.open({
-            amount: Math.round(amount * 100),
-            currency: 'thb',
-            frameLabel: `NoraStory — ฿${tier.price}`,
-            submitLabel: 'ชำระเงิน',
-            onCreateTokenSuccess: async (nonce) => {
-                setLocalError('');
-                setMode(MODE.STARTING);
-                try {
-                    const result = await createCardCharge({ sessionId, omiseToken: nonce.id });
-                    if (!result.success) throw new Error(result.error);
+
+        setCardProcessing(true);
+        setLocalError('');
+        window.Omise.setPublicKey(publicKey);
+
+        window.Omise.createToken('card', {
+            name: cardForm.name,
+            number: cardForm.number.replace(/\s/g, ''),
+            expiration_month: parseInt(cardForm.expMonth),
+            expiration_year: parseInt(cardForm.expYear.length === 2 ? `20${cardForm.expYear}` : cardForm.expYear),
+            security_code: cardForm.cvc,
+        }, async (statusCode, response) => {
+            if (statusCode !== 200 || response.object === 'error') {
+                setLocalError(response.message || 'ข้อมูลบัตรไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่');
+                setCardProcessing(false);
+                return;
+            }
+            const omiseToken = response.id;
+            setMode(MODE.STARTING);
+            try {
+                const result = await createCardCharge({ sessionId, omiseToken });
+                if (!result.success) throw new Error(result.error);
+                if (!isSubmitCalledRef.current) {
                     setMode(MODE.CARD);
-                } catch (err) {
+                }
+            } catch (err) {
+                if (!isSubmitCalledRef.current) {
                     setLocalError(err.message || 'ชำระเงินไม่สำเร็จ กรุณาลองใหม่');
                     setMode(MODE.CARD);
                 }
-            },
-            onFormClosed: () => {},
+            } finally {
+                setCardProcessing(false);
+            }
         });
     };
 
@@ -206,11 +248,17 @@ const OmisePaymentStep = () => {
             } catch (err) {
                 setError('เกิดข้อผิดพลาด: ' + err.message);
                 isSubmitCalledRef.current = false;
-                setMode(isPaid ? MODE.SUBMITTING : MODE.SELECT);
+                setMode(mode === MODE.CARD ? MODE.CARD : MODE.PROMPTPAY);
+                // Retry auto-submit after 3s (max 3 retries)
+                if (submitRetryCount < 3) {
+                    setTimeout(() => {
+                        setSubmitRetryCount(c => c + 1);
+                    }, 3000);
+                }
             }
         };
         doSubmit();
-    }, [isPaid]);
+    }, [isPaid, submitRetryCount]);
 
     // ============================================
     // Expired state sync
@@ -244,7 +292,65 @@ const OmisePaymentStep = () => {
         setImageUrls(null);
         imageUploadPromiseRef.current = null;
         isSubmitCalledRef.current = false;
+        isStartingRef.current = false;
+        setSubmitRetryCount(0);
+        setManualChecking(false);
         setMode(MODE.SELECT);
+    };
+
+    // ============================================
+    // Manual check + submit (user presses button)
+    // ============================================
+    const handleManualSubmit = async () => {
+        if (!sessionId || manualChecking) return;
+        setManualChecking(true);
+        setLocalError('');
+        setError('');
+        try {
+            let finalImageUrls = imageUrls;
+            if (finalImageUrls === null && getMaxImages() > 0) {
+                finalImageUrls = await (imageUploadPromiseRef.current || uploadImages());
+            }
+            const result = await submitOrderWithPayment({
+                sessionId,
+                tierId: tier.id,
+                tierName: tier.name,
+                price: tier.price,
+                buyerName: formData.buyerName,
+                buyerEmail: formData.buyerEmail,
+                buyerPhone: formData.buyerPhone,
+                needsDetailFields,
+                pin: formData.pin,
+                targetName: formData.targetName,
+                signOff: formData.signOff,
+                message: formData.message,
+                needsTimelineFields,
+                timelines: formData.timelines,
+                finaleMessage: formData.finaleMessage,
+                finaleSignOff: formData.finaleSignOff,
+                wantSpecialLink: tier?.wantSpecialLink,
+                wantCustomLink: tier?.wantCustomLink,
+                customDomain: formData.customDomain,
+                selectedTemplate,
+                slipUrl: '',
+                contentImages: finalImageUrls || [],
+                musicUrl: formData.musicUrl || null,
+                colorThemeId: selectedColorTheme?.id || null,
+                platform: 'web',
+            });
+            if (!result.success) throw new Error(result.error);
+            setStoryId(result.orderId);
+            setStep(6);
+        } catch (err) {
+            const msg = err.message || '';
+            if (msg.includes('ชำระเงิน') || msg.includes('pending') || msg.includes('FAILED_PRECONDITION')) {
+                setLocalError('ยังไม่พบการชำระเงิน กรุณาสแกน QR Code และชำระเงินก่อน');
+            } else {
+                setLocalError('เกิดข้อผิดพลาด: ' + msg);
+            }
+        } finally {
+            setManualChecking(false);
+        }
     };
 
     // ============================================
@@ -327,7 +433,6 @@ const OmisePaymentStep = () => {
                         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                         className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl px-4 py-3 flex items-start gap-2"
                     >
-                        <span className="mt-0.5">⚠️</span>
                         <span>{localError}</span>
                     </motion.div>
                 )}
@@ -337,49 +442,46 @@ const OmisePaymentStep = () => {
             {mode === MODE.SELECT && (
                 <div className="space-y-3">
                     <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">ยอดชำระ</p>
-                            <p className="text-2xl font-extrabold text-[#1A3C40]">฿{tier?.price}<span className="text-sm font-normal text-gray-400">.-</span></p>
-                        </div>
                         <div className="p-4 space-y-2.5">
                             <p className="text-xs font-medium text-gray-500 mb-1">เลือกช่องทางชำระเงิน</p>
 
                             {/* PromptPay */}
                             <button
-                                onClick={() => startSession('promptpay')}
-                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-[#1A3C40]/20 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left group"
+                                disabled
+                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed text-left transition-all"
                             >
-                                <div className="w-9 h-9 bg-[#113566] rounded-lg flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 bg-gray-300 rounded-lg flex items-center justify-center shrink-0">
                                     <span className="text-white text-[10px] font-extrabold leading-tight text-center">PP</span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-semibold text-[#1A3C40]">พร้อมเพย์ (PromptPay)</p>
-                                    <p className="text-[11px] text-gray-400">สแกน QR Code จ่ายทันที</p>
+                                    <p className="text-sm font-semibold text-gray-500">พร้อมเพย์ (PromptPay)</p>
+                                    <p className="text-[11px] text-gray-400">ปิดปรับปรุงชั่วคราว</p>
                                 </div>
-                                <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">แนะนำ</span>
+                                <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100/50">กำลังปรับปรุง</span>
                             </button>
 
                             {/* Credit/Debit Card */}
                             <button
-                                onClick={() => startSession('card')}
-                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left"
+                                disabled
+                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed text-left transition-all"
                             >
-                                <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                                    <CreditCard size={18} className="text-gray-600" />
+                                <div className="w-9 h-9 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
+                                    <CreditCard size={18} className="text-gray-400" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-semibold text-[#1A3C40]">บัตรเครดิต / เดบิต</p>
-                                    <p className="text-[11px] text-gray-400">Visa, Mastercard ผ่าน Omise</p>
+                                    <p className="text-sm font-semibold text-gray-500">บัตรเครดิต / เดบิต</p>
+                                    <p className="text-[11px] text-gray-400">ปิดปรับปรุงชั่วคราว</p>
                                 </div>
+                                <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100/50">กำลังปรับปรุง</span>
                             </button>
 
                             {/* Slip Fallback Toggle */}
                             <button
-                                onClick={() => setMode(MODE.SLIP)}
-                                className="w-full flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-600 transition-colors py-1 justify-center"
+                                disabled
+                                className="w-full flex items-center gap-2 text-[11px] text-gray-300 opacity-60 cursor-not-allowed py-1 justify-center"
                             >
                                 <ChevronDown size={13} />
-                                ชำระด้วยการโอนเงินแล้วแนบสลิปเอง
+                                ชำระด้วยการแนบสลิป (ปิดปรับปรุงชั่วคราว)
                             </button>
                         </div>
                     </div>
@@ -422,19 +524,24 @@ const OmisePaymentStep = () => {
                             </div>
                         )}
                         <p className="text-xs text-gray-500 text-center">สแกน QR Code ด้วยแอปธนาคาร<br />แล้วระบบจะบันทึกคำสั่งซื้ออัตโนมัติ</p>
-                        <p className="text-lg font-extrabold text-[#1A3C40]">฿{tier?.price}</p>
+
+                        {/* Manual check + submit button */}
                         <button
-                            onClick={handleReset}
-                            className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                            onClick={handleManualSubmit}
+                            disabled={manualChecking}
+                            className="w-full py-3 rounded-xl bg-[#1A3C40] text-white font-semibold text-sm hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <RefreshCw size={11} />
-                            เปลี่ยนช่องทางชำระ
+                            {manualChecking ? (
+                                <><Loader2 className="animate-spin" size={16} /> กำลังตรวจสอบ...</>
+                            ) : (
+                                <> ชำระเงินแล้ว</>
+                            )}
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* ─── MODE: CARD ─── */}
+            {/* ─── MODE: CARD (inline form) ─── */}
             {mode === MODE.CARD && (
                 <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
@@ -446,25 +553,98 @@ const OmisePaymentStep = () => {
                             </div>
                         )}
                     </div>
-                    <div className="p-4 flex flex-col items-center gap-3">
-                        <div className="w-16 h-16 bg-[#1A3C40]/5 rounded-2xl flex items-center justify-center">
-                            <CreditCard size={28} className="text-[#1A3C40]" />
+                    <div className="p-4 space-y-3">
+                        {/* Card Number */}
+                        <div>
+                            <label className="block text-[11px] font-medium text-gray-500 mb-1">หมายเลขบัตร</label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0000 0000 0000 0000"
+                                maxLength={19}
+                                value={cardForm.number}
+                                onChange={(e) => {
+                                    const v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19);
+                                    setCardForm(p => ({ ...p, number: v }));
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 transition-all font-[monospace] tracking-wider"
+                            />
                         </div>
-                        <div className="text-center">
-                            <p className="text-lg font-extrabold text-[#1A3C40]">฿{tier?.price}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Visa / Mastercard ผ่าน Omise</p>
+                        {/* Name on Card */}
+                        <div>
+                            <label className="block text-[11px] font-medium text-gray-500 mb-1">ชื่อบนบัตร</label>
+                            <input
+                                type="text"
+                                placeholder=""
+                                value={cardForm.name}
+                                onChange={(e) => setCardForm(p => ({ ...p, name: e.target.value.toUpperCase() }))}
+                                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 transition-all uppercase"
+                            />
                         </div>
+                        {/* Expiry + CVV */}
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-medium text-gray-500 mb-1">เดือน/ปี</label>
+                                <div className="flex gap-1.5">
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="MM/YY"
+                                        maxLength={5}
+                                        value={
+                                            cardForm.expMonth ?
+                                                (cardForm.expMonth.length === 2 ?
+                                                    `${cardForm.expMonth}/${cardForm.expYear}`
+                                                    : cardForm.expMonth
+                                                )
+                                                : ''
+                                        }
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            // Handle backspace when the value is just "MM/" (e.target.value becomes "MM")
+                                            if (v === cardForm.expMonth && cardForm.expYear === '') {
+                                                setCardForm(p => ({ ...p, expMonth: p.expMonth.slice(0, 1) }));
+                                                return;
+                                            }
+                                            const clean = v.replace(/\D/g, '').slice(0, 4);
+                                            setCardForm(p => ({ ...p, expMonth: clean.slice(0, 2), expYear: clean.slice(2, 4) }));
+                                        }}
+                                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 transition-all font-[monospace]"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-medium text-gray-500 mb-1">CVV</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    placeholder="•••"
+                                    maxLength={4}
+                                    value={cardForm.cvc}
+                                    onChange={(e) => {
+                                        const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        setCardForm(p => ({ ...p, cvc: v }));
+                                    }}
+                                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#1A3C40]/20 focus:border-[#1A3C40]/40 transition-all font-[monospace]"
+                                />
+                            </div>
+                        </div>
+                        {/* Submit */}
                         <button
-                            onClick={handleOmiseCardOpen}
-                            className="w-full py-3 rounded-xl bg-[#1A3C40] text-white font-semibold text-sm hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2"
+                            onClick={handleCardSubmit}
+                            disabled={cardProcessing || !cardForm.number || !cardForm.name || !cardForm.expMonth || !cardForm.expYear || !cardForm.cvc}
+                            className="w-full py-3 rounded-xl bg-[#1A3C40] text-white font-semibold text-sm hover:bg-[#1A3C40]/90 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <CreditCard size={16} />
-                            กรอกข้อมูลบัตรและชำระเงิน
+                            {cardProcessing ? (
+                                <><Loader2 className="animate-spin" size={16} /> กำลังชำระเงิน...</>
+                            ) : (
+                                <><CreditCard size={16} /> ชำระเงิน ฿{tier?.price}</>
+                            )}
                         </button>
                         <p className="text-[10px] text-gray-400 text-center">ข้อมูลบัตรถูกส่งตรงไปยัง Omise อย่างปลอดภัย<br />ไม่ผ่านระบบของเรา</p>
                         <button
                             onClick={handleReset}
-                            className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                            className="w-full flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors justify-center"
                         >
                             <RefreshCw size={11} />
                             เปลี่ยนช่องทางชำระ
