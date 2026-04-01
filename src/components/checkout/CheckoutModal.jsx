@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
-import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
+import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, OmisePaymentStep, SuccessStep } from './steps';
 import LivePreviewModal from './LivePreviewModal';
 import { createOrder } from '../../api/functions';
 
@@ -397,7 +397,7 @@ const CheckoutContent = () => {
                                         {step === 2 && <BuyerInfoStep />}
                                         {step === 3 && <DetailsStep />}
                                         {step === 4 && <ImagesStep />}
-                                        {step === 5 && <PaymentStep />}
+                                        {step === 5 && <OmisePaymentStep />}
 
                                         {/* Live Preview Button — visible on step 3+ (after details/images filled) */}
                                         {(step === 3 || step === 4) && selectedTemplate && (
@@ -421,7 +421,6 @@ const CheckoutContent = () => {
                                             {step > 1 && (
                                                 <button
                                                     onClick={() => {
-                                                        // Skip image step when going back if no images needed
                                                         if (step === 5 && getMaxImages() === 0) {
                                                             setStep(3);
                                                         } else {
@@ -433,16 +432,8 @@ const CheckoutContent = () => {
                                                     ย้อนกลับ
                                                 </button>
                                             )}
-                                            {step < 5 ? (
+                                            {step < 5 && (
                                                 <button onClick={handleNextStep} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg">ถัดไป</button>
-                                            ) : (
-                                                <button
-                                                    onClick={handleSubmit}
-                                                    disabled={loading || qrExpired}
-                                                    className={`flex-1 py-3.5 rounded-xl ${qrExpired ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#1A3C40] hover:bg-[#1A3C40]/90'} text-white font-medium transition-all shadow-lg flex items-center justify-center gap-2`}
-                                                >
-                                                    {loading ? <Loader2 className="animate-spin" size={20} /> : 'ยืนยันการชำระเงิน'}
-                                                </button>
                                             )}
                                         </div>
                                     </div>

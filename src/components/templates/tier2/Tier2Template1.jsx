@@ -283,7 +283,8 @@ const Tier2Template1 = ({
     images = [],
     musicUrl,
     colorTheme,
-    config
+    config,
+    isModalPreview = false
 }) => {
     // support both prop names
     const CORRECT_PIN = pinProp || pinCode || (isDemo ? '1234' : null);
@@ -559,8 +560,9 @@ const Tier2Template1 = ({
                 {viewState === 'CONTENT' && (
                     <motion.div
                         key="content"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                        transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
                         className="absolute inset-0 z-30 flex flex-col items-center justify-center overflow-hidden p-4"
                     >
                         <AnimatedBackground gradientColors={gradientColors} />
@@ -570,18 +572,28 @@ const Tier2Template1 = ({
                         {/* Floating Images */}
                         <FloatingImages images={images} />
 
-                        <div className="relative z-10 w-full max-w-lg flex flex-col items-center justify-center">
+                        <div className="relative z-10 w-full max-w-sm flex flex-col items-center justify-center px-4">
 
                             {/* Message Card */}
                             <motion.div
                                 initial={{ opacity: 0, y: 30 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="relative bg-white/10 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-white/20 shadow-2xl overflow-hidden min-h-[400px]"
+                                className="relative bg-white/10 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl overflow-hidden min-h-[350px] w-full flex flex-col justify-center text-center"
                             >
+
                                 {/* Decorative Elements */}
-                                <div className="absolute top-0 right-0 w-40 h-40 rounded-bl-full" style={{ background: `linear-gradient(to bottom left, ${themeColors.primary}33, transparent)` }} />
-                                <div className="absolute bottom-0 left-0 w-32 h-32 rounded-tr-full" style={{ background: `linear-gradient(to top right, ${themeColors.secondary}33, transparent)` }} />
+                                <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-50" style={{ background: `linear-gradient(to bottom left, ${themeColors.primary}33, transparent)` }} />
+                                <div className="absolute bottom-0 left-0 w-20 h-20 rounded-tr-full opacity-50" style={{ background: `linear-gradient(to top right, ${themeColors.secondary}33, transparent)` }} />
+
+                                {/* Top decorative line (like T1) */}
+                                <motion.div
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: 1 }}
+                                    transition={{ delay: 0.5, duration: 0.8 }}
+                                    className="absolute top-0 left-0 w-full h-1"
+                                    style={{ background: `linear-gradient(to right, transparent, ${themeColors.primary}, transparent)` }}
+                                />
 
                                 {/* Glowing Border */}
                                 <motion.div
@@ -597,15 +609,15 @@ const Tier2Template1 = ({
                                 />
 
                                 {/* Content */}
-                                <div className="relative z-10">
+                                <div className="relative z-10 w-full flex flex-col items-center">
                                     <motion.div
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ delay: 0.4, type: "spring" }}
-                                        className="flex justify-center mb-6"
+                                        className="flex justify-center mb-4"
                                     >
-                                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(to bottom right, ${themeColors.primary}, ${themeColors.secondary})`, boxShadow: `0 10px 15px -3px ${themeColors.primary}4D` }}>
-                                            <Heart size={28} className="text-white" fill="currentColor" />
+                                        <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(to bottom right, ${themeColors.primary}, ${themeColors.secondary})`, boxShadow: `0 10px 15px -3px ${themeColors.primary}4D` }}>
+                                            <Heart size={24} className="text-white" fill="currentColor" />
                                         </div>
                                     </motion.div>
 
@@ -613,36 +625,38 @@ const Tier2Template1 = ({
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.4 }}
-                                        className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words"
+                                        className="text-xs tracking-widest uppercase mb-4 font-medium break-keep"
                                         style={{ color: themeColors.accent }}
                                     >
                                         ✨ {targetName || "For You"} ✨
                                     </motion.p>
 
-                                    <motion.h1
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.6 }}
-                                        className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 80
-                                            ? "text-base md:text-xl"
-                                            : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 50
-                                                ? "text-lg md:text-xl"
-                                                : "text-xl md:text-xl"
-                                            } font-serif italic leading-relaxed text-white mb-6 px-4 break-words text-center`}
-                                    >
-                                        "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
-                                    </motion.h1>
+                                    <div className="space-y-3 w-full">
+                                        <motion.h1
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.6 }}
+                                            className={`${(customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 80
+                                                ? "text-base md:text-lg"
+                                                : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย").length > 50
+                                                    ? "text-lg md:text-xl"
+                                                    : "text-xl md:text-2xl"
+                                                } font-serif italic leading-relaxed text-white mb-6 max-w-[95%] mx-auto break-keep`}
+                                        >
+                                            "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ฉันไม่อยากสูญเสีย"}"
+                                        </motion.h1>
+                                    </div>
 
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.8 }}
-                                        className="flex items-center justify-center gap-3"
+                                        className="flex items-center justify-center gap-3 w-full"
                                         style={{ color: themeColors.accent }}
                                     >
-                                        <div className="w-10 h-px" style={{ background: `linear-gradient(to right, transparent, ${themeColors.accent})` }} />
-                                        <span className="text-sm tracking-wide font-medium break-words">{customSignOff || "รักเธอเสมอ"}</span>
-                                        <div className="w-10 h-px" style={{ background: `linear-gradient(to left, transparent, ${themeColors.accent})` }} />
+                                        <div className="w-6 h-px" style={{ background: `linear-gradient(to right, transparent, ${themeColors.accent})` }} />
+                                        <span className="text-xs tracking-wide font-medium break-keep">{customSignOff || "รักเธอเสมอ"}</span>
+                                        <div className="w-6 h-px" style={{ background: `linear-gradient(to left, transparent, ${themeColors.accent})` }} />
                                     </motion.div>
 
                                     <motion.button
@@ -651,13 +665,16 @@ const Tier2Template1 = ({
                                         transition={{ delay: 1 }}
                                         onClick={triggerConfetti}
                                         disabled={!canSendLove}
-                                        whileHover={canSendLove ? { scale: 1.05, color: themeColors.accent } : {}}
+                                        whileHover={canSendLove ? { scale: 1.05, color: themeColors.primary } : {}}
                                         whileTap={canSendLove ? { scale: 0.95 } : {}}
-                                        className={`mt-10 text-sm text-white transition-colors duration-300 uppercase tracking-widest flex items-center gap-2 mx-auto px-6 py-3 rounded-full border border-white/20 ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
-                                        style={{ background: `linear-gradient(to right, ${themeColors.primary}4D, ${themeColors.secondary}4D)` }}
+                                        className={`mt-6 flex items-center justify-center gap-2 mx-auto w-10 h-10 rounded-full transition-all duration-300 backdrop-blur-sm border ${!canSendLove ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                        style={{
+                                            backgroundColor: canSendLove ? `${themeColors.primary}33` : 'transparent',
+                                            borderColor: canSendLove ? themeColors.primary : 'rgba(255,255,255,0.2)',
+                                            color: canSendLove ? themeColors.accent : 'rgba(255,255,255,0.5)'
+                                        }}
                                     >
-                                        <Sparkles size={16} />
-                                        {canSendLove ? "" : ""}
+                                        <Sparkles size={18} />
                                     </motion.button>
                                 </div>
                             </motion.div>

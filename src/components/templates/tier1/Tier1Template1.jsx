@@ -323,7 +323,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-words"
+                                    className="text-sm tracking-[0.1em] uppercase mb-6 font-medium text-center break-keep"
                                     style={{ color: primaryColor }}
                                 >
                                     ✨ {targetName || "For You"} ✨
@@ -339,7 +339,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                             : (customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย").length > 50
                                                 ? "text-xl md:text-xl"
                                                 : "text-2xl md:text-xl"
-                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-words`}
+                                            } italic leading-relaxed text-gray-800 mb-8 max-w-[90%] mx-auto break-keep`}
                                     >
                                         "{customMessage || "ทุกช่วงเวลาที่มีเธอ คือของขวัญที่เค้าไม่อยากสูญเสีย"}"
                                     </motion.h1>
@@ -352,7 +352,7 @@ const Tier1Template1 = ({ customMessage, customSignOff, targetName = 'ถึง 
                                     className="flex items-center justify-center gap-2 text-gray-500"
                                 >
                                     <div className="w-8 h-px bg-gray-300" />
-                                    <span className="text-sm tracking-wide break-words">{customSignOff || "รักเธอเสมอ"}</span>
+                                    <span className="text-sm tracking-wide break-keep">{customSignOff || "รักเธอเสมอ"}</span>
                                     <div className="w-8 h-px bg-gray-300" />
                                 </motion.div>
 

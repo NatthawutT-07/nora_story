@@ -57,6 +57,16 @@ service cloud.firestore {
     }
     
     // ============================================
+    // Payment Sessions (Omise)
+    // ============================================
+    match /payment_sessions/{sessionId} {
+      // Public read (for frontend onSnapshot listener to check status)
+      allow read: if true;
+      // Write only via Cloud Functions (admin SDK)
+      allow write: if false;
+    }
+    
+    // ============================================
     // Default: Deny all other paths
     // ============================================
     match /{document=**} {
