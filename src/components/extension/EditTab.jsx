@@ -1,7 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, CreditCard, Pencil, Image as ImageIcon, X, CheckCircle } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import generatePayload from 'promptpay-qr';
 
 const EditTab = ({
     activeTab,
@@ -31,16 +29,11 @@ const EditTab = ({
     setEditImageFiles,
     handleSaveImageEdit,
 
-    // Payment Form
+    // Payment
     textPaymentPending,
     imagePaymentPending,
-    editPayType,
-    setEditPayType,
-    editSlipFile,
-    setEditSlipFile,
     editSubmitting,
-    handleEditPayment,
-    promptpayId
+    onStartEditPayment,
 }) => {
     return (
         <div>
@@ -81,10 +74,10 @@ const EditTab = ({
                     {/* No free edits: show payment button */}
                     {!canFreeEditText && !textPaymentPending && (
                         <button
-                            onClick={() => { setEditPayType('text'); setEditSlipFile(null); }}
+                            onClick={() => onStartEditPayment('text')}
                             className="w-full py-3 rounded-xl bg-[#E8A08A] text-[#1A3C40] text-sm font-medium hover:bg-[#d89279] transition-all flex items-center justify-center gap-2 mb-4"
                         >
-                            <CreditCard size={14} /> ชำระเงิน {editConfig?.paidTextPrice}฿ เพื่อแก้ไข
+                            <CreditCard size={14} /> ชำระเงิน {editConfig?.paidTextPrice}฿ เพื่อแก้ไข (อนุมัติทันที)
                         </button>
                     )}
 
@@ -321,10 +314,10 @@ const EditTab = ({
                     {/* No free edits: show payment */}
                     {!canFreeEditImage && !imagePaymentPending && (
                         <button
-                            onClick={() => { setEditPayType('image'); setEditSlipFile(null); }}
+                            onClick={() => onStartEditPayment('image')}
                             className="w-full py-3 rounded-xl bg-[#E8A08A] text-[#1A3C40] text-sm font-medium hover:bg-[#d89279] transition-all flex items-center justify-center gap-2 mb-4"
                         >
-                            <CreditCard size={14} /> ชำระเงิน {editConfig.paidImagePrice}฿ เพื่อแก้ไข
+                            <CreditCard size={14} /> ชำระเงิน {editConfig.paidImagePrice}฿ เพื่อแก้ไข (อนุมัติทันที)
                         </button>
                     )}
 
@@ -432,68 +425,6 @@ const EditTab = ({
                 </div>
             )}
 
-            {/* === Paid Edit Payment Form (shared across both edit tabs) === */}
-            <AnimatePresence>
-                {editPayType && !(editPayType === 'text' ? textPaymentPending : imagePaymentPending) && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                    >
-                        <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm mb-4 mt-4">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="font-bold text-[#1A3C40] text-sm">
-                                    ชำระเงินเพื่อแก้ไข{editPayType === 'text' ? 'ข้อความ' : 'รูปภาพ'}
-                                </h4>
-                                <button onClick={() => setEditPayType(null)} className="p-1 rounded-full hover:bg-gray-100">
-                                    <X size={16} className="text-gray-400" />
-                                </button>
-                            </div>
-
-                            {/* QR Code */}
-                            <div className="flex flex-col items-center mb-4">
-                                {(() => {
-                                    const price = editPayType === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
-                                    const payload = generatePayload(promptpayId, { amount: price });
-                                    return (
-                                        <>
-                                            <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative mb-3">
-                                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap z-10">
-                                                    สแกนเพื่อชำระเงิน
-                                                </div>
-                                                <QRCodeSVG value={payload} size={140} level="M" includeMargin={true} />
-                                            </div>
-                                            <div className="bg-[#1A3C40] text-white px-4 py-2 rounded-lg text-center w-full mb-3">
-                                                <span className="text-xs opacity-80 block">ยอดชำระ</span>
-                                                <span className="text-lg font-bold">{price} บาท</span>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-
-                            <div className="mb-4">
-                                <label className="block text-xs font-medium text-gray-600 mb-2">แนบสลิปโอนเงิน</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setEditSlipFile(e.target.files?.[0] || null)}
-                                    className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg p-1.5 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleEditPayment}
-                                disabled={editSubmitting || !editSlipFile}
-                                className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${editSubmitting || !editSlipFile ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279]'}`}
-                            >
-                                {editSubmitting ? <><Loader2 size={14} className="animate-spin" /> กำลังส่ง...</> : 'ยืนยันการชำระเงิน'}
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

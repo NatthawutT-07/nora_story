@@ -62,6 +62,7 @@ const OmisePaymentStep = () => {
     const [sessionId, setSessionId] = useState(null);
     const [expiresAt, setExpiresAt] = useState(null);
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
+    const [qrPayload, setQrPayload] = useState(null);
     const [localError, setLocalError] = useState('');
     const [imageUrls, setImageUrls] = useState(null);
     const [fileError, setFileError] = useState('');
@@ -134,7 +135,10 @@ const OmisePaymentStep = () => {
             if (!result.success) throw new Error(result.error);
             setSessionId(result.sessionId);
             setExpiresAt(result.expiresAt);
-            if (paymentMethod === 'promptpay') setQrCodeUrl(result.qrCodeUrl);
+            if (paymentMethod === 'promptpay') {
+                setQrCodeUrl(result.qrCodeUrl || null);
+                setQrPayload(result.qrPayload || null);
+            }
             setMode(paymentMethod === 'promptpay' ? MODE.PROMPTPAY : MODE.CARD);
             imageUploadPromiseRef.current = uploadImages();
             imageUploadPromiseRef.current.then(urls => setImageUrls(urls));
@@ -288,6 +292,7 @@ const OmisePaymentStep = () => {
         setSessionId(null);
         setExpiresAt(null);
         setQrCodeUrl(null);
+        setQrPayload(null);
         setLocalError('');
         setImageUrls(null);
         imageUploadPromiseRef.current = null;
@@ -447,42 +452,41 @@ const OmisePaymentStep = () => {
 
                             {/* PromptPay */}
                             <button
-                                disabled
-                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed text-left transition-all"
+                                onClick={() => startSession('promptpay')}
+                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-[#1A3C40]/20 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left group"
                             >
-                                <div className="w-9 h-9 bg-gray-300 rounded-lg flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 bg-[#113566] rounded-lg flex items-center justify-center shrink-0">
                                     <span className="text-white text-[10px] font-extrabold leading-tight text-center">PP</span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-500">พร้อมเพย์ (PromptPay)</p>
-                                    <p className="text-[11px] text-gray-400">ปิดปรับปรุงชั่วคราว</p>
+                                    <p className="text-sm font-semibold text-[#1A3C40]">พร้อมเพย์ (PromptPay)</p>
+                                    <p className="text-[11px] text-gray-400">สแกน QR Code จ่ายทันที</p>
                                 </div>
-                                <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100/50">กำลังปรับปรุง</span>
+                                <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">แนะนำ</span>
                             </button>
 
                             {/* Credit/Debit Card */}
                             <button
-                                disabled
-                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed text-left transition-all"
+                                onClick={() => startSession('card')}
+                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left"
                             >
-                                <div className="w-9 h-9 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
-                                    <CreditCard size={18} className="text-gray-400" />
+                                <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                                    <CreditCard size={18} className="text-gray-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-500">บัตรเครดิต / เดบิต</p>
-                                    <p className="text-[11px] text-gray-400">ปิดปรับปรุงชั่วคราว</p>
+                                    <p className="text-sm font-semibold text-[#1A3C40]">บัตรเครดิต / เดบิต</p>
+                                    <p className="text-[11px] text-gray-400">Visa, Mastercard ผ่าน Omise</p>
                                 </div>
-                                <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100/50">กำลังปรับปรุง</span>
                             </button>
 
                             {/* Slip Fallback Toggle */}
-                            <button
-                                disabled
-                                className="w-full flex items-center gap-2 text-[11px] text-gray-300 opacity-60 cursor-not-allowed py-1 justify-center"
+                            {/* <button
+                                onClick={() => setMode(MODE.SLIP)}
+                                className="w-full flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-600 transition-colors py-1 justify-center"
                             >
                                 <ChevronDown size={13} />
-                                ชำระด้วยการแนบสลิป (ปิดปรับปรุงชั่วคราว)
-                            </button>
+                                ชำระด้วยการโอนเงินแล้วแนบสลิปเอง
+                            </button> */}
                         </div>
                     </div>
 
@@ -517,6 +521,13 @@ const OmisePaymentStep = () => {
                         {qrCodeUrl ? (
                             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
                                 <img src={qrCodeUrl} alt="PromptPay QR" className="w-44 h-44 object-contain rounded-lg" />
+                            </div>
+                        ) : qrPayload ? (
+                            <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative">
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10">
+                                    สแกนเพื่อชำระเงิน
+                                </div>
+                                <QRCodeCanvas value={qrPayload} size={168} level="M" includeMargin={true} />
                             </div>
                         ) : (
                             <div className="w-44 h-44 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center">

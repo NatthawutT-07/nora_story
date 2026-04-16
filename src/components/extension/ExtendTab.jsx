@@ -1,6 +1,4 @@
-import { Check, Globe, Sparkles, CreditCard, Loader2, CheckCircle2, CheckCircle, XCircle, Timer, Download } from 'lucide-react';
-import { QRCodeCanvas } from 'qrcode.react';
-import generatePayload from 'promptpay-qr';
+import { Check, Globe, Sparkles, CreditCard, CheckCircle2, CheckCircle, XCircle } from 'lucide-react';
 
 const ExtendTab = ({
     packages,
@@ -15,54 +13,11 @@ const ExtendTab = ({
     domainStatus,
     isDomainChecking,
     handleCheckDomain,
-    qrTimeLeft,
     order,
     expiryDate,
     isExpired,
-    promptpayId,
-    handleSlipChange,
-    slipFile,
-    isSubmitting,
-    handleSubmit
+    onStartPayment,
 }) => {
-    const downloadQr = async () => {
-        const canvas = document.getElementById("qr-extend-canvas");
-        if (!canvas) return;
-        const pngUrl = canvas.toDataURL("image/png");
-
-        const totalAmount = (selectedPackage?.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
-
-        const fallbackDownload = () => {
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl.replace("image/png", "image/octet-stream");
-            downloadLink.download = `Promptpay_NoraStory_${totalAmount}Thb.png`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        };
-
-        try {
-            if (navigator.canShare) {
-                const res = await fetch(pngUrl);
-                const blob = await res.blob();
-                const file = new File([blob], `Promptpay_NoraStory_${totalAmount}Thb.png`, { type: 'image/png' });
-
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'QR Code สำหรับต่ออายุ NoraStory',
-                    });
-                    return;
-                }
-            }
-            fallbackDownload();
-        } catch (error) {
-            console.error('Error sharing:', error);
-            if (error.name !== 'AbortError') {
-                fallbackDownload();
-            }
-        }
-    };
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
@@ -257,88 +212,35 @@ const ExtendTab = ({
                     <CreditCard size={20} className="text-[#E8A08A]" /> ชำระเงิน
                 </h3>
 
-                {/* PromptPay QR Code */}
-                <div className="bg-gray-50 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center mb-4 sm:mb-6 text-center border border-gray-100">
-                    {(() => {
-                        const totalAmount = (selectedPackage?.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
-                        const payload = totalAmount > 0 ? generatePayload(promptpayId, { amount: totalAmount }) : null;
-
-                        const isQrVisible = !((wantSpecialLink || wantCustomLink) && domainStatus !== true) && (!((wantSpecialLink || wantCustomLink) && qrTimeLeft === 0));
-
-                        return payload && isQrVisible ? (
-                            <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative mb-3 sm:mb-4">
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10 box-shadow">
-                                    สแกนเพื่อชำระเงิน
-                                </div>
-                                <QRCodeCanvas
-                                    id="qr-extend-canvas"
-                                    value={payload}
-                                    size={160}
-                                    level="M"
-                                    includeMargin={true}
-                                    className="rounded-lg"
-                                />
-                                {qrTimeLeft !== null && qrTimeLeft > 0 && (
-                                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-600 text-[10px] font-medium px-3 py-1 rounded-full flex items-center gap-1 min-w-[max-content] shadow-sm">
-                                        <Timer size={12} className="animate-pulse" />
-                                        หมดอายุใน {Math.floor(qrTimeLeft / 60)}:{(qrTimeLeft % 60).toString().padStart(2, '0')} นาที
-                                    </div>
-                                )}
-                                <div className="mt-4 flex justify-center">
-                                    <button
-                                        onClick={downloadQr}
-                                        className="flex py-2 px-6 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-xl justify-center items-center gap-2 text-sm font-semibold transition-colors shadow-sm w-full"
-                                    >
-                                        <Download size={16} />
-                                        บันทึก QR Code
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="h-40 w-40 bg-white rounded-xl flex items-center justify-center text-center text-gray-400 text-xs mb-3 border border-dashed border-gray-200 p-4">
-                                {(!selectedPackage) ? 'เลือกแพ็คเกจก่อน' :
-                                    ((wantSpecialLink || wantCustomLink) && domainStatus !== true) ? 'กรุณาตรวจสอบชื่อลิงก์ว่าว่างหรือไม่' :
-                                        ((wantSpecialLink || wantCustomLink) && qrTimeLeft === 0) ? 'คิวอาร์โค้ดหมดอายุ กรุณาตรวจสอบลิงก์อีกครั้ง' : ''}
-                            </div>
-                        );
-                    })()}
-
-                    <div className="bg-[#1A3C40] text-white px-4 py-2 rounded-lg w-full">
-                        <span className="text-xs sm:text-sm opacity-80 block">ยอดชำระ</span>
-                        <span className="text-lg sm:text-xl font-bold">{(selectedPackage?.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0)} บาท</span>
-                        {(wantSpecialLink || wantCustomLink) && (
-                            <span className="text-[10px] opacity-60 block mt-0.5">({selectedPackage?.price}฿ + {wantSpecialLink ? 'Special Link 999฿' : 'Custom Link 99฿'})</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Slip Upload */}
-                <div className="mb-4 sm:mb-6">
-                    <label className="block text-xs font-medium text-gray-600 mb-2">
-                        แนบสลิปโอนเงิน
-                    </label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleSlipChange}
-                        className="block w-full text-sm text-gray-600 border border-gray-200 rounded-lg p-1.5 cursor-pointer bg-white file:mr-3 file:py-1 file:px-3 file:rounded-md file:border file:border-gray-200 file:text-xs file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
-                    />
+                {/* Amount Summary */}
+                <div className="bg-[#1A3C40] text-white px-4 py-4 rounded-xl mb-5 text-center">
+                    <span className="text-xs opacity-80 block mb-1">ยอดชำระ</span>
+                    <span className="text-2xl font-bold">
+                        {(selectedPackage?.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0)} บาท
+                    </span>
+                    {(wantSpecialLink || wantCustomLink) && (
+                        <span className="text-[10px] opacity-60 block mt-1">
+                            ({selectedPackage?.price}฿ + {wantSpecialLink ? 'Special Link 999฿' : 'Custom Link 99฿'})
+                        </span>
+                    )}
                 </div>
 
                 <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || !slipFile}
-                    className={`w-full py-3 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 ${isSubmitting || !slipFile
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279] shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                        }`}
+                    onClick={onStartPayment}
+                    disabled={!selectedPackage}
+                    className={`w-full py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 ${
+                        !selectedPackage
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#E8A08A] text-[#1A3C40] hover:bg-[#d89279] shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                    }`}
                 >
-                    {isSubmitting ? (
-                        <><Loader2 className="animate-spin" size={20} /> กำลังส่ง...</>
-                    ) : (
-                        'ยืนยันการต่ออายุ'
-                    )}
+                    <CreditCard size={18} />
+                    ชำระเงิน {selectedPackage ? `${(selectedPackage.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0)} ฿` : ''}
                 </button>
+
+                <p className="text-[11px] text-gray-400 text-center mt-3">
+                    PromptPay · บัตรเครดิต/เดบิต · อนุมัติอัตโนมัติทันที
+                </p>
             </div>
         </div>
     );

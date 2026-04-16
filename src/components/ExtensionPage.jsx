@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp, deleteField, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -11,6 +11,7 @@ import { useToast } from './ui/Toast';
 import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
+import OmiseExtensionPayment from './extension/OmiseExtensionPayment';
 import { requestExtension, saveTextEdit, saveImageEdit, submitEditPayment } from '../api/functions';
 
 // Build extension packages from tierData.js so pricing stays in sync
@@ -125,8 +126,6 @@ const ExtensionPage = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedPackage, setSelectedPackage] = useState(null);
-    const [slipFile, setSlipFile] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [wantSpecialLink, setWantSpecialLink] = useState(false);
@@ -134,42 +133,20 @@ const ExtensionPage = () => {
     const [customDomain1, setCustomDomain1] = useState('');
     const [domainStatus, setDomainStatus] = useState(null); // null | true | false
     const [isDomainChecking, setIsDomainChecking] = useState(false);
-    const [qrExpiresAt, setQrExpiresAt] = useState(null);
-    const [qrTimeLeft, setQrTimeLeft] = useState(null);
-    const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || '';
     const [activeTab, setActiveTab] = useState('extend'); // 'extend' | 'editText' | 'editImage' | 'history'
     const { showToast, ToastContainer } = useToast();
-    const isSubmittingRef = useRef(false);
+    const [paymentModal, setPaymentModal] = useState({ open: false, paymentType: null, packageDays: null, editType: null, price: 0, label: '' });
 
     // Reset domain status when input changes
     useEffect(() => {
         setDomainStatus(null);
-        setQrExpiresAt(null);
     }, [customDomain1, wantCustomLink, wantSpecialLink]);
-
-    // QR Countdown Timer
-    useEffect(() => {
-        if (!qrExpiresAt) {
-            setQrTimeLeft(null);
-            return;
-        }
-
-        const interval = setInterval(() => {
-            const left = Math.max(0, Math.floor((qrExpiresAt - Date.now()) / 1000));
-            setQrTimeLeft(left);
-            if (left <= 0) clearInterval(interval);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [qrExpiresAt]);
 
     // Edit states
     const [editTextMode, setEditTextMode] = useState(false);
     const [editImageMode, setEditImageMode] = useState(false);
     const [editFormData, setEditFormData] = useState({});
     const [editImageFiles, setEditImageFiles] = useState([]);
-    const [editSlipFile, setEditSlipFile] = useState(null);
-    const [editPayType, setEditPayType] = useState(null); // 'text' | 'image'
     const [editSubmitting, setEditSubmitting] = useState(false);
 
     useEffect(() => {
@@ -209,11 +186,8 @@ const ExtensionPage = () => {
             const isDuplicate = !snapshot.empty && snapshot.docs.some(doc => doc.id !== id);
             if (isDuplicate) {
                 setDomainStatus(false);
-                setQrExpiresAt(null);
             } else {
                 setDomainStatus(true);
-                // Set QR expiration to 15 minutes from now
-                setQrExpiresAt(Date.now() + 15 * 60 * 1000);
             }
         } catch (error) {
             console.error('Error checking domain:', error);
@@ -224,73 +198,40 @@ const ExtensionPage = () => {
         }
     };
 
-    const handleSlipChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('ไฟล์ขนาดใหญ่เกินไป (Max 5MB)', 'warning');
-                return;
-            }
-            setSlipFile(file);
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (isSubmittingRef.current) return;
-        if (!slipFile) {
-            showToast('กรุณาแนบสลิปโอนเงิน', 'warning');
+    // --- Extension Payment (Omise) ---
+    const openExtensionPayment = () => {
+        if (!selectedPackage) {
+            showToast('กรุณาเลือกแพ็คเกจก่อน', 'warning');
             return;
         }
-
         if ((wantSpecialLink || wantCustomLink) && domainStatus !== true) {
             showToast('กรุณาตรวจสอบชื่อลิงก์ก่อนดำเนินการต่อ', 'warning');
             return;
         }
+        const totalAmount = (selectedPackage.price || 0) + (wantSpecialLink ? 999 : 0) + (wantCustomLink ? 99 : 0);
+        setPaymentModal({
+            open: true,
+            paymentType: 'extension',
+            packageDays: selectedPackage.days,
+            editType: null,
+            price: totalAmount,
+            label: `ต่ออายุ ${selectedPackage.label}`,
+        });
+    };
 
-        if ((wantSpecialLink || wantCustomLink) && qrTimeLeft === 0) {
-            showToast('คิวอาร์โค้ดหมดอายุ กรุณากดตรวจสอบลิงก์อีกครั้ง', 'error');
-            return;
-        }
+    const handleExtensionPaySuccess = () => {
+        setPaymentModal(p => ({ ...p, open: false }));
+        setIsSuccess(true);
+    };
 
-        isSubmittingRef.current = true;
-        setIsSubmitting(true);
+    const handleExtensionSlipSubmitted = async (slipUrl) => {
         try {
-            const timestamp = Date.now();
-            const slipRef = ref(storage, `extension_slips/${id}/${timestamp}_ext_${selectedPackage.days}d.jpg`);
-
-            // Compress extension slip
-            const slipCompressionOptions = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1200,
-                useWebWorker: true
-            };
-            const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
-            await uploadBytes(slipRef, compressedSlipFile);
-
-            const slipUrl = await getDownloadURL(slipRef);
-
-            const extensionData = {
-                orderId: id,
-                packageDays: selectedPackage.days,
-                slipUrl,
-                wantSpecialLink,
-                wantCustomLink,
-                customDomain1
-            };
-
+            const extensionData = { orderId: id, packageDays: selectedPackage.days, slipUrl, wantSpecialLink, wantCustomLink, customDomain1 };
             const result = await requestExtension(extensionData);
-
-            if (!result.success) {
-                throw new Error(result.error || 'เกิดข้อผิดพลาดในการต่ออายุ');
-            }
-
+            if (!result.success) throw new Error(result.error || 'เกิดข้อผิดพลาดในการต่ออายุ');
             setIsSuccess(true);
         } catch (err) {
-            console.error(err);
-            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
-        } finally {
-            setIsSubmitting(false);
-            isSubmittingRef.current = false;
+            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
         }
     };
 
@@ -438,56 +379,36 @@ const ExtensionPage = () => {
         }
     };
 
-    const handleEditPayment = async () => {
-        if (!editSlipFile) {
-            showToast('กรุณาแนบสลิปโอนเงิน', 'warning');
-            return;
-        }
-        setEditSubmitting(true);
+    // --- Edit Payment (Omise) ---
+    const openEditPayment = (type) => {
+        const price = type === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
+        const label = type === 'text' ? 'ชำระเงินเพื่อแก้ไขข้อความ' : 'ชำระเงินเพื่อแก้ไขรูปภาพ';
+        setPaymentModal({ open: true, paymentType: type === 'text' ? 'textEdit' : 'imageEdit', packageDays: null, editType: type, price, label });
+    };
+
+    const handleEditPaySuccess = async () => {
+        setPaymentModal(p => ({ ...p, open: false }));
+        const docRef = doc(db, 'orders', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) setOrder({ id: docSnap.id, ...docSnap.data() });
+        showToast('ชำระเงินสำเร็จ! สิทธิ์แก้ไขเปิดใช้งานแล้ว', 'success');
+    };
+
+    const handleEditSlipSubmitted = async (slipUrl) => {
+        const type = paymentModal.editType;
         try {
-            const timestamp = Date.now();
-            const slipRef = ref(storage, `edit_slips/${id}/${timestamp}_edit_${editPayType}.jpg`);
-
-            // Compress edit payment slip
-            const slipCompressionOptions = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1200,
-                useWebWorker: true
-            };
-            const compressedSlipFile = await imageCompression(editSlipFile, slipCompressionOptions);
-            await uploadBytes(slipRef, compressedSlipFile);
-
-            const slipUrl = await getDownloadURL(slipRef);
-
-            const result = await submitEditPayment({
-                orderId: id,
-                editType: editPayType,
-                slipUrl
-            });
-
-            if (!result.success) {
-                throw new Error(result.error || 'เกิดข้อผิดพลาดในการแจ้งชำระเงิน');
-            }
-
-            setOrder(prev => {
-                const next = {
-                    ...prev,
-                    [`${editPayType}_edit_payment_status`]: 'pending',
-                    [`${editPayType}_edit_payment_slip_url`]: slipUrl,
-                    [`${editPayType}_edit_payment_price`]: result.price,
-                    [`${editPayType}_edit_payment_requested_at`]: new Date()
-                };
-                delete next[`${editPayType}_edit_payment_approved_at`];
-                delete next[`${editPayType}_edit_payment_rejected_at`];
-                return next;
-            });
-            setEditSlipFile(null);
-            setEditPayType(null);
+            const result = await submitEditPayment({ orderId: id, editType: type, slipUrl });
+            if (!result.success) throw new Error(result.error || 'เกิดข้อผิดพลาด');
+            setOrder(prev => ({
+                ...prev,
+                [`${type}_edit_payment_status`]: 'pending',
+                [`${type}_edit_payment_slip_url`]: slipUrl,
+                [`${type}_edit_payment_price`]: result.price,
+                [`${type}_edit_payment_requested_at`]: new Date()
+            }));
+            showToast('ส่งสลิปเรียบร้อย รอทีมงานตรวจสอบภายใน 24 ชม.', 'success');
         } catch (err) {
-            console.error(err);
-            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
-        } finally {
-            setEditSubmitting(false);
+            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
         }
     };
 
@@ -635,15 +556,10 @@ const ExtensionPage = () => {
                         domainStatus={domainStatus}
                         isDomainChecking={isDomainChecking}
                         handleCheckDomain={handleCheckDomain}
-                        qrTimeLeft={qrTimeLeft}
                         order={order}
                         expiryDate={expiryDate}
                         isExpired={isExpired}
-                        promptpayId={promptpayId}
-                        handleSlipChange={handleSlipChange}
-                        slipFile={slipFile}
-                        isSubmitting={isSubmitting}
-                        handleSubmit={handleSubmit}
+                        onStartPayment={openExtensionPayment}
                     />
                 )}
 
@@ -677,13 +593,8 @@ const ExtensionPage = () => {
 
                         textPaymentPending={textPaymentPending}
                         imagePaymentPending={imagePaymentPending}
-                        editPayType={editPayType}
-                        setEditPayType={setEditPayType}
-                        editSlipFile={editSlipFile}
-                        setEditSlipFile={setEditSlipFile}
                         editSubmitting={editSubmitting}
-                        handleEditPayment={handleEditPayment}
-                        promptpayId={promptpayId}
+                        onStartEditPayment={openEditPayment}
                     />
                 )}
 
@@ -692,6 +603,20 @@ const ExtensionPage = () => {
                     <HistoryTab order={order} />
                 )}
             </div>
+
+            {/* Omise Payment Modal */}
+            <OmiseExtensionPayment
+                isOpen={paymentModal.open}
+                onClose={() => setPaymentModal(p => ({ ...p, open: false }))}
+                onSuccess={paymentModal.paymentType === 'extension' ? handleExtensionPaySuccess : handleEditPaySuccess}
+                onSlipSubmitted={paymentModal.paymentType === 'extension' ? handleExtensionSlipSubmitted : handleEditSlipSubmitted}
+                price={paymentModal.price}
+                label={paymentModal.label}
+                paymentType={paymentModal.paymentType}
+                orderId={id}
+                packageDays={paymentModal.packageDays}
+                editType={paymentModal.editType}
+            />
         </div>
     );
 };

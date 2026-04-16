@@ -37,3 +37,25 @@ export const submitOrderWithPayment = async (data) => {
     const result = await fn(data);
     return result.data;
 };
+
+/**
+ * ยืนยัน Omise Payment แล้ว auto-approve การต่ออายุทันที
+ * @param {object} data - { sessionId, orderId, packageDays }
+ * @returns {Promise<{ success, newExpiry }>}
+ */
+export const submitExtensionWithPayment = async (data) => {
+    const fn = httpsCallable(functions, 'submitExtensionWithPayment');
+    const result = await fn(data);
+    return result.data;
+};
+
+/**
+ * ยืนยัน Omise Payment แล้ว auto-approve สิทธิ์แก้ไขทันที
+ * @param {object} data - { sessionId, orderId, editType }
+ * @returns {Promise<{ success, price }>}
+ */
+export const submitEditPaymentWithOmise = async (data) => {
+    const fn = httpsCallable(functions, 'submitEditPaymentWithOmise');
+    const result = await fn(data);
+    return result.data;
+};
