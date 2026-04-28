@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { Suspense } from 'react';
 import useSWR from 'swr';
+import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
 import { getOrder } from '../api/functions';
 
@@ -60,8 +61,20 @@ const StoryPage = () => {
 
         if (TemplateComponent) {
             const config = mergeConfig(storyData.config);
+            const pageTitle = `${storyData.target_name} | Nora Story`;
+            const pageDesc = storyData.message ? storyData.message.substring(0, 160) : 'เปลี่ยนความทรงจำของคุณให้กลายเป็นเรื่องราวที่อยู่ตลอดไป';
+
             return (
                 <div className="relative z-10 w-full min-h-screen">
+                    <Helmet>
+                        <title>{pageTitle}</title>
+                        <meta name="description" content={pageDesc} />
+                        <meta property="og:title" content={pageTitle} />
+                        <meta property="og:description" content={pageDesc} />
+                        {storyData.content_images?.[0] && (
+                            <meta property="og:image" content={storyData.content_images[0]} />
+                        )}
+                    </Helmet>
                     <Suspense fallback={<LoadingScreen />}>
                         <TemplateComponent
                             customTitle={storyData.customer_name}

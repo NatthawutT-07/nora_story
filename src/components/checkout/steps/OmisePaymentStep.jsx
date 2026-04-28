@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, CreditCard, Upload, RefreshCw, Check, ChevronDown, ShieldCheck, Banknote } from 'lucide-react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import imageCompression from 'browser-image-compression';
-import generatePayload from 'promptpay-qr';
 import { QRCodeCanvas } from 'qrcode.react';
+import generatePayload from 'promptpay-qr';
+import { compressImage, compressImages } from '../../../utils/imageUtils';
 import { useCheckout } from '../CheckoutContext';
 import usePaymentSession from '../../../hooks/usePaymentSession';
 import { createPaymentSession, createCardCharge, submitOrderWithPayment } from '../../../api/payment';
@@ -58,6 +58,17 @@ const OmisePaymentStep = () => {
 
     // Reset on unmount (user navigated away)
     useEffect(() => {
+        // เริ่มอัปโหลดรูปภาพใน Background ทันทีเมื่อมาถึงหน้าชำระเงิน (Tier 2-3)
+        // เพื่อให้ตอนลูกค้ากดชำระเงินเสร็จ รูปจะอัปโหลดเสร็จพอดี ไม่ต้องรอ
+        if (getMaxImages() > 0 && contentFiles && contentFiles.filter(Boolean).length > 0) {
+            console.log('Starting background image upload...');
+            imageUploadPromiseRef.current = uploadImages();
+            imageUploadPromiseRef.current.then(urls => {
+                setImageUrls(urls);
+                console.log('Background image upload completed.');
+            });
+        }
+
         return () => setPaymentSessionActive(false);
     }, []);
     const [sessionId, setSessionId] = useState(null);
@@ -121,7 +132,7 @@ const OmisePaymentStep = () => {
         if (maxUploads === 0 || !contentFiles || contentFiles.filter(Boolean).length === 0) {
             return [];
         }
-        const opts = { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true, initialQuality: 0.85 };
+
         const results = Array(maxUploads).fill(null);
         await Promise.all(
             Array.from({ length: maxUploads }, (_, i) => {
@@ -129,11 +140,13 @@ const OmisePaymentStep = () => {
                 if (!file) return Promise.resolve();
                 return (async () => {
                     try {
-                        const compressed = await imageCompression(file, opts);
-                        const imgRef = storageRef(storage, `temp_${Date.now()}_${i}_${file.name}`);
+                        const compressed = await compressImage(file);
+                        // เก็บไว้ในโฟลเดอร์ temp_uploads เพื่อให้ระบบ Cleanup ตามลบได้ง่าย
+                        const imgRef = storageRef(storage, `temp_uploads/${Date.now()}_${i}_${file.name}`);
                         await uploadBytes(imgRef, compressed);
                         results[i] = await getDownloadURL(imgRef);
-                    } catch {
+                    } catch (err) {
+                        console.error('Upload failed for file', i, err);
                         const imgRef = storageRef(storage, `temp_${Date.now()}_${i}_${file.name}`);
                         await uploadBytes(imgRef, file);
                         results[i] = await getDownloadURL(imgRef);
@@ -395,13 +408,22 @@ const OmisePaymentStep = () => {
         try {
             const slipExt = slipFile.name.split('.').pop();
             const sRef = storageRef(storage, `slips/temp_${Date.now()}_slip.${slipExt}`);
-            const compressed = await imageCompression(slipFile, { maxSizeMB: 1, maxWidthOrHeight: 1200, useWebWorker: true });
+            const compressed = await compressImage(slipFile, { maxSizeMB: 1, maxWidthOrHeight: 1200 });
             await uploadBytes(sRef, compressed);
             const slipUrl = await getDownloadURL(sRef);
 
             const maxUploads = getMaxImages() || 0;
             let contentUrls = Array(maxUploads).fill(null);
-            if (maxUploads > 0) contentUrls = await uploadImages();
+            if (maxUploads > 0) {
+                // ดึงรูปที่แอบอัปโหลดไว้ใน Background มาใช้ได้เลย ไม่ต้องรออัปโหลดใหม่ตอนกดบันทึก
+                if (imageUrls) {
+                    contentUrls = imageUrls;
+                } else if (imageUploadPromiseRef.current) {
+                    contentUrls = await imageUploadPromiseRef.current;
+                } else {
+                    contentUrls = await uploadImages();
+                }
+            }
 
             const result = await createOrder({
                 tierId: tier.id,
