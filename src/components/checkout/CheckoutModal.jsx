@@ -72,17 +72,17 @@ const CheckoutContent = () => {
     // เช็คความครบถ้วนของขั้นตอนที่ 3 (ไม่รวมเพลง เพราะมีค่าเริ่มต้นเป็นไม่มีเพลง)
     const isStep3Valid = () => {
         if (step !== 3) return true; // ถ้าไม่ใช่ step 3 ถือว่าผ่านไปแล้วหรือยังไม่ถึง
-        
+
         if (needsDetailFields) {
             if (!formData.pin || formData.pin.length !== 4) return false;
             if (!formData.targetName?.trim()) return false;
             if (!formData.message?.trim() || formData.message.length > 100) return false;
         }
-        
+
         if (needsTimelineFields) {
             if (!formData.finaleMessage?.trim()) return false;
         }
-        
+
         return true;
     };
 
@@ -167,7 +167,7 @@ const CheckoutContent = () => {
                     return;
                 }
             }
-            
+
             // Skip image step if no images needed
             const maxImages = getMaxImages();
             if (maxImages === 0) {
@@ -407,11 +407,10 @@ const CheckoutContent = () => {
                                             <button
                                                 onClick={() => setShowPreviewModal(true)}
                                                 disabled={step === 3 && !isStep3Valid()}
-                                                className={`w-full py-3 rounded-xl border border-dashed text-sm flex items-center justify-center gap-2 transition-all ${
-                                                    step === 3 && !isStep3Valid() 
+                                                className={`w-full py-3 rounded-xl border border-dashed text-sm flex items-center justify-center gap-2 transition-all ${step === 3 && !isStep3Valid()
                                                         ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
                                                         : 'bg-gradient-to-r from-[#E8A08A]/10 to-[#1A3C40]/10 border-[#1A3C40]/20 text-[#1A3C40] font-medium hover:from-[#E8A08A]/20 hover:to-[#1A3C40]/20'
-                                                }`}
+                                                    }`}
                                             >
                                                 <Eye size={16} />
                                                 ดูตัวอย่างก่อนจ่ายเงิน
@@ -421,7 +420,7 @@ const CheckoutContent = () => {
                                         {error && <div className="text-red-500 text-xs bg-red-50 p-3 rounded-lg flex items-center gap-2"><AlertCircle size={16} />{error}</div>}
 
                                         <div className="flex gap-3 mt-6 pb-2">
-                                            {step > 1 && (
+                                            {step > 1 && step !== 5 && (
                                                 <button
                                                     onClick={() => {
                                                         if (step === 5 && getMaxImages() === 0) {
@@ -431,13 +430,12 @@ const CheckoutContent = () => {
                                                         }
                                                     }}
                                                     disabled={step === 5 && paymentSessionActive}
-                                                    className={`flex-1 py-3.5 rounded-xl font-medium transition-colors ${
-                                                        step === 5 && paymentSessionActive
+                                                    className={`flex-1 py-3.5 rounded-xl font-medium transition-colors ${step === 5 && paymentSessionActive
                                                             ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                    }`}
+                                                        }`}
                                                 >
-                                                    ย้อนกลับ
+                                                    ย้อนกลับหก
                                                 </button>
                                             )}
                                             {step < 5 && (

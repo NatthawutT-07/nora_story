@@ -266,14 +266,12 @@ const ExtensionPage = () => {
         }
         setEditTextMode(true);
         setEditImageMode(false);
-        setEditPayType(null);
     };
 
     const openImageEditForm = () => {
         setEditImageFiles([...(order?.content_images || [])]);
         setEditImageMode(true);
         setEditTextMode(false);
-        setEditPayType(null);
     };
 
     const handleSaveTextEdit = async () => {

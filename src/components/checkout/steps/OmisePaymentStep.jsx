@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, CreditCard, Upload, RefreshCw, Check, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Loader2, CreditCard, Upload, RefreshCw, Check, ChevronDown, ShieldCheck, Banknote } from 'lucide-react';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import generatePayload from 'promptpay-qr';
@@ -451,7 +451,7 @@ const OmisePaymentStep = () => {
                             <p className="text-xs font-medium text-gray-500 mb-1">เลือกช่องทางชำระเงิน</p>
 
                             {/* PromptPay */}
-                            <button
+                            {/* <button
                                 onClick={() => startSession('promptpay')}
                                 className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-[#1A3C40]/20 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left group"
                             >
@@ -463,10 +463,10 @@ const OmisePaymentStep = () => {
                                     <p className="text-[11px] text-gray-400">สแกน QR Code จ่ายทันที</p>
                                 </div>
                                 <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">แนะนำ</span>
-                            </button>
+                            </button> */}
 
                             {/* Credit/Debit Card */}
-                            <button
+                            {/* <button
                                 onClick={() => startSession('card')}
                                 className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left"
                             >
@@ -477,16 +477,21 @@ const OmisePaymentStep = () => {
                                     <p className="text-sm font-semibold text-[#1A3C40]">บัตรเครดิต / เดบิต</p>
                                     <p className="text-[11px] text-gray-400">Visa, Mastercard ผ่าน Omise</p>
                                 </div>
-                            </button>
+                            </button> */}
 
                             {/* Slip Fallback Toggle */}
-                            {/* <button
+                            <button
                                 onClick={() => setMode(MODE.SLIP)}
-                                className="w-full flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-600 transition-colors py-1 justify-center"
+                                className="w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-200 hover:border-[#1A3C40]/60 hover:bg-[#1A3C40]/5 transition-all text-left"
                             >
-                                <ChevronDown size={13} />
-                                ชำระด้วยการโอนเงินแล้วแนบสลิปเอง
-                            </button> */}
+                                <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                                    <Banknote size={18} className="text-gray-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-[#1A3C40]">โอนเงิน / พร้อมเพย์</p>
+                                    <p className="text-[11px] text-gray-400">โอนผ่านธนาคารและแนบหลักฐาน</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
 
@@ -671,9 +676,14 @@ const OmisePaymentStep = () => {
                         <Check size={26} className="text-green-600" />
                     </div>
                     <p className="text-sm font-semibold text-green-700">ชำระเงินสำเร็จ!</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Loader2 className="animate-spin" size={14} />
-                        กำลังบันทึกคำสั่งซื้อ...
+                    <div className="flex flex-col items-center gap-2 text-center">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Loader2 className="animate-spin" size={14} />
+                            กำลังบันทึกคำสั่งซื้อ...
+                        </div>
+                        <p className="text-[11px] font-bold text-rose-500 animate-pulse mt-1">
+                            ⚠️ ห้ามปิดหน้านี้เด็ดขาดจนกว่าจะบันทึกสำเร็จ
+                        </p>
                     </div>
                 </div>
             )}
@@ -681,13 +691,6 @@ const OmisePaymentStep = () => {
             {/* ─── MODE: SLIP ─── */}
             {mode === MODE.SLIP && (
                 <div className="space-y-3">
-                    <button
-                        onClick={() => { setMode(MODE.SELECT); setFileError(''); }}
-                        className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <RefreshCw size={11} />
-                        กลับไปเลือกช่องทางชำระด้วย Omise
-                    </button>
 
                     <div className={`rounded-2xl border ${qrExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'} overflow-hidden transition-colors`}>
                         <div className="px-4 py-3 flex flex-col items-center justify-center border-b border-gray-100 bg-gray-50/50">
@@ -757,7 +760,12 @@ const OmisePaymentStep = () => {
                             disabled={loading || !slipFile}
                             className={`w-full py-3.5 rounded-xl ${!slipFile || loading ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#1A3C40] hover:bg-[#1A3C40]/90'} text-white font-medium transition-all shadow-lg flex items-center justify-center gap-2`}
                         >
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : 'ยืนยันการชำระเงิน (แนบสลิป)'}
+                            {loading ? (
+                                <div className="flex flex-col items-center py-1">
+                                    <Loader2 className="animate-spin mb-1" size={18} />
+                                    <span className="text-[10px] font-bold">กำลังบันทึกข้อมูล ห้ามปิดหน้านี้เด็ดขาด</span>
+                                </div>
+                            ) : 'ยืนยันการชำระเงิน (แนบสลิป)'}
                         </button>
                     )}
 
