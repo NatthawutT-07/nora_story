@@ -6,6 +6,7 @@ import generatePayload from 'promptpay-qr';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../../firebase';
+import logo from '../../assets/logo.png';
 
 const MODE = {
     SLIP: 'slip',
@@ -37,6 +38,32 @@ const OmiseExtensionPayment = ({
     const [fileError, setFileError] = useState('');
     const [slipTimeLeft, setSlipTimeLeft] = useState(900); // 15 minutes
     const [qrExpired, setQrExpired] = useState(false);
+    const [processedLogo, setProcessedLogo] = useState(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = logo;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(100, 100, 100, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(100, 100, 96, 0, Math.PI * 2);
+            ctx.clip();
+            const minSide = Math.min(img.width, img.height);
+            const sourceX = (img.width - minSide) / 2;
+            const sourceY = (img.height - minSide) / 2;
+            ctx.drawImage(img, sourceX, sourceY, minSide, minSide, 0, 0, 200, 200);
+            ctx.restore();
+            setProcessedLogo(canvas.toDataURL());
+        };
+    }, []);
 
     const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || '';
     const amount = price || 0;
@@ -234,9 +261,17 @@ const OmiseExtensionPayment = ({
                                                     <QRCodeCanvas
                                                         value={generatePayload(promptpayId, { amount })}
                                                         size={160}
-                                                        level="M"
+                                                        level="H"
                                                         includeMargin={true}
                                                         className="rounded-lg"
+                                                        imageSettings={{
+                                                            src: processedLogo || logo,
+                                                            x: undefined,
+                                                            y: undefined,
+                                                            height: 42,
+                                                            width: 42,
+                                                            excavate: false,
+                                                        }}
                                                     />
                                                 </div>
                                                 <div className="flex items-center gap-2">

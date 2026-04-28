@@ -12,7 +12,7 @@ import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
 import OmiseExtensionPayment from './extension/OmiseExtensionPayment';
-import { requestExtension, saveTextEdit, saveImageEdit, submitEditPayment } from '../api/functions';
+import { getOrderForExtension, requestExtension, saveTextEdit, saveImageEdit, submitEditPayment } from '../api/functions';
 
 // Build extension packages from tierData.js so pricing stays in sync
 const EXTENSION_PACKAGES_BY_TIER = {};
@@ -152,17 +152,17 @@ const ExtensionPage = () => {
     useEffect(() => {
         const fetchOrder = async () => {
             try {
-                const docRef = doc(db, 'orders', id);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setOrder({ id: docSnap.id, ...docSnap.data() });
+                const result = await getOrderForExtension(id);
+                if (result.success) {
+                    const orderData = result.order;
+                    setOrder(orderData);
                     // Set default selected package based on tier
-                    const tierId = docSnap.data().tier_id || 1;
+                    const tierId = orderData.tier_id || 1;
                     const packages = EXTENSION_PACKAGES_BY_TIER[tierId] || EXTENSION_PACKAGES_BY_TIER[1];
                     const recommended = packages.find(p => p.recommended) || packages[0];
                     setSelectedPackage(recommended);
                 } else {
-                    setError('ไม่พบออเดอร์นี้ในระบบ');
+                    setError(result.error || 'ไม่พบออเดอร์นี้ในระบบ');
                 }
             } catch (err) {
                 console.error(err);

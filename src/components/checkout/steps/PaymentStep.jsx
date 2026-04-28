@@ -4,6 +4,7 @@ import { useCheckout } from '../CheckoutContext';
 import { useState, useEffect, useRef } from 'react';
 import generatePayload from 'promptpay-qr';
 import { QRCodeCanvas } from 'qrcode.react';
+import logo from '../../../assets/logo.png';
 
 const PaymentStep = () => {
     const { tier, setSlipFile, setSlipPreview, setError, qrExpired, setQrExpired } = useCheckout();
@@ -12,6 +13,34 @@ const PaymentStep = () => {
     const [qrError, setQrError] = useState(null);
     const [fileError, setFileError] = useState('');
     const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+    const [processedLogo, setProcessedLogo] = useState(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = logo;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            // Draw white circle background
+            ctx.beginPath();
+            ctx.arc(100, 100, 100, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            // Draw logo clipped to circle (preserving aspect ratio)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(100, 100, 96, 0, Math.PI * 2);
+            ctx.clip();
+            const minSide = Math.min(img.width, img.height);
+            const sourceX = (img.width - minSide) / 2;
+            const sourceY = (img.height - minSide) / 2;
+            ctx.drawImage(img, sourceX, sourceY, minSide, minSide, 0, 0, 200, 200);
+            ctx.restore();
+            setProcessedLogo(canvas.toDataURL());
+        };
+    }, []);
 
     const downloadQr = async () => {
         const canvas = document.getElementById("qr-payment-canvas");
@@ -144,9 +173,17 @@ const PaymentStep = () => {
                                     id="qr-payment-canvas"
                                     value={qrCodeUrl}
                                     size={180}
-                                    level="M"
+                                    level="H"
                                     includeMargin={true}
                                     className="rounded-lg"
+                                    imageSettings={{
+                                        src: processedLogo || logo,
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 48,
+                                        width: 48,
+                                        excavate: false,
+                                    }}
                                 />
                             </div>
 

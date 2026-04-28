@@ -408,8 +408,8 @@ const CheckoutContent = () => {
                                                 onClick={() => setShowPreviewModal(true)}
                                                 disabled={step === 3 && !isStep3Valid()}
                                                 className={`w-full py-3 rounded-xl border border-dashed text-sm flex items-center justify-center gap-2 transition-all ${step === 3 && !isStep3Valid()
-                                                        ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-gradient-to-r from-[#E8A08A]/10 to-[#1A3C40]/10 border-[#1A3C40]/20 text-[#1A3C40] font-medium hover:from-[#E8A08A]/20 hover:to-[#1A3C40]/20'
+                                                    ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-gradient-to-r from-[#E8A08A]/10 to-[#1A3C40]/10 border-[#1A3C40]/20 text-[#1A3C40] font-medium hover:from-[#E8A08A]/20 hover:to-[#1A3C40]/20'
                                                     }`}
                                             >
                                                 <Eye size={16} />
@@ -431,8 +431,8 @@ const CheckoutContent = () => {
                                                     }}
                                                     disabled={step === 5 && paymentSessionActive}
                                                     className={`flex-1 py-3.5 rounded-xl font-medium transition-colors ${step === 5 && paymentSessionActive
-                                                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                         }`}
                                                 >
                                                     ย้อนกลับหก
@@ -466,10 +466,10 @@ const CheckoutContent = () => {
                                             <AlertCircle size={32} />
                                         </div>
                                         <h3 className="text-xl font-bold text-[#1A3C40] mb-2 font-playfair">
-                                            ยกเลิกการทำรายการ?
+                                            ยกเลิกการทำรายการ
                                         </h3>
                                         <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                                            หากคุณปิดหน้าต่างนี้ ข้อมูลที่คุณกรอกไว้และรูปภาพที่อัปโหลดจะสูญหายทั้งหมด คุณต้องการยกเลิกใช่หรือไม่?
+                                            หากคุณปิดหน้าต่างนี้ ข้อมูลที่คุณกรอกไว้และรูปภาพที่อัปโหลดจะสูญหายทั้งหมด คุณต้องการยกเลิกใช่หรือไม่
                                         </p>
                                         <div className="flex gap-3">
                                             <button

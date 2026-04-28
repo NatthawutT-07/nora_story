@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Link2, Globe, Sparkles, Copy, Check, RefreshCw, QrCode } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
+import logo from '../assets/logo.png';
 
 // Random ID generator for demo
 const generateRandomId = () => {
@@ -49,18 +51,23 @@ const LINK_TYPES = [
     },
 ];
 
-// Simple QR code using external API
-const QRCodeImage = ({ value, size = 200 }) => {
-    const encodedUrl = encodeURIComponent(value);
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedUrl}&bgcolor=fff0f5&color=1A3C40`;
-
+// Simple QR code using QRCodeCanvas
+const QRCodeDisplay = ({ value, size = 200, logoImg }) => {
     return (
-        <img
-            src={qrUrl}
-            alt="QR Code"
-            width={size}
-            height={size}
+        <QRCodeCanvas
+            value={value}
+            size={size}
+            level="H"
+            includeMargin={false}
             className="rounded-lg"
+            imageSettings={{
+                src: logoImg || logo,
+                x: undefined,
+                y: undefined,
+                height: 54,
+                width: 54,
+                excavate: false,
+            }}
         />
     );
 };
@@ -69,6 +76,32 @@ const QRCodeDemo = () => {
     const [selectedType, setSelectedType] = useState('random');
     const [randomId, setRandomId] = useState(generateRandomId());
     const [copied, setCopied] = useState(false);
+    const [processedLogo, setProcessedLogo] = useState(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = logo;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(100, 100, 100, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(100, 100, 96, 0, Math.PI * 2);
+            ctx.clip();
+            const minSide = Math.min(img.width, img.height);
+            const sourceX = (img.width - minSide) / 2;
+            const sourceY = (img.height - minSide) / 2;
+            ctx.drawImage(img, sourceX, sourceY, minSide, minSide, 0, 0, 200, 200);
+            ctx.restore();
+            setProcessedLogo(canvas.toDataURL());
+        };
+    }, []);
 
     const currentType = LINK_TYPES.find(t => t.id === selectedType);
     const currentUrl = currentType.getUrl(randomId);
@@ -130,7 +163,7 @@ const QRCodeDemo = () => {
                                 className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100"
                             >
                                 <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-4 rounded-2xl mb-4 flex items-center justify-center">
-                                    <QRCodeImage value={fullUrl} size={200} />
+                                    <QRCodeDisplay value={fullUrl} size={200} logoImg={processedLogo} />
                                 </div>
 
                                 {/* URL Display with Highlights */}

@@ -10,6 +10,7 @@ import usePaymentSession from '../../../hooks/usePaymentSession';
 import { createPaymentSession, createCardCharge, submitOrderWithPayment } from '../../../api/payment';
 import { createOrder } from '../../../api/functions';
 import { storage } from '../../../firebase';
+import logo from '../../../assets/logo.png';
 
 const MODE = {
     SELECT: 'select',
@@ -74,6 +75,32 @@ const OmisePaymentStep = () => {
     const isSubmitCalledRef = useRef(false);
     const isStartingRef = useRef(false);
     const imageUploadPromiseRef = useRef(null);
+    const [processedLogo, setProcessedLogo] = useState(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = logo;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(100, 100, 100, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(100, 100, 96, 0, Math.PI * 2);
+            ctx.clip();
+            const minSide = Math.min(img.width, img.height);
+            const sourceX = (img.width - minSide) / 2;
+            const sourceY = (img.height - minSide) / 2;
+            ctx.drawImage(img, sourceX, sourceY, minSide, minSide, 0, 0, 200, 200);
+            ctx.restore();
+            setProcessedLogo(canvas.toDataURL());
+        };
+    }, []);
 
     const { status, secondsLeft, isExpired, isPaid } = usePaymentSession(sessionId, expiresAt);
 
@@ -523,16 +550,29 @@ const OmisePaymentStep = () => {
                         )}
                     </div>
                     <div className="p-4 flex flex-col items-center gap-3">
-                        {qrCodeUrl ? (
-                            <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-                                <img src={qrCodeUrl} alt="PromptPay QR" className="w-44 h-44 object-contain rounded-lg" />
-                            </div>
-                        ) : qrPayload ? (
+                        {qrPayload ? (
                             <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative">
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10">
                                     สแกนเพื่อชำระเงิน
                                 </div>
-                                <QRCodeCanvas value={qrPayload} size={168} level="M" includeMargin={true} />
+                                <QRCodeCanvas
+                                    value={qrPayload}
+                                    size={168}
+                                    level="H"
+                                    includeMargin={true}
+                                    imageSettings={{
+                                        src: processedLogo || logo,
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 44,
+                                        width: 44,
+                                        excavate: false,
+                                    }}
+                                />
+                            </div>
+                        ) : qrCodeUrl ? (
+                            <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+                                <img src={qrCodeUrl} alt="PromptPay QR" className="w-44 h-44 object-contain rounded-lg" />
                             </div>
                         ) : (
                             <div className="w-44 h-44 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center">
@@ -708,9 +748,17 @@ const OmisePaymentStep = () => {
                                         <QRCodeCanvas
                                             value={generatePayload(promptpayId, { amount })}
                                             size={160}
-                                            level="M"
+                                            level="H"
                                             includeMargin={true}
                                             className="rounded-lg"
+                                            imageSettings={{
+                                                src: processedLogo || logo,
+                                                x: undefined,
+                                                y: undefined,
+                                                height: 42,
+                                                width: 42,
+                                                excavate: false,
+                                            }}
                                         />
                                     </div>
                                     <div className="flex items-center gap-2 mt-1">

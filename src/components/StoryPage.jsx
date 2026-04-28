@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { Suspense } from 'react';
 import useSWR from 'swr';
 import { db } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { getOrder } from '../api/functions';
 
 // Add-ons
 import { mergeConfig } from '../lib/templateConfig';
@@ -19,47 +19,11 @@ import ErrorScreen from './ui/ErrorScreen';
 const fetchStoryData = async (storyId) => {
     if (!storyId) throw new Error('ไม่พบรหัสเรื่องราว');
 
-    // First try: Direct document lookup by ID
-    const docRef = doc(db, 'orders', storyId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.status === 'approved' || data.status === 'completed') {
-            // Check expiration
-            if (data.expires_at) {
-                const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
-                if (new Date() > expiresAt) {
-                    throw new Error('ลิงก์นี้หมดอายุแล้ว');
-                }
-            }
-            return { id: docSnap.id, ...data };
-        } else {
-            throw new Error('เรื่องราวนี้ยังไม่พร้อมแสดง');
-        }
-    } else {
-        // Second try: Query by custom_domain (for VIP subdomains)
-        const q = query(collection(db, 'orders'), where('custom_domain', '==', storyId));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const docData = querySnapshot.docs[0];
-            const data = docData.data();
-            if (data.status === 'approved' || data.status === 'completed') {
-                if (data.expires_at) {
-                    const expiresAt = data.expires_at.toDate ? data.expires_at.toDate() : new Date(data.expires_at);
-                    if (new Date() > expiresAt) {
-                        throw new Error('ลิงก์นี้หมดอายุแล้ว');
-                    }
-                }
-                return { id: docData.id, ...data };
-            } else {
-                throw new Error('เรื่องราวนี้ยังไม่พร้อมแสดง');
-            }
-        } else {
-            throw new Error('ไม่พบเรื่องราวที่คุณกำลังมองหา');
-        }
+    const result = await getOrder(storyId);
+    if (!result.success) {
+        throw new Error(result.error || 'ไม่พบเรื่องราวที่คุณกำลังมองหา');
     }
+    return result.order;
 };
 
 const StoryPage = () => {
