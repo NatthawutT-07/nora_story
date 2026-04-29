@@ -20,12 +20,12 @@ const DEFAULT_OPTIONS = {
  */
 export const compressImage = async (file, customOptions = {}) => {
   if (!file) return null;
-  
+
   const options = { ...DEFAULT_OPTIONS, ...customOptions };
-  
+
   try {
     const compressedFile = await imageCompression(file, options);
-    console.log(`Compressed: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) -> (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`);
+    // console.log(`Compressed: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) -> (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`);
     return compressedFile;
   } catch (error) {
     console.error('Image compression error:', error);

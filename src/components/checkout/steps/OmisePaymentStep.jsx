@@ -44,6 +44,7 @@ const OmisePaymentStep = () => {
         qrExpired,
         setQrExpired,
         setPaymentSessionActive,
+        preGeneratedOrderId,
     } = useCheckout();
 
     const [mode, setModeInternal] = useState(MODE.SELECT);
@@ -61,11 +62,11 @@ const OmisePaymentStep = () => {
         // เริ่มอัปโหลดรูปภาพใน Background ทันทีเมื่อมาถึงหน้าชำระเงิน (Tier 2-3)
         // เพื่อให้ตอนลูกค้ากดชำระเงินเสร็จ รูปจะอัปโหลดเสร็จพอดี ไม่ต้องรอ
         if (getMaxImages() > 0 && contentFiles && contentFiles.filter(Boolean).length > 0) {
-            console.log('Starting background image upload...');
+            // console.log('Starting background image upload...');
             imageUploadPromiseRef.current = uploadImages();
             imageUploadPromiseRef.current.then(urls => {
                 setImageUrls(urls);
-                console.log('Background image upload completed.');
+                // console.log('Background image upload completed.');
             });
         }
 
@@ -140,14 +141,17 @@ const OmisePaymentStep = () => {
                 if (!file) return Promise.resolve();
                 return (async () => {
                     try {
+                        // ใช้ preGeneratedOrderId เป็นชื่อโฟลเดอร์ (ซึ่งอาจเป็น Custom Link หรือ Random ID)
+                        const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
                         const compressed = await compressImage(file);
-                        // เก็บไว้ในโฟลเดอร์ temp_uploads เพื่อให้ระบบ Cleanup ตามลบได้ง่าย
-                        const imgRef = storageRef(storage, `temp_uploads/${Date.now()}_${i}_${file.name}`);
+                        // แยกเป็นโฟลเดอร์ตาม ID ของ Order เพื่อความเป็นระเบียบและจัดการไฟล์ได้ง่าย
+                        const imgRef = storageRef(storage, `uploads/${folder}/${Date.now()}_${i}_${file.name}`);
                         await uploadBytes(imgRef, compressed);
                         results[i] = await getDownloadURL(imgRef);
                     } catch (err) {
                         console.error('Upload failed for file', i, err);
-                        const imgRef = storageRef(storage, `temp_${Date.now()}_${i}_${file.name}`);
+                        const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
+                        const imgRef = storageRef(storage, `uploads/${folder}/error_${Date.now()}_${i}_${file.name}`);
                         await uploadBytes(imgRef, file);
                         results[i] = await getDownloadURL(imgRef);
                     }
@@ -406,8 +410,10 @@ const OmisePaymentStep = () => {
         setLoading(true);
         setError('');
         try {
+            const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
             const slipExt = slipFile.name.split('.').pop();
-            const sRef = storageRef(storage, `slips/temp_${Date.now()}_slip.${slipExt}`);
+            const slipName = `slip_${folder}_${Date.now()}.${slipExt}`;
+            const sRef = storageRef(storage, `slips/${folder}/${slipName}`);
             const compressed = await compressImage(slipFile, { maxSizeMB: 1, maxWidthOrHeight: 1200 });
             await uploadBytes(sRef, compressed);
             const slipUrl = await getDownloadURL(sRef);

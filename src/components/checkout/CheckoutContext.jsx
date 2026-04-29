@@ -46,6 +46,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     const [isDomainAvailable, setIsDomainAvailable] = useState(null);
     const [qrExpired, setQrExpired] = useState(false);
     const [paymentSessionActive, setPaymentSessionActive] = useState(false);
+    const [preGeneratedOrderId, setPreGeneratedOrderId] = useState(null);
+
 
     const [formData, setFormData] = useState({
         buyerName: '',
@@ -207,6 +209,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         setQrExpired,
         paymentSessionActive,
         setPaymentSessionActive,
+        preGeneratedOrderId,
+        setPreGeneratedOrderId,
 
         // Computed
         isTier1Template1,

@@ -56,8 +56,9 @@ const StoryPage = () => {
     if (loading) return <LoadingScreen />;
     if (errorMsg) return <ErrorScreen message={errorMsg} />;
 
-    if (storyData && storyData.template_id) {
-        const TemplateComponent = getTemplateComponent(storyData.template_id);
+    const templateId = storyData.template_id || storyData.selected_template_id;
+    if (storyData && templateId) {
+        const TemplateComponent = getTemplateComponent(templateId);
 
         if (TemplateComponent) {
             const config = mergeConfig(storyData.config);

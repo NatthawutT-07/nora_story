@@ -54,13 +54,26 @@ const ImagesStep = () => {
             >
                 {isFilled ? (
                     <div className="relative w-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow" style={{ aspectRatio: ratio || '1/1' }}>
-                        <img src={preview} className="w-full h-full object-cover" alt="" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        <label className="cursor-pointer group/label relative block w-full h-full">
+                            <img src={preview} className="w-full h-full object-cover" alt="" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                                <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold text-[#1A3C40] opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-sm">
+                                    เปลี่ยนรูป
+                                </div>
+                            </div>
+                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, idx)} className="hidden" />
+                        </label>
+                        
                         <button
-                            onClick={() => updateSlot(idx, null)}
-                            className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-red-500 p-1.5 rounded-full shadow-lg hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                updateSlot(idx, null);
+                            }}
+                            className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm text-red-500 p-1.5 rounded-full shadow-lg hover:bg-red-500 hover:text-white transition-all z-20 border border-gray-100"
+                            title="ลบรูปภาพ"
                         >
-                            <X size={12} />
+                            <X size={14} />
                         </button>
                         {label && (
                             <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/50 to-transparent">

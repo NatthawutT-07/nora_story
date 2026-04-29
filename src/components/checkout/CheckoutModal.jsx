@@ -63,19 +63,39 @@ const CheckoutContent = () => {
         qrExpired,
         selectedColorTheme,
         paymentSessionActive,
+        preGeneratedOrderId,
+        setPreGeneratedOrderId,
     } = useCheckout();
 
     const [showExitWarning, setShowExitWarning] = useState(false);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const isSubmittingRef = useRef(false);
 
+    const isStep1Valid = () => !!selectedTemplate;
+    const isStep2Valid = () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[0-9+-\s]{9,15}$/;
+        
+        const basicInfoValid = formData.buyerName.trim().length >= 1 && 
+                             emailRegex.test(formData.buyerEmail) && 
+                             phoneRegex.test(formData.buyerPhone.replace(/[-\s]/g, ''));
+        
+        if (!basicInfoValid) return false;
+
+        // Check Custom Link logic
+        if (tier?.wantSpecialLink || tier?.wantCustomLink) {
+            if (!formData.customDomain?.trim() || formData.customDomain.length < 8) return false;
+            if (isDomainAvailable !== true) return false;
+        }
+
+        return true;
+    };
+
     // เช็คความครบถ้วนของขั้นตอนที่ 3 (ไม่รวมเพลง เพราะมีค่าเริ่มต้นเป็นไม่มีเพลง)
     const isStep3Valid = () => {
-        if (step !== 3) return true; // ถ้าไม่ใช่ step 3 ถือว่าผ่านไปแล้วหรือยังไม่ถึง
-
         if (needsDetailFields) {
             if (!formData.pin || formData.pin.length !== 4) return false;
-            if (!formData.targetName?.trim()) return false;
+            if (!formData.targetName?.trim() || formData.targetName.trim().length < 1) return false;
             if (!formData.message?.trim() || formData.message.length > 100) return false;
         }
 
@@ -83,6 +103,21 @@ const CheckoutContent = () => {
             if (!formData.finaleMessage?.trim()) return false;
         }
 
+        return true;
+    };
+
+    const isStep4Valid = () => {
+        const maxImages = getMaxImages();
+        if (maxImages === 0) return true;
+        const uploadedCount = contentFiles.filter(Boolean).length;
+        return uploadedCount >= maxImages;
+    };
+
+    const canGoNext = () => {
+        if (step === 1) return isStep1Valid();
+        if (step === 2) return isStep2Valid();
+        if (step === 3) return isStep3Valid();
+        if (step === 4) return isStep4Valid();
         return true;
     };
 
@@ -137,7 +172,37 @@ const CheckoutContent = () => {
                 }
             }
 
-            setStep(3); // Go to details
+            // Generate or set Order ID before moving to step 3
+            // If they have a custom domain, use it as the ID. Otherwise, generate a random one.
+            const generateIdIfNeeded = async () => {
+                const isCustom = tier?.wantSpecialLink || tier?.wantCustomLink;
+                
+                if (isCustom) {
+                    // Always update if it's a custom domain (in case they changed it)
+                    return formData.customDomain;
+                }
+                
+                // For random orders, only generate once to avoid path mismatch if they go back/forth
+                if (preGeneratedOrderId && !preGeneratedOrderId.includes(formData.customDomain)) {
+                    // Check if the current ID looks like a random one (not the custom domain)
+                    // If we already have a random ID, just keep it.
+                    return preGeneratedOrderId;
+                }
+
+                return await generateUniqueStoryId();
+            };
+
+            setLoading(true);
+            generateIdIfNeeded().then(id => {
+                setPreGeneratedOrderId(id);
+                setLoading(false);
+                setStep(3);
+            }).catch(err => {
+                console.error("Error generating order ID:", err);
+                setError('เกิดข้อผิดพลาดในการสร้างรหัสคำสั่งซื้อ');
+                setLoading(false);
+            });
+            return;
         } else if (step === 3) {
             // Validate template details (T1-1 and T2)
             if (needsDetailFields) {
@@ -204,9 +269,10 @@ const CheckoutContent = () => {
             // 1. Upload Slip Image
             let slipUrl = '';
             if (slipFile) {
+                const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
                 const slipExt = slipFile.name.split('.').pop();
-                const slipName = `temp_${Date.now()}_slip.${slipExt}`;
-                const slipRef = ref(storage, `slips/${slipName}`);
+                const slipName = `slip_${preGeneratedOrderId}_${Date.now()}.${slipExt}`;
+                const slipRef = ref(storage, `slips/${folder}/${slipName}`);
 
                 const slipCompressionOptions = {
                     maxSizeMB: 1,
@@ -267,6 +333,7 @@ const CheckoutContent = () => {
 
             // 3. Prepare order data for Cloud Function
             const orderData = {
+                orderId: preGeneratedOrderId, // Send pre-generated ID
                 tierId: tier.id,
                 tierName: tier.name,
                 price: tier.price,
@@ -435,12 +502,21 @@ const CheckoutContent = () => {
                                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                         }`}
                                                 >
-                                                    ย้อนกลับหก
+                                                    ย้อนกลับ
                                                 </button>
                                             )}
                                             {step < 5 && (
-                                                <button onClick={handleNextStep} className="flex-1 py-3.5 rounded-xl bg-[#1A3C40] text-white font-medium hover:bg-[#1A3C40]/90 transition-all shadow-lg">ถัดไป</button>
-                                            )}
+                                                 <button
+                                                     onClick={handleNextStep}
+                                                     disabled={!canGoNext() || loading}
+                                                     className={`flex-1 py-3.5 rounded-xl font-medium transition-all shadow-lg ${!canGoNext() || loading
+                                                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                                         : 'bg-[#1A3C40] text-white hover:bg-[#1A3C40]/90'
+                                                         }`}
+                                                 >
+                                                     {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'ถัดไป'}
+                                                 </button>
+                                             )}
                                         </div>
                                     </div>
                                 </>
