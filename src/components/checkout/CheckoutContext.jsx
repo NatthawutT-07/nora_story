@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getPalettesForTier } from '../../lib/colorPalettes';
+import { getTemplate, getTemplateMaxImages, getTemplateHasMusic } from '../../lib/templateRegistry';
 
 const CheckoutContext = createContext(null);
 
@@ -14,7 +15,7 @@ export const useCheckout = () => {
 };
 
 export const CheckoutProvider = ({ children, tier, onClose }) => {
-    // Steps: 1=Buyer Info, 2=Template Selection, 3=Template Details, 4=Images, 5=Payment, 6=Success
+    // Steps: 1=Template Selection, 2=Buyer Info, 3=Template Details, 4=Images, 5=Payment, 6=Success
     const [step, setStep] = useState(1);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [selectedColorTheme, setSelectedColorTheme] = useState(() => {
@@ -45,9 +46,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     const [storyId, setStoryId] = useState(null);
     const [isDomainAvailable, setIsDomainAvailable] = useState(null);
     const [qrExpired, setQrExpired] = useState(false);
-    const [paymentSessionActive, setPaymentSessionActive] = useState(false);
     const [preGeneratedOrderId, setPreGeneratedOrderId] = useState(null);
-
 
     const [formData, setFormData] = useState({
         buyerName: '',
@@ -73,27 +72,12 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         musicUrl: '',
     });
 
-    // Check template tier type
-    const isTier1Template1 = String(tier?.id) === '1' && selectedTemplate === 't1-1';
-    const isChatTemplate = String(tier?.id) === '1' && selectedTemplate === 't1-2';
-    const isTier2 = String(tier?.id) === '2';
-    const isTier3 = String(tier?.id) === '3';
-    // Tier 1 uses Template1Fields (for t1-1) or Template2Fields (for t1-2).
-    const needsDetailFields = isTier1Template1 || isTier2;
-    // Tier 3 uses timeline fields
-    const needsTimelineFields = isTier3;
+    // ─── Registry-Driven Config ───
+    // All template-specific logic flows from the registry, not from if/else chains
+    const templateConfig = selectedTemplate ? getTemplate(selectedTemplate) : null;
 
-    // Max images per tier
-    const getMaxImages = () => {
-        if (!tier) return 0;
-        if (String(tier?.id) === '1') {
-            if (selectedTemplate === 't1-3') return 1;
-            return 0;
-        }
-        if (String(tier?.id) === '2') return 5;
-        if (String(tier?.id) === '3') return 10;
-        return 0;
-    };
+    // Max images: determined by the specific template, not the tier
+    const getMaxImages = () => getTemplateMaxImages(selectedTemplate);
 
     // Max file size per image (in bytes)
     const getMaxFileSize = () => {
@@ -210,18 +194,11 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         checkDomainAvailability,
         qrExpired,
         setQrExpired,
-        paymentSessionActive,
-        setPaymentSessionActive,
         preGeneratedOrderId,
         setPreGeneratedOrderId,
 
-        // Computed
-        isTier1Template1,
-        isTier2,
-        isTier3,
-        isChatTemplate,
-        needsDetailFields,
-        needsTimelineFields,
+        // Registry-driven config (replaces all hardcoded checks)
+        templateConfig,
         getMaxImages,
         getMaxFileSize,
         needsImageStep,

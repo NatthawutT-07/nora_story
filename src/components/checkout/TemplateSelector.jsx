@@ -1,49 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Eye } from 'lucide-react';
+import { Check, Eye, Loader2 } from 'lucide-react';
 import ColorPicker from './ColorPicker';
 import { useCheckout } from './CheckoutContext';
-
-// Import templates for inline preview
-import Tier1Template1 from '../templates/tier1/Tier1Template1';
-import Tier1Template2 from '../templates/tier1/Tier1Template2';
-
-import Tier2Template1 from '../templates/tier2/Tier2Template1';
-import Tier3Template1 from '../templates/tier3/Tier3Template1';
-
-// Template preview data
-const TEMPLATE_PREVIEWS = {
-    1: [
-        { id: 't1-1', number: '01', name: 'Love Card', preview: '', description: 'ข้อความลับพร้อม PIN' },
-
-        { id: 't1-2', number: '02', name: 'Chat View', preview: '', description: 'แชทจำลอง' },
-        { id: 't1-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
-    ],
-    2: [
-        { id: 't2-1', number: '01', name: 'Standard Love', preview: '', description: 'อนิเมชั่นอัพเกรด' },
-        { id: 't2-2', number: '02', name: 'Soon', preview: '', description: '', disabled: true },
-        { id: 't2-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
-    ],
-    3: [
-        { id: 't3-1', number: '01', name: 'Premium Story', preview: '', description: 'หรูหราอลังการ' },
-        { id: 't3-2', number: '02', name: 'Soon', preview: '', description: '', disabled: true },
-        { id: 't3-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
-    ],
-};
-
-// Demo component map for inline preview modal
-const DEMO_TEMPLATES = {
-    't1-1': Tier1Template1,
-    't1-2': Tier1Template2,
-
-    't2-1': Tier2Template1,
-    't3-1': Tier3Template1,
-};
+import { getTemplatesByTier, getTemplate } from '../../lib/templateRegistry';
 
 // Inline Full-Screen Preview Modal (Using Portal to escape parent overflow/z-index)
 const PreviewModal = ({ templateId, onClose, colorTheme }) => {
-    const Component = DEMO_TEMPLATES[templateId];
+    const config = getTemplate(templateId);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -51,7 +16,9 @@ const PreviewModal = ({ templateId, onClose, colorTheme }) => {
         return () => setMounted(false);
     }, []);
 
-    if (!Component || !mounted) return null;
+    if (!config?.PageComponent || !mounted) return null;
+
+    const Component = config.PageComponent;
 
     return createPortal(
         <motion.div
@@ -82,17 +49,23 @@ const PreviewModal = ({ templateId, onClose, colorTheme }) => {
                 </button>
                 {/* Template render */}
                 <div className="w-full h-full overflow-y-auto relative">
-                    <Component
-                        targetName="ที่รัก"
-                        customMessage="ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ดีที่สุดในชีวิต"
-                        customSignOff="รักเธอเสมอ"
-                        pinCode="1234"
-                        pin="1234"
-                        timelines={[]}
-                        isDemo={true}
-                        isModalPreview={true}
-                        colorTheme={colorTheme}
-                    />
+                    <Suspense fallback={
+                        <div className="w-full h-full flex items-center justify-center">
+                            <Loader2 className="animate-spin text-gray-400" size={32} />
+                        </div>
+                    }>
+                        <Component
+                            targetName="ที่รัก"
+                            customMessage="ทุกช่วงเวลาที่มีเธอ คือของขวัญที่ดีที่สุดในชีวิต"
+                            customSignOff="รักเธอเสมอ"
+                            pinCode="1234"
+                            pin="1234"
+                            timelines={[]}
+                            isDemo={true}
+                            isModalPreview={true}
+                            colorTheme={colorTheme}
+                        />
+                    </Suspense>
                 </div>
             </motion.div>
         </motion.div>,
@@ -102,7 +75,7 @@ const PreviewModal = ({ templateId, onClose, colorTheme }) => {
 
 const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
     const { selectedColorTheme } = useCheckout();
-    const templates = TEMPLATE_PREVIEWS[tierId] || TEMPLATE_PREVIEWS[1];
+    const templates = getTemplatesByTier(tierId);
     const [previewId, setPreviewId] = useState(null);
 
     return (
@@ -115,7 +88,7 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                 {templates.map((template) => {
                     const isSelected = selectedTemplate === template.id;
                     const isDisabled = template.disabled;
-                    const hasPreview = Boolean(DEMO_TEMPLATES[template.id]);
+                    const hasPreview = !isDisabled && !!template.PageComponent;
 
                     return (
                         <motion.div
@@ -154,7 +127,7 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                                     : isSelected ? 'bg-[#1A3C40] text-white'
                                         : 'bg-gray-200/70 text-gray-400'}`}
                             >
-                                {template.number}
+                                {template.number || '01'}
                             </div>
 
                             <p className={`text-sm font-semibold leading-tight mb-0.5
@@ -165,7 +138,7 @@ const TemplateSelector = ({ tierId, selectedTemplate, onSelect }) => {
                             <p className="text-[10px] text-gray-400">{template.description}</p>
 
                             {/* Preview button */}
-                            {hasPreview && !isDisabled && (
+                            {hasPreview && (
                                 <motion.button
                                     whileTap={{ scale: 0.9 }}
                                     onClick={(e) => { e.stopPropagation(); setPreviewId(template.id); }}

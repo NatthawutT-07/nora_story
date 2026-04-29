@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Play, Heart, Mail, Star, Sparkles, Camera, ScrollText } from 'lucide-react';
-import { TEMPLATE_DATA } from '../data/templateData';
+import { getTemplate } from '../lib/templateRegistry';
 import { TIERS } from '../data/tierData';
 
 const tierData = TIERS.filter(t => t.id !== '4').reduce((acc, t) => {
@@ -164,7 +164,7 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
                     >
                         {tier.demos.map((id, index) => {
-                            const template = TEMPLATE_DATA[id] || { name: `Template ${id}`, description: `${tier.name} Style`, preview: '' };
+                            const template = getTemplate(id) || { name: `Template ${id}`, description: `${tier.name} Style`, preview: '' };
                             const isDisabled = template.disabled;
 
                             return (

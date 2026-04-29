@@ -1,14 +1,12 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, AlertCircle, Eye } from 'lucide-react';
-import { db, storage } from '../../firebase';
+import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import imageCompression from 'browser-image-compression';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
 import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
 import LivePreviewModal from './LivePreviewModal';
-import { createOrder } from '../../api/functions';
+import { getTemplate } from '../../lib/templateRegistry';
 
 // Generate random 15-character alphanumeric ID for story URLs
 const generateRandomId = () => {
@@ -40,6 +38,44 @@ const generateUniqueStoryId = async () => {
     return generateRandomId() + Date.now().toString(36).slice(-3);
 };
 
+/**
+ * Field validation rules — keyed by field name from the registry
+ * Each returns { valid: boolean, error: string }
+ */
+const FIELD_VALIDATORS = {
+    pin: (formData) => {
+        if (!formData.pin || formData.pin.length !== 4) return { valid: false, error: 'กรุณาใส่ PIN 4 หลัก' };
+        return { valid: true };
+    },
+    targetName: (formData, templateConfig) => {
+        const maxLen = templateConfig?.id === 't1-2' ? 15 : 20;
+        if (!formData.targetName?.trim()) return { valid: false, error: 'กรุณากรอกชื่อคนรับ' };
+        if (formData.targetName.length > maxLen) return { valid: false, error: `ชื่อต้องไม่เกิน ${maxLen} ตัวอักษร` };
+        return { valid: true };
+    },
+    message: (formData) => {
+        if (!formData.message?.trim()) return { valid: false, error: 'กรุณากรอกข้อความ' };
+        if (formData.message.length > 100) return { valid: false, error: 'ข้อความต้องไม่เกิน 100 ตัวอักษร' };
+        return { valid: true };
+    },
+    signOff: () => ({ valid: true }), // optional
+    shortMessage: (formData) => {
+        if (!formData.shortMessage?.trim()) return { valid: false, error: 'กรุณากรอกข้อความแรกที่ทักทาย' };
+        return { valid: true };
+    },
+    customMessage: (formData) => {
+        if (!formData.customMessage?.trim()) return { valid: false, error: 'กรุณากรอกข้อความบอกรักส่วนที่ 2' };
+        if (formData.customMessage.length > 200) return { valid: false, error: 'ข้อความต้องไม่เกิน 200 ตัวอักษร' };
+        return { valid: true };
+    },
+    timelines: () => ({ valid: true }), // timelines are optional individually
+    finaleMessage: (formData) => {
+        if (!formData.finaleMessage?.trim()) return { valid: false, error: 'กรุณากรอกข้อความสุดท้าย' };
+        return { valid: true };
+    },
+    finaleSignOff: () => ({ valid: true }), // optional
+};
+
 const CheckoutContent = () => {
     const {
         tier,
@@ -47,25 +83,21 @@ const CheckoutContent = () => {
         setStep,
         formData,
         selectedTemplate,
-        slipFile,
         contentFiles,
         loading,
         setLoading,
         error,
         setError,
         handleClose,
-        needsDetailFields,
-        needsTimelineFields,
         getStepLabels,
         getProgressStep,
         getMaxImages,
         isDomainAvailable,
         qrExpired,
         selectedColorTheme,
-        paymentSessionActive,
         preGeneratedOrderId,
         setPreGeneratedOrderId,
-        isChatTemplate,
+        templateConfig,
     } = useCheckout();
 
     const [showExitWarning, setShowExitWarning] = useState(false);
@@ -73,6 +105,7 @@ const CheckoutContent = () => {
     const isSubmittingRef = useRef(false);
 
     const isStep1Valid = () => !!selectedTemplate;
+
     const isStep2Valid = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const phoneRegex = /^[0-9+-\s]{9,15}$/;
@@ -92,23 +125,16 @@ const CheckoutContent = () => {
         return true;
     };
 
+    // Registry-driven validation: validate based on templateConfig.fields
     const isStep3Valid = () => {
-        if (isChatTemplate) {
-            if (!formData.targetName?.trim() || formData.targetName.length > 15) return false;
-            if (!formData.shortMessage?.trim() || formData.shortMessage.length > 50) return false;
-            if (!formData.customMessage?.trim() || formData.customMessage.length > 200) return false;
+        if (!templateConfig?.fields) return true;
+        for (const field of templateConfig.fields) {
+            const validator = FIELD_VALIDATORS[field];
+            if (validator) {
+                const result = validator(formData, templateConfig);
+                if (!result.valid) return false;
+            }
         }
-
-        if (needsDetailFields) {
-            if (!formData.pin || formData.pin.length !== 4) return false;
-            if (!formData.targetName?.trim() || formData.targetName.trim().length < 1) return false;
-            if (!formData.message?.trim() || formData.message.length > 100) return false;
-        }
-
-        if (needsTimelineFields) {
-            if (!formData.finaleMessage?.trim()) return false;
-        }
-
         return true;
     };
 
@@ -128,8 +154,6 @@ const CheckoutContent = () => {
     };
 
     const attemptClose = () => {
-        // Only warn if they've made progress (past step 1) and haven't finished (not step 6)
-        // Feel free to adjust the condition
         if (step > 1 && step < 6) {
             setShowExitWarning(true);
         } else {
@@ -141,7 +165,6 @@ const CheckoutContent = () => {
         setError('');
 
         if (step === 1) {
-            // Validate template selection first
             if (!selectedTemplate) {
                 setError('กรุณาเลือกธีม');
                 return;
@@ -149,52 +172,24 @@ const CheckoutContent = () => {
             setStep(2);
         } else if (step === 2) {
             // Validate buyer info
-            if (!formData.buyerName.trim()) {
-                setError('กรุณากรอกชื่อผู้สั่งซื้อ');
-                return;
-            }
-            if (!formData.buyerEmail.trim() || !formData.buyerEmail.includes('@')) {
-                setError('กรุณากรอก Email ที่ถูกต้อง');
-                return;
-            }
-            if (!formData.buyerPhone.trim() || formData.buyerPhone.length < 9) {
-                setError('กรุณากรอกเบอร์โทรศัพท์');
-                return;
-            }
+            if (!formData.buyerName.trim()) { setError('กรุณากรอกชื่อผู้สั่งซื้อ'); return; }
+            if (!formData.buyerEmail.trim() || !formData.buyerEmail.includes('@')) { setError('กรุณากรอก Email ที่ถูกต้อง'); return; }
+            if (!formData.buyerPhone.trim() || formData.buyerPhone.length < 9) { setError('กรุณากรอกเบอร์โทรศัพท์'); return; }
 
             // Check Special Link logic
             if (tier?.wantSpecialLink || tier?.wantCustomLink) {
-                if (!formData.customDomain?.trim()) {
-                    setError('กรุณาระบุชื่อลิงก์ที่ต้องการ');
-                    return;
-                }
-                if (formData.customDomain.length < 8) {
-                    setError('ชื่อลิงก์ต้องมีอย่างน้อย 8 ตัวอักษร');
-                    return;
-                }
-                if (isDomainAvailable !== true) {
-                    setError('กรุณาตรวจสอบความว่างของชื่อลิงก์ก่อนทำรายการถัดไป');
-                    return;
-                }
+                if (!formData.customDomain?.trim()) { setError('กรุณาระบุชื่อลิงก์ที่ต้องการ'); return; }
+                if (formData.customDomain.length < 8) { setError('ชื่อลิงก์ต้องมีอย่างน้อย 8 ตัวอักษร'); return; }
+                if (isDomainAvailable !== true) { setError('กรุณาตรวจสอบความว่างของชื่อลิงก์ก่อนทำรายการถัดไป'); return; }
             }
 
             // Generate or set Order ID before moving to step 3
-            // If they have a custom domain, use it as the ID. Otherwise, generate a random one.
             const generateIdIfNeeded = async () => {
                 const isCustom = tier?.wantSpecialLink || tier?.wantCustomLink;
-                
-                if (isCustom) {
-                    // Always update if it's a custom domain (in case they changed it)
-                    return formData.customDomain;
-                }
-                
-                // For random orders, only generate once to avoid path mismatch if they go back/forth
+                if (isCustom) return formData.customDomain;
                 if (preGeneratedOrderId && !preGeneratedOrderId.includes(formData.customDomain)) {
-                    // Check if the current ID looks like a random one (not the custom domain)
-                    // If we already have a random ID, just keep it.
                     return preGeneratedOrderId;
                 }
-
                 return await generateUniqueStoryId();
             };
 
@@ -210,47 +205,14 @@ const CheckoutContent = () => {
             });
             return;
         } else if (step === 3) {
-            // Validate template details
-            if (isChatTemplate) {
-                if (!formData.targetName?.trim()) {
-                    setError('กรุณากรอกชื่อคู่สนทนา');
-                    return;
-                }
-                if (!formData.shortMessage?.trim()) {
-                    setError('กรุณากรอกข้อความแรกที่ทักทาย');
-                    return;
-                }
-                if (!formData.customMessage?.trim()) {
-                    setError('กรุณากรอกข้อความบอกรักส่วนที่ 2');
-                    return;
-                }
-            }
-
-            if (needsDetailFields) {
-                if (!formData.pin || formData.pin.length !== 4) {
-                    setError('กรุณาใส่ PIN 4 หลัก');
-                    return;
-                }
-                if (!formData.targetName.trim()) {
-                    setError('กรุณากรอกชื่อคนรับ');
-                    return;
-                }
-                if (!formData.message.trim()) {
-                    setError('กรุณากรอกข้อความ');
-                    return;
-                }
-                const maxMsg = 100;
-                if (formData.message.length > maxMsg) {
-                    setError(`ข้อความต้องไม่เกิน ${maxMsg} ตัวอักษร`);
-                    return;
-                }
-            }
-            // Tier 3: Validate timeline fields
-            if (needsTimelineFields) {
-                // Timelines 1-5 are optional
-                if (!formData.finaleMessage?.trim()) {
-                    setError('กรุณากรอกข้อความสุดท้าย (ช่อง 5)');
-                    return;
+            // Registry-driven validation with error messages
+            if (templateConfig?.fields) {
+                for (const field of templateConfig.fields) {
+                    const validator = FIELD_VALIDATORS[field];
+                    if (validator) {
+                        const result = validator(formData, templateConfig);
+                        if (!result.valid) { setError(result.error); return; }
+                    }
                 }
             }
 
@@ -274,136 +236,7 @@ const CheckoutContent = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (isSubmittingRef.current) return;
-        if (!slipFile) {
-            setError('กรุณาแนบสลิปโอนเงิน');
-            return;
-        }
-
-        isSubmittingRef.current = true;
-        setLoading(true);
-        setError('');
-
-        try {
-            // 1. Upload Slip Image
-            let slipUrl = '';
-            if (slipFile) {
-                const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
-                const slipExt = slipFile.name.split('.').pop();
-                const slipName = `slip_${preGeneratedOrderId}_${Date.now()}.${slipExt}`;
-                const slipRef = ref(storage, `slips/${folder}/${slipName}`);
-
-                const slipCompressionOptions = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1200,
-                    useWebWorker: true
-                };
-
-                const compressedSlipFile = await imageCompression(slipFile, slipCompressionOptions);
-                await uploadBytes(slipRef, compressedSlipFile);
-                slipUrl = await getDownloadURL(slipRef);
-            }
-
-            // 2. Upload Content Images (if any)
-            const maxUploads = getMaxImages() || contentFiles.length;
-            let contentUrls = Array(maxUploads).fill(null);
-            if ((contentFiles.length > 0 || maxUploads > 0)) {
-                const contentCompressionOptions = {
-                    maxSizeMB: 2,
-                    maxWidthOrHeight: 1920,
-                    useWebWorker: true,
-                    initialQuality: 0.85
-                };
-
-                const contentUploadPromises = [];
-                for (let i = 0; i < maxUploads; i++) {
-                    const file = contentFiles[i];
-                    if (file) {
-                        const uploadPromise = async () => {
-                            try {
-                                const folder = formData.customDomain || formData.buyerPhone || 'temp_group';
-                                const compressedFile = await imageCompression(file, contentCompressionOptions);
-                                const refName = `uploads/${folder}/${Date.now()}_${i}_${file.name}`;
-                                const imgRef = ref(storage, refName);
-                                await uploadBytes(imgRef, compressedFile);
-                                const url = await getDownloadURL(imgRef);
-                                return { index: i, url };
-                            } catch (error) {
-                                console.error(`Error compressing/uploading image ${i}:`, error);
-                                const folder = formData.customDomain || formData.buyerPhone || 'temp_group';
-                                const refName = `uploads/${folder}/${Date.now()}_${i}_${file.name}`;
-                                const imgRef = ref(storage, refName);
-                                await uploadBytes(imgRef, file);
-                                const url = await getDownloadURL(imgRef);
-                                return { index: i, url };
-                            }
-                        };
-                        contentUploadPromises.push(uploadPromise());
-                    }
-                }
-
-                if (contentUploadPromises.length > 0) {
-                    const uploadResults = await Promise.all(contentUploadPromises);
-                    uploadResults.forEach(res => {
-                        contentUrls[res.index] = res.url;
-                    });
-                }
-            }
-
-            // 3. Prepare order data for Cloud Function
-            const orderData = {
-                orderId: preGeneratedOrderId, // Send pre-generated ID
-                tierId: tier.id,
-                tierName: tier.name,
-                price: tier.price,
-                buyerName: formData.buyerName,
-                buyerEmail: formData.buyerEmail,
-                buyerPhone: formData.buyerPhone,
-                needsDetailFields,
-                needsChatFields: isChatTemplate,
-                pin: formData.pin,
-                targetName: formData.targetName,
-                signOff: formData.signOff,
-                message: formData.message,
-                shortMessage: formData.shortMessage,
-                customMessage: formData.customMessage,
-                needsTimelineFields,
-                timelines: formData.timelines,
-                finaleMessage: formData.finaleMessage,
-                finaleSignOff: formData.finaleSignOff,
-                wantSpecialLink: tier?.wantSpecialLink,
-                wantCustomLink: tier?.wantCustomLink,
-                customDomain: formData.customDomain,
-                selectedTemplate,
-                slipUrl,
-                contentImages: contentUrls, // Added here
-                musicUrl: formData.musicUrl,
-                colorThemeId: selectedColorTheme?.id,
-                platform: 'web'
-            };
-
-            // 4. Call Cloud Function to create order
-            const result = await createOrder(orderData);
-
-            if (!result.success) {
-                throw new Error(result.error || 'เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ');
-            }
-
-            setStep(6); // Success
-
-        } catch (err) {
-            console.error("Error creating order:", err);
-            setError('เกิดข้อผิดพลาด: ' + err.message);
-        } finally {
-            setLoading(false);
-            isSubmittingRef.current = false;
-        }
-    };
-
     const stepLabels = getStepLabels();
-
 
     return (
         <>
@@ -520,11 +353,7 @@ const CheckoutContent = () => {
                                                             setStep(step - 1);
                                                         }
                                                     }}
-                                                    disabled={step === 5 && paymentSessionActive}
-                                                    className={`flex-1 py-3.5 rounded-xl font-medium transition-colors ${step === 5 && paymentSessionActive
-                                                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                        }`}
+                                                    className="flex-1 py-3.5 rounded-xl font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
                                                 >
                                                     ย้อนกลับ
                                                 </button>

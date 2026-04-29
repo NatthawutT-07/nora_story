@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { TIERS } from '../data/tierData';
-import { getTemplateComponent } from '../lib/templates';
+import { getTemplateComponent } from '../lib/templateRegistry';
 
 import Hero from './Hero';
 import Pricing from './Pricing';

@@ -1,2 +1,3 @@
-export { default as Template1Fields } from './tier1/Template1Fields';
-export { default as Template4Fields } from './tier1/Template4Fields';
+// Form components are now loaded dynamically via templateRegistry.js
+// This file is kept for backward compatibility but is no longer the primary entry point.
+// Each template's form is defined in its registry entry as FormComponent.

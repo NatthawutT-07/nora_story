@@ -8,7 +8,7 @@ import { getOrder } from '../api/functions';
 // Add-ons
 import { mergeConfig } from '../lib/templateConfig';
 import { findPaletteById } from '../lib/colorPalettes';
-import { getTemplateComponent } from '../lib/templates';
+import { getTemplateComponent } from '../lib/templateRegistry';
 
 // UI Components
 import LoadingScreen from './ui/LoadingScreen';

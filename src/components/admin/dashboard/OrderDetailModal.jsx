@@ -17,12 +17,12 @@ import {
 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import {
-    ALL_TEMPLATES,
     DEFAULT_CONFIG,
     EFFECT_OPTIONS,
     FEATURE_OPTIONS,
     TIER_DURATIONS
 } from '../../../lib/templateConfig';
+import { TEMPLATE_REGISTRY, getTemplate } from '../../../lib/templateRegistry';
 import {
     adminUpdateOrderLink,
     adminApproveOrder,
@@ -409,7 +409,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                     <label className="block text-xs font-medium text-gray-600 mb-2">เลือก Template {order.selected_template_id && <span className="text-gray-400 ml-2">(ลูกค้าเลือก: {order.selected_template_id})</span>}</label>
                                     <select value={modifiedTemplateId || order.selected_template_id || ''} onChange={(e) => setModifiedTemplateId(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50">
                                         <option value="">-- เลือก Template --</option>
-                                        {ALL_TEMPLATES.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                                        {Object.values(TEMPLATE_REGISTRY).filter(t => !t.disabled).map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
                                     </select>
                                 </div>
                             )}
@@ -428,7 +428,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                             {order.status === 'approved' && order.template_id && (
                                 <div className="pt-3 border-t border-gray-200 flex items-center gap-2">
                                     <span className="text-xs text-gray-500">Template:</span>
-                                    <span className="text-xs font-medium text-[#1A3C40] bg-[#E8A08A]/10 px-2 py-1 rounded">{ALL_TEMPLATES.find(t => t.id === order.template_id)?.name || order.template_id}</span>
+                                    <span className="text-xs font-medium text-[#1A3C40] bg-[#E8A08A]/10 px-2 py-1 rounded">{getTemplate(order.template_id)?.name || order.template_id}</span>
                                 </div>
                             )}
                         </div>

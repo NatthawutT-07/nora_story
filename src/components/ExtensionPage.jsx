@@ -11,7 +11,7 @@ import { useToast } from './ui/Toast';
 import ExtendTab from './extension/ExtendTab';
 import EditTab from './extension/EditTab';
 import HistoryTab from './extension/HistoryTab';
-import OmiseExtensionPayment from './extension/OmiseExtensionPayment';
+import SlipPaymentModal from './extension/SlipPaymentModal';
 import { getOrderForExtension, requestExtension, saveTextEdit, saveImageEdit, submitEditPayment } from '../api/functions';
 
 // Build extension packages from tierData.js so pricing stays in sync
@@ -42,6 +42,21 @@ const EDIT_CONFIG = {
     3: { freeTextEdits: 3, freeImageEdits: 1, paidTextPrice: 29, paidImagePrice: 79 },
 };
 
+/**
+ * Parse any date format from Firebase into a JS Date.
+ * Handles: Firestore Timestamp ({seconds}/{_seconds}), .toDate(), ISO string, epoch number
+ */
+const parseFirebaseDate = (val) => {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    if (typeof val === 'number') return new Date(val);
+    if (typeof val.toDate === 'function') return val.toDate();
+    if (val.seconds != null) return new Date(val.seconds * 1000);
+    if (val._seconds != null) return new Date(val._seconds * 1000);
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+};
+
 // Live Countdown Component
 const Countdown = ({ expiresAt }) => {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
@@ -49,7 +64,8 @@ const Countdown = ({ expiresAt }) => {
     useEffect(() => {
         if (!expiresAt) return;
 
-        const expiryDate = new Date(expiresAt.seconds * 1000);
+        const expiryDate = parseFirebaseDate(expiresAt);
+        if (!expiryDate) return;
 
         const tick = () => {
             const now = new Date();
@@ -198,7 +214,7 @@ const ExtensionPage = () => {
         }
     };
 
-    // --- Extension Payment (Omise) ---
+    // --- Extension Payment ---
     const openExtensionPayment = () => {
         if (!selectedPackage) {
             showToast('กรุณาเลือกแพ็คเกจก่อน', 'warning');
@@ -377,7 +393,7 @@ const ExtensionPage = () => {
         }
     };
 
-    // --- Edit Payment (Omise) ---
+    // --- Edit Payment ---
     const openEditPayment = (type) => {
         const price = type === 'text' ? editConfig.paidTextPrice : editConfig.paidImagePrice;
         const label = type === 'text' ? 'ชำระเงินเพื่อแก้ไขข้อความ' : 'ชำระเงินเพื่อแก้ไขรูปภาพ';
@@ -472,7 +488,7 @@ const ExtensionPage = () => {
     }
 
     // --- Main Page ---
-    const expiryDate = order.expires_at ? new Date(order.expires_at.seconds * 1000) : null;
+    const expiryDate = parseFirebaseDate(order.expires_at);
     const isExpired = expiryDate ? expiryDate < new Date() : false;
 
     return (
@@ -602,8 +618,8 @@ const ExtensionPage = () => {
                 )}
             </div>
 
-            {/* Omise Payment Modal */}
-            <OmiseExtensionPayment
+            {/* Slip Payment Modal */}
+            <SlipPaymentModal
                 isOpen={paymentModal.open}
                 onClose={() => setPaymentModal(p => ({ ...p, open: false }))}
                 onSuccess={paymentModal.paymentType === 'extension' ? handleExtensionPaySuccess : handleEditPaySuccess}

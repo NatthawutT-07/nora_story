@@ -14,11 +14,11 @@ const MODE = {
 };
 
 /**
- * OmiseExtensionPayment
+ * SlipPaymentModal
  * Reusable payment modal for extension / text edit / image edit flows.
- * Simplified to ONLY support manual slip transfer (PromptPay QR).
+ * Supports manual slip transfer (PromptPay QR) only.
  */
-const OmiseExtensionPayment = ({
+const SlipPaymentModal = ({
     isOpen,
     onClose,
     onSuccess,
@@ -359,4 +359,4 @@ const OmiseExtensionPayment = ({
     );
 };
 
-export default OmiseExtensionPayment;
+export default SlipPaymentModal;
