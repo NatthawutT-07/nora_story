@@ -79,9 +79,10 @@ const StoryPage = () => {
                     <Suspense fallback={<LoadingScreen />}>
                         <TemplateComponent
                             customTitle={storyData.customer_name}
-                            customMessage={storyData.message}
                             customSignOff={storyData.sign_off}
-                            targetName={storyData.target_name}
+                            targetName={storyData.target_name || storyData.targetName}
+                            shortMessage={storyData.shortMessage || storyData.short_message}
+                            customMessage={storyData.customMessage || storyData.custom_message || storyData.message}
                             pin={storyData.pin_code}
                             timelines={storyData.timelines || []}
                             finaleMessage={storyData.finale_message}

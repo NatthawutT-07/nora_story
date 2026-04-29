@@ -1,129 +1,131 @@
-import { motion } from 'framer-motion';
-import { Flower, Sparkles } from 'lucide-react';
+import React from 'react';
+import { ChevronLeft, Phone, Video, Battery, Wifi, Signal, Mic } from 'lucide-react';
 
-// Floating Lotus Component
-const FloatingLotus = () => {
+const ChatMessage = ({ text, isSender, senderName, avatarUrl, showAvatar, isFirstInGroup, isPurple }) => {
     return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(8)].map((_, i) => (
-                <motion.div
-                    key={i}
-                    initial={{
-                        x: Math.random() * 100 + '%',
-                        y: '100%',
-                        opacity: 0,
-                        scale: 0.5 + Math.random() * 0.5
-                    }}
-                    animate={{
-                        y: '-20%',
-                        opacity: [0, 0.4, 0.4, 0],
-                        rotate: Math.random() * 360
-                    }}
-                    transition={{
-                        duration: 15 + Math.random() * 10,
-                        repeat: Infinity,
-                        delay: Math.random() * 10,
-                        ease: 'linear'
-                    }}
-                    className="absolute text-amber-400/30"
+        <div className={`flex w-full ${isSender ? 'justify-end' : 'justify-start'} mb-1.5 relative`}>
+            {!isSender && (
+                <div className="w-8 h-8 mr-2 flex-shrink-0 self-end mb-1">
+                    {showAvatar && (
+                        <img
+                            src={avatarUrl || `https://ui-avatars.com/api/?name=${senderName || 'U'}&background=random`}
+                            alt={senderName}
+                            className="w-full h-full rounded-full object-cover"
+                        />
+                    )}
+                </div>
+            )}
+
+            <div className={`flex flex-col ${isSender ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                {!isSender && isFirstInGroup && senderName && (
+                    <span className="text-[11px] text-gray-500 mb-1 ml-3 font-medium">{senderName}</span>
+                )}
+                <div
+                    className={`px-4 py-2.5 text-[15px] ${isSender
+                        ? (isPurple ? 'bg-gradient-to-br from-rose-100 to-pink-100 text-rose-900 shadow-sm' : 'bg-blue-100 text-blue-900 shadow-sm')
+                        : 'bg-[#F4F4F5] text-gray-700 shadow-sm'
+                        } ${isSender
+                            ? 'rounded-[20px] rounded-br-sm'
+                            : 'rounded-[20px] rounded-bl-sm'
+                        }`}
+                    style={{ lineHeight: '1.4' }}
                 >
-                    <Flower size={24 + Math.random() * 24} fill="currentColor" />
-                </motion.div>
-            ))}
+                    {text}
+                </div>
+            </div>
         </div>
     );
 };
 
-// Golden Gradient Background
-const GoldenBackground = () => {
-    return (
-        <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50"
-            animate={{
-                background: [
-                    'linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fff7ed 100%)',
-                    'linear-gradient(135deg, #fff7ed 0%, #fffbeb 50%, #fef3c7 100%)',
-                    'linear-gradient(135deg, #fef3c7 0%, #fff7ed 50%, #fffbeb 100%)',
-                ]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-        />
-    );
-};
-
-const Tier1Template2 = ({ images = [] }) => {
-    // Use the first uploaded image or a fallback
-    const mainImage = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1599553240723-5e9854737274?w=800';
+const Tier1Template2 = ({
+    shortMessage: shortMsgProp,
+    customMessage: customMsgProp,
+    targetName: targetNameProp
+}) => {
+    // Fallback logic to handle null/undefined/empty string
+    const targetName = targetNameProp || 'Honey ❤️';
+    const shortMessage = shortMsgProp || 'Baby';
+    const customMessage = customMsgProp || 'Thank you for being in my life and making me smile every day. Through thick and thin, having you by my side gives me the strength to keep going. I love you.';
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative font-serif overflow-hidden text-[#5D4037]">
-            <GoldenBackground />
-            <FloatingLotus />
+        <div className="w-full min-h-screen bg-[#FFF8F8] flex flex-col items-center py-12 px-4 sm:px-8 font-sans">
+            {/* Phone Mockup Frame */}
+            <div className="w-full max-w-[340px] h-[680px] flex-shrink-0 bg-white rounded-[40px] shadow-2xl relative overflow-hidden border-[10px] border-gray-900 flex flex-col my-auto">
 
-            <div className="relative z-10 w-full max-w-md text-center">
-                {/* Decorative Top Icon */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-6 flex justify-center text-amber-500"
-                >
-                    <Flower size={40} fill="currentColor" />
-                </motion.div>
+                {/* Notch & Status Bar */}
+                <div className="h-12 w-full flex justify-between items-center px-5 pt-1 text-black z-20 relative bg-white">
+                    {/* Notch simulation */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150px] h-[28px] bg-gray-900 rounded-b-[20px] z-30"></div>
 
-                {/* Main Image Card */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, type: "spring" }}
-                    className="relative mb-5 md:mb-8 mx-auto"
-                >
-                    {/* Golden Glow/Border Effect */}
-                    <div className="absolute -inset-1 bg-gradient-to-tr from-amber-300 to-yellow-200 rounded-2xl blur-sm opacity-70"></div>
-
-                    <div className="relative bg-white p-2 rounded-2xl shadow-xl border border-amber-100">
-                        <div className="rounded-xl overflow-hidden aspect-[3/4] relative">
-                            <img
-                                src={mainImage}
-                                alt="Ordination"
-                                className="w-full h-full object-cover"
-                            />
-                            {/* Inner Border */}
-                            <div className="absolute inset-2 border border-white/50 rounded-lg pointer-events-none"></div>
-                        </div>
+                    <span className="text-[14px] font-semibold tracking-tight ml-2 mt-1 z-40"></span>
+                    <div className="flex items-center gap-1.5 mt-1 z-40">
+                        <Signal size={16} strokeWidth={2.5} />
+                        <Wifi size={16} strokeWidth={2.5} />
+                        <Battery size={22} strokeWidth={1.5} />
                     </div>
-                </motion.div>
+                </div>
 
-                {/* Text Content */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                >
-                    <h1 className="text-2xl md:text-3xl font-bold mb-3 text-amber-700 bg-clip-text">
-                        ขอเชิญร่วมอนุโมทนาบุญ<br />อุปสมบท
-                    </h1>
-
-                    <div className="flex items-center justify-center gap-2 text-amber-600/60 mb-6">
-                        <Sparkles size={16} />
-                        <span className="text-sm tracking-widest uppercase">Ordination Ceremony</span>
-                        <Sparkles size={16} />
+                {/* Chat Header */}
+                <div className="px-2 py-3 flex items-center justify-between border-b border-gray-100 bg-white/95 backdrop-blur-md relative z-10 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center text-rose-400 w-1/4">
+                        <ChevronLeft size={34} strokeWidth={2} className="-ml-1" />
                     </div>
 
-                    <p className="text-sm text-[#8D6E63] italic font-light">
-                        "ขอให้กุศลผลบุญนี้ จงส่งผลให้ท่านและครอบครัว<br />ประสบแต่ความสุขความเจริญ"
-                    </p>
-                </motion.div>
+                    <div className="flex flex-col items-center flex-1">
 
-                {/* Footer Decor */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1 }}
-                    className="mt-8 md:mt-12 flex justify-center"
-                >
-                    <div className="w-24 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
-                </motion.div>
+                        <span className="font-semibold text-[15px] text-gray-800 flex items-center gap-1">
+                            {targetName}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-4 text-rose-400 w-1/4 pr-3">
+                        <Video size={26} strokeWidth={1.5} />
+                        <Phone size={22} strokeWidth={1.5} />
+                    </div>
+                </div>
+
+                {/* Chat Area */}
+                <div className="flex-1 bg-white overflow-y-auto px-4 py-6 flex flex-col pb-24">
+                    <ChatMessage
+                        text={shortMessage}
+                        isSender={true}
+                        isPurple={true}
+                    />
+
+                    <div className="h-6"></div>
+
+                    <ChatMessage
+                        text="?"
+                        isSender={false}
+                        senderName={targetName}
+                        isFirstInGroup={true}
+                        showAvatar={true}
+                    />
+
+                    <div className="h-6"></div>
+
+                    <ChatMessage
+                        text={customMessage}
+                        isSender={true}
+                        isPurple={true}
+                    />
+                </div>
+
+                {/* Bottom Input Area */}
+                <div className="absolute bottom-0 w-full pb-8 pt-3 px-3 bg-[#FCFCFC] border-t border-gray-100 flex items-end gap-3 z-20">
+                    <div className="w-8 h-8 rounded-full bg-[#F0F0F0] flex items-center justify-center text-gray-400 flex-shrink-0 mb-1 ml-1 cursor-pointer hover:bg-gray-200 transition-colors">
+                        <span className="text-2xl leading-none font-light mb-0.5">+</span>
+                    </div>
+                    <div className="flex-1 min-h-[38px] bg-white border border-gray-200 rounded-[20px] px-4 py-1.5 flex items-center mb-0.5 shadow-sm">
+                        <span className="text-gray-400 text-[15px]">iMessage</span>
+                    </div>
+                    <div className="flex gap-3 mb-1.5 items-center text-rose-400 mr-2 cursor-pointer">
+                        <Mic size={24} strokeWidth={1.5} />
+                    </div>
+                </div>
+
+                {/* Home indicator */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[130px] h-[5px] bg-black rounded-full z-30"></div>
             </div>
         </div>
     );

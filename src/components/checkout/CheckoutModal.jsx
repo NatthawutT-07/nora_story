@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { CheckoutProvider, useCheckout } from './CheckoutContext';
-import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, OmisePaymentStep, SuccessStep } from './steps';
+import { BuyerInfoStep, TemplateStep, DetailsStep, ImagesStep, PaymentStep, SuccessStep } from './steps';
 import LivePreviewModal from './LivePreviewModal';
 import { createOrder } from '../../api/functions';
 
@@ -65,6 +65,7 @@ const CheckoutContent = () => {
         paymentSessionActive,
         preGeneratedOrderId,
         setPreGeneratedOrderId,
+        isChatTemplate,
     } = useCheckout();
 
     const [showExitWarning, setShowExitWarning] = useState(false);
@@ -91,8 +92,13 @@ const CheckoutContent = () => {
         return true;
     };
 
-    // เช็คความครบถ้วนของขั้นตอนที่ 3 (ไม่รวมเพลง เพราะมีค่าเริ่มต้นเป็นไม่มีเพลง)
     const isStep3Valid = () => {
+        if (isChatTemplate) {
+            if (!formData.targetName?.trim() || formData.targetName.length > 15) return false;
+            if (!formData.shortMessage?.trim() || formData.shortMessage.length > 50) return false;
+            if (!formData.customMessage?.trim() || formData.customMessage.length > 200) return false;
+        }
+
         if (needsDetailFields) {
             if (!formData.pin || formData.pin.length !== 4) return false;
             if (!formData.targetName?.trim() || formData.targetName.trim().length < 1) return false;
@@ -204,7 +210,22 @@ const CheckoutContent = () => {
             });
             return;
         } else if (step === 3) {
-            // Validate template details (T1-1 and T2)
+            // Validate template details
+            if (isChatTemplate) {
+                if (!formData.targetName?.trim()) {
+                    setError('กรุณากรอกชื่อคู่สนทนา');
+                    return;
+                }
+                if (!formData.shortMessage?.trim()) {
+                    setError('กรุณากรอกข้อความแรกที่ทักทาย');
+                    return;
+                }
+                if (!formData.customMessage?.trim()) {
+                    setError('กรุณากรอกข้อความบอกรักส่วนที่ 2');
+                    return;
+                }
+            }
+
             if (needsDetailFields) {
                 if (!formData.pin || formData.pin.length !== 4) {
                     setError('กรุณาใส่ PIN 4 หลัก');
@@ -341,10 +362,13 @@ const CheckoutContent = () => {
                 buyerEmail: formData.buyerEmail,
                 buyerPhone: formData.buyerPhone,
                 needsDetailFields,
+                needsChatFields: isChatTemplate,
                 pin: formData.pin,
                 targetName: formData.targetName,
                 signOff: formData.signOff,
                 message: formData.message,
+                shortMessage: formData.shortMessage,
+                customMessage: formData.customMessage,
                 needsTimelineFields,
                 timelines: formData.timelines,
                 finaleMessage: formData.finaleMessage,
@@ -467,7 +491,7 @@ const CheckoutContent = () => {
                                         {step === 2 && <BuyerInfoStep />}
                                         {step === 3 && <DetailsStep />}
                                         {step === 4 && <ImagesStep />}
-                                        {step === 5 && <OmisePaymentStep />}
+                                        {step === 5 && <PaymentStep />}
 
                                         {/* Live Preview Button — visible on step 3+ (after details/images filled) */}
                                         {(step === 3 || step === 4) && selectedTemplate && (

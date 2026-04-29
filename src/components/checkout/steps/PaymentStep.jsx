@@ -1,20 +1,51 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Loader2, Check } from 'lucide-react';
-import { useCheckout } from '../CheckoutContext';
 import { useState, useEffect, useRef } from 'react';
-import generatePayload from 'promptpay-qr';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { QRCodeCanvas } from 'qrcode.react';
+import generatePayload from 'promptpay-qr';
+import { compressImage } from '../../../utils/imageUtils';
+import { useCheckout } from '../CheckoutContext';
+import { createOrder } from '../../../api/functions';
+import { storage } from '../../../firebase';
 import logo from '../../../assets/logo.png';
 
 const PaymentStep = () => {
-    const { tier, setSlipFile, setSlipPreview, setError, qrExpired, setQrExpired } = useCheckout();
-    const [qrCodeUrl, setQrCodeUrl] = useState(null);
-    const [loadingQr, setLoadingQr] = useState(true);
-    const [qrError, setQrError] = useState(null);
+    const {
+        tier,
+        formData,
+        selectedTemplate,
+        selectedColorTheme,
+        contentFiles,
+        slipFile,
+        setSlipFile,
+        slipPreview,
+        setSlipPreview,
+        needsDetailFields,
+        needsTimelineFields,
+        getMaxImages,
+        setLoading,
+        loading,
+        setError,
+        setStep,
+        setStoryId,
+        qrExpired,
+        setQrExpired,
+        preGeneratedOrderId,
+    } = useCheckout();
+
+    const [imageUrls, setImageUrls] = useState(null);
     const [fileError, setFileError] = useState('');
-    const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+    const [slipTimeLeft, setSlipTimeLeft] = useState(900); // 15 minutes
+    const imageUploadPromiseRef = useRef(null);
     const [processedLogo, setProcessedLogo] = useState(null);
 
+    const amount = tier?.price ? parseFloat(String(tier.price).replace(/,/g, '')) : 0;
+    const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || '';
+
+    // ============================================
+    // Init Logo & Background Upload
+    // ============================================
     useEffect(() => {
         const img = new Image();
         img.src = logo;
@@ -23,12 +54,10 @@ const PaymentStep = () => {
             canvas.width = 200;
             canvas.height = 200;
             const ctx = canvas.getContext('2d');
-            // Draw white circle background
             ctx.beginPath();
             ctx.arc(100, 100, 100, 0, Math.PI * 2);
             ctx.fillStyle = 'white';
             ctx.fill();
-            // Draw logo clipped to circle (preserving aspect ratio)
             ctx.save();
             ctx.beginPath();
             ctx.arc(100, 100, 96, 0, Math.PI * 2);
@@ -40,139 +69,165 @@ const PaymentStep = () => {
             ctx.restore();
             setProcessedLogo(canvas.toDataURL());
         };
+
+        // เริ่มอัปโหลดรูปภาพใน Background ทันที
+        if (getMaxImages() > 0 && contentFiles && contentFiles.filter(Boolean).length > 0) {
+            imageUploadPromiseRef.current = uploadImages();
+            imageUploadPromiseRef.current.then(urls => {
+                setImageUrls(urls);
+            });
+        }
     }, []);
 
-    const downloadQr = async () => {
-        const canvas = document.getElementById("qr-payment-canvas");
-        if (!canvas) return;
-        const pngUrl = canvas.toDataURL("image/png");
-
-        const fallbackDownload = () => {
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl.replace("image/png", "image/octet-stream");
-            downloadLink.download = `Promptpay_NoraStory_${amount}Thb.png`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        };
-
-        try {
-            // Check if Web Share API is supported and can share files
-            if (navigator.canShare) {
-                const res = await fetch(pngUrl);
-                const blob = await res.blob();
-                const file = new File([blob], `Promptpay_NoraStory_${amount}Thb.png`, { type: 'image/png' });
-
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: 'QR Code สำหรับชำระเงิน NoraStory',
-                    });
-                    return; // Successfully shared
-                }
-            }
-            // Fallback for browsers that don't support file sharing
-            fallbackDownload();
-        } catch (error) {
-            console.error('Error sharing:', error);
-            // Only fallback if it's not a user cancellation
-            if (error.name !== 'AbortError') {
-                fallbackDownload();
-            }
+    // ============================================
+    // Image Upload (background)
+    // ============================================
+    const uploadImages = async () => {
+        const maxUploads = getMaxImages() || 0;
+        if (maxUploads === 0 || !contentFiles || contentFiles.filter(Boolean).length === 0) {
+            return [];
         }
+
+        const results = Array(maxUploads).fill(null);
+        await Promise.all(
+            Array.from({ length: maxUploads }, (_, i) => {
+                const file = contentFiles[i];
+                if (!file) return Promise.resolve();
+                return (async () => {
+                    try {
+                        const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
+                        const compressed = await compressImage(file);
+                        const imgRef = storageRef(storage, `uploads/${folder}/${Date.now()}_${i}_${file.name}`);
+                        await uploadBytes(imgRef, compressed);
+                        results[i] = await getDownloadURL(imgRef);
+                    } catch (err) {
+                        console.error('Upload failed for file', i, err);
+                        const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
+                        const imgRef = storageRef(storage, `uploads/${folder}/error_${Date.now()}_${i}_${file.name}`);
+                        await uploadBytes(imgRef, file);
+                        results[i] = await getDownloadURL(imgRef);
+                    }
+                })();
+            })
+        );
+        return results;
     };
 
-    const qrRef = useRef(null);
-
-    const promptpayId = import.meta.env.VITE_PROMPTPAY_ID || ''; // Merchant PromptPay number
-    const amount = tier?.price ? parseFloat(tier.price.replace(/,/g, '')) : 0;
-
-    useEffect(() => {
-        if (amount > 0) {
-            const payload = generatePayload(promptpayId, { amount });
-            setQrCodeUrl(payload); // We use qrCodeUrl to store the payload string now
-            setLoadingQr(false);
-        } else {
-            setQrError('ไม่พบยอดชำระ');
-            setLoadingQr(false);
-        }
-    }, [amount]);
-
+    // ============================================
+    // Countdown Timer
+    // ============================================
     useEffect(() => {
         if (qrExpired) return;
-
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    setQrExpired(true);
-                    setSlipFile(null);
-                    setSlipPreview(null);
-                    return 0;
-                }
+        const t = setInterval(() => {
+            setSlipTimeLeft(prev => {
+                if (prev <= 1) { clearInterval(t); setQrExpired(true); return 0; }
                 return prev - 1;
             });
         }, 1000);
+        return () => clearInterval(t);
+    }, [qrExpired, setQrExpired]);
 
-        return () => clearInterval(timer);
-    }, [qrExpired, setQrExpired, setSlipFile, setSlipPreview]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const formatTime = (secs) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
     };
 
+    // ============================================
+    // Submit Handler
+    // ============================================
+    const handleSlipSubmit = async () => {
+        if (!slipFile) { setFileError('กรุณาแนบสลิปโอนเงิน'); return; }
+        setLoading(true);
+        setError('');
+        try {
+            const folder = preGeneratedOrderId || formData.buyerPhone || 'anonymous';
+            const slipExt = slipFile.name.split('.').pop();
+            const slipName = `slip_${folder}_${Date.now()}.${slipExt}`;
+            const sRef = storageRef(storage, `slips/${folder}/${slipName}`);
+            const compressed = await compressImage(slipFile, { maxSizeMB: 1, maxWidthOrHeight: 1200 });
+            await uploadBytes(sRef, compressed);
+            const slipUrl = await getDownloadURL(sRef);
 
-
-    const handleSlipChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            if (selectedFile.size > 5 * 1024 * 1024) {
-                setFileError('ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 5MB) กรุณาอัปโหลดใหม่');
-                setSlipFile(null);
-                setError('');
-                e.target.value = null;
-                return;
+            const maxUploads = getMaxImages() || 0;
+            let contentUrls = Array(maxUploads).fill(null);
+            if (maxUploads > 0) {
+                if (imageUrls) {
+                    contentUrls = imageUrls;
+                } else if (imageUploadPromiseRef.current) {
+                    contentUrls = await imageUploadPromiseRef.current;
+                } else {
+                    contentUrls = await uploadImages();
+                }
             }
-            setFileError('');
-            setSlipFile(selectedFile);
-            setError('');
-            const reader = new FileReader();
-            reader.onloadend = () => setSlipPreview(reader.result);
-            reader.readAsDataURL(selectedFile);
-        } else {
-            setSlipFile(null);
-            setFileError('');
+
+            const result = await createOrder({
+                tierId: tier.id,
+                tierName: tier.name,
+                price: tier.price,
+                buyerName: formData.buyerName,
+                buyerEmail: formData.buyerEmail,
+                buyerPhone: formData.buyerPhone,
+                needsDetailFields,
+                pin: formData.pin,
+                targetName: formData.targetName,
+                signOff: formData.signOff,
+                message: formData.message,
+                needsTimelineFields,
+                timelines: formData.timelines,
+                finaleMessage: formData.finaleMessage,
+                finaleSignOff: formData.finaleSignOff,
+                wantSpecialLink: tier?.wantSpecialLink,
+                wantCustomLink: tier?.wantCustomLink,
+                customDomain: formData.customDomain,
+                selectedTemplate,
+                slipUrl,
+                contentImages: contentUrls,
+                musicUrl: formData.musicUrl || null,
+                colorThemeId: selectedColorTheme?.id || null,
+                platform: 'web',
+            });
+            if (!result.success) throw new Error(result.error || 'เกิดข้อผิดพลาด');
+            setStoryId(result.orderId);
+            setStep(6);
+        } catch (err) {
+            setError('เกิดข้อผิดพลาด: ' + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
-    return (
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
+    const handleSlipChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) { setSlipFile(null); setFileError(''); return; }
+        if (file.size > 5 * 1024 * 1024) {
+            setFileError('ไฟล์ใหญ่เกิน 5MB'); setSlipFile(null); e.target.value = null; return;
+        }
+        setFileError('');
+        setSlipFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setSlipPreview(reader.result);
+        reader.readAsDataURL(file);
+    };
 
-            {/* Payment Details Card */}
+    return (
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
             <div className={`rounded-2xl border ${qrExpired ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'} overflow-hidden transition-colors`}>
                 <div className="px-4 py-3 flex flex-col items-center justify-center border-b border-gray-100 bg-gray-50/50">
                     {qrExpired ? (
                         <div className="h-44 w-full bg-red-50/50 rounded-xl flex flex-col items-center justify-center text-red-500 text-sm p-4 text-center border border-dashed border-red-200">
                             <span className="font-semibold mb-1">QR Code หมดอายุแล้ว</span>
-                            <span className="text-xs text-red-400">กรุณาปิดหน้าต่างนี้และเริ่มทำรายการใหม่อีกครั้ง</span>
+                            <span className="text-xs text-red-400">กรุณาปิดหน้าต่างนี้และเริ่มทำรายการใหม่</span>
                         </div>
-                    ) : loadingQr ? (
-                        <div className="h-44 w-44 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100">
-                            <Loader2 className="animate-spin text-gray-300" size={24} />
-                        </div>
-                    ) : qrCodeUrl ? (
+                    ) : amount > 0 ? (
                         <>
                             <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative mb-2">
-                                {/* Decorative elements for PromptPay QR */}
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#113566] text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap z-10">
-                                    สแกนเพื่อชำระเงิน
+                                    สแกนเพื่อโอนเงิน
                                 </div>
                                 <QRCodeCanvas
-                                    id="qr-payment-canvas"
-                                    value={qrCodeUrl}
-                                    size={180}
+                                    value={generatePayload(promptpayId, { amount })}
+                                    size={160}
                                     level="H"
                                     includeMargin={true}
                                     className="rounded-lg"
@@ -180,38 +235,26 @@ const PaymentStep = () => {
                                         src: processedLogo || logo,
                                         x: undefined,
                                         y: undefined,
-                                        height: 48,
-                                        width: 48,
+                                        height: 42,
+                                        width: 42,
                                         excavate: false,
                                     }}
                                 />
                             </div>
-
-                            {/* Save QR Button and Timer inside Row */}
-                            <div className="flex flex-row items-center justify-between w-full mx-auto mt-2 mb-0 gap-3">
-                                <div className="flex-none flex items-center justify-center gap-1.5 text-rose-500 font-[monospace] px-4 py-2 sm:py-2.5 bg-rose-50/90 shadow-sm rounded-xl w-auto border border-rose-100/50 cursor-default">
-                                    <span className="text-xs sm:text-sm">⏳</span>
-                                    <span className="text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap">{formatTime(timeLeft)}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1.5 text-rose-500 font-[monospace] px-3 py-1.5 bg-rose-50/90 rounded-xl border border-rose-100/50 text-sm font-semibold">
+                                    <span>⏳</span>
+                                    <span>{formatTime(slipTimeLeft)}</span>
                                 </div>
-
-                                <button
-                                    onClick={downloadQr}
-                                    className="flex flex-1 sm:flex-none py-2 sm:py-2.5 px-6 bg-[#f8fafc] border border-slate-200 text-[#1a2f3d] hover:bg-gray-100 rounded-xl justify-center items-center gap-2 text-sm sm:text-base font-semibold transition-colors shadow-sm"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#3b5368]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    บันทึก
-                                </button>
                             </div>
                         </>
                     ) : (
-                        <div className="h-44 w-44 bg-white rounded-xl flex flex-col items-center justify-center text-gray-400 text-xs p-4 text-center border border-dashed border-gray-200 shadow-sm">
-                            <span>ไม่สามารถสร้าง QR Code ได้</span>
-                            {qrError && <span className="text-[10px] text-red-400 mt-1">{qrError}</span>}
+                        <div className="h-44 w-44 bg-white rounded-xl flex items-center justify-center text-gray-400 text-xs border border-dashed border-gray-200">
+                            ไม่พบยอดชำระ
                         </div>
                     )}
                 </div>
 
-                {/* Bank Info Section */}
                 <div className="px-4 py-3 space-y-2">
                     <div className="flex items-center justify-between">
                         <div>
@@ -227,7 +270,6 @@ const PaymentStep = () => {
                         </div>
                     </div>
                     <div className="h-px bg-gray-100" />
-
                     <div>
                         <p className="text-[10px] text-gray-400 uppercase tracking-wide">ชื่อบัญชี</p>
                         <p className="text-sm font-medium text-gray-700">นาย ณัฐวุฒิ ตังกุลานุพันธ์</p>
@@ -237,27 +279,37 @@ const PaymentStep = () => {
 
             {!qrExpired && (
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-2">
-                        แนบสลิปโอนเงิน
-                    </label>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">แนบสลิปโอนเงิน</label>
                     <input
                         type="file"
                         accept="image/*"
                         onChange={handleSlipChange}
-                        className="block w-full text-sm md:text-base text-gray-600 border border-gray-200 rounded-xl p-2 md:p-2.5 cursor-pointer bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 transition-all"
+                        className="block w-full text-sm text-gray-600 border border-gray-200 rounded-xl p-2 cursor-pointer bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 transition-all"
                     />
-                    {fileError && (
-                        <p className="text-red-500 text-[11px] mt-1.5">{fileError}</p>
-                    )}
+                    {fileError && <p className="text-red-500 text-[11px] mt-1.5">{fileError}</p>}
                 </div>
             )}
 
-            {/* Trust Badge */}
+            {!qrExpired && (
+                <button
+                    onClick={handleSlipSubmit}
+                    disabled={loading || !slipFile}
+                    className={`w-full py-3.5 rounded-xl ${!slipFile || loading ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#1A3C40] hover:bg-[#1A3C40]/90'} text-white font-medium transition-all shadow-lg flex items-center justify-center gap-2`}
+                >
+                    {loading ? (
+                        <div className="flex flex-col items-center py-1">
+                            <Loader2 className="animate-spin mb-1" size={18} />
+                            <span className="text-[10px] font-bold">กำลังบันทึกข้อมูล ห้ามปิดหน้านี้เด็ดขาด</span>
+                        </div>
+                    ) : 'ยืนยันการชำระเงิน (แนบสลิป)'}
+                </button>
+            )}
+
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 pt-1">
                 <span>🔒</span>
-                <span>ชำระเงินปลอดภัย · ลิงก์จะถูกส่งไปยังอีเมลที่คุณระบุหลังจากผ่านการตรวจสอบ</span>
+                <span>ลิงก์จะถูกส่งไปยังอีเมลหลังจากตรวจสอบสลิปแล้ว</span>
             </div>
-        </motion.div >
+        </motion.div>
     );
 };
 

@@ -1,14 +1,22 @@
 import { motion } from 'framer-motion';
 import { useCheckout } from '../CheckoutContext';
 import Template1Fields from '../forms/tier1/Template1Fields';
+import Template2Fields from '../forms/tier1/Template2Fields';
 import { Wand2 } from 'lucide-react';
 import TimelineFields from '../forms/tier3/TimelineFields';
 import MusicSelection from '../forms/MusicSelection';
 
 const DetailsStep = () => {
-    const { needsDetailFields, needsTimelineFields, selectedTemplate, updateFormData } = useCheckout();
+    const { needsDetailFields, needsTimelineFields, isChatTemplate, selectedTemplate, updateFormData } = useCheckout();
 
     const handleDemoFill = () => {
+        if (isChatTemplate) {
+            updateFormData({
+                targetName: 'Honey ❤️',
+                shortMessage: 'Baby',
+                customMessage: 'Thank you for being in my life and making me smile every day. Through thick and thin, having you by my side gives me the strength to keep going. I love you.'
+            });
+        }
         if (needsDetailFields) {
             updateFormData({
                 pin: '1234',
@@ -42,7 +50,16 @@ const DetailsStep = () => {
         </button>
     );  
 
-    // T1-1 and T2 templates: PIN, Target Name, Message, Sign Off
+    // Chat template (t1-2)
+    if (isChatTemplate) {
+        return (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <Template2Fields />
+            </motion.div>
+        );
+    }
+
+    // T1-1 and T2 templates
     if (needsDetailFields) {
         return (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>

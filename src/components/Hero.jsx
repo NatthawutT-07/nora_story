@@ -228,15 +228,15 @@ const Hero = () => {
                     className="grid grid-cols-3 gap-4 sm:gap-8 mt-12 sm:mt-16 pt-8 border-t border-white/10 w-full max-w-lg"
                 >
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">3</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">4</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">เทมเพลต</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">{(89 + userCount).toLocaleString()}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">{(userCount).toLocaleString()}</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">ผู้ใช้งาน</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-white">79฿</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">59฿</p>
                         <p className="text-xs sm:text-sm text-white/50 mt-1">เริ่มต้นเพียง</p>
                     </div>
                 </motion.div>

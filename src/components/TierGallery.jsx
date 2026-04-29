@@ -146,15 +146,6 @@ const TierGallery = ({ tierIdProp, onBack, onSelectDemo }) => {
                             <span className="text-sm font-medium text-gray-400">฿</span>
                             <span className="text-xs text-gray-400 block sm:inline sm:ml-2">/ {tier.duration}</span>
                         </div>
-                        {/* <button
-                            onClick={() => {
-                                if (onBack) onBack();
-                                window.location.href = `/?checkout=${tier.id}`;
-                            }}
-                            className={`px-5 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r ${tier.gradient} shadow-md transition-all text-sm whitespace-nowrap hover:opacity-90 active:scale-95`}
-                        >
-                            เลือกแพ็คเกจ
-                        </button> */}
                     </div>
                 </motion.div>
 

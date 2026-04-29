@@ -7,6 +7,7 @@ import { useCheckout } from './CheckoutContext';
 
 // Import templates for inline preview
 import Tier1Template1 from '../templates/tier1/Tier1Template1';
+import Tier1Template2 from '../templates/tier1/Tier1Template2';
 
 import Tier2Template1 from '../templates/tier2/Tier2Template1';
 import Tier3Template1 from '../templates/tier3/Tier3Template1';
@@ -16,24 +17,25 @@ const TEMPLATE_PREVIEWS = {
     1: [
         { id: 't1-1', number: '01', name: 'Love Card', preview: '', description: 'ข้อความลับพร้อม PIN' },
 
-        { id: 't1-2', number: '02', name: 'Ordination', preview: '', description: 'การ์ดงานบวช', disabled: true },
-        { id: 't1-3', number: '03', name: 'Wedding', preview: '', description: 'การ์ดงานแต่ง', disabled: true },
+        { id: 't1-2', number: '02', name: 'Chat View', preview: '', description: 'แชทจำลอง' },
+        { id: 't1-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
     ],
     2: [
         { id: 't2-1', number: '01', name: 'Standard Love', preview: '', description: 'อนิเมชั่นอัพเกรด' },
-        { id: 't2-2', number: '02', name: 'Ordination', preview: '', description: 'งานบวชพรีเมียม', disabled: true },
-        { id: 't2-3', number: '03', name: 'Wedding', preview: '', description: 'แกลเลอรี่ความทรงจำ', disabled: true },
+        { id: 't2-2', number: '02', name: 'Soon', preview: '', description: '', disabled: true },
+        { id: 't2-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
     ],
     3: [
         { id: 't3-1', number: '01', name: 'Premium Story', preview: '', description: 'หรูหราอลังการ' },
-        { id: 't3-2', number: '02', name: 'Ordination', preview: '', description: 'งานบวชพรีเมียม', disabled: true },
-        { id: 't3-3', number: '03', name: 'Wedding', preview: '', description: 'ไทม์ไลน์งานแต่ง', disabled: true },
+        { id: 't3-2', number: '02', name: 'Soon', preview: '', description: '', disabled: true },
+        { id: 't3-3', number: '03', name: 'Soon', preview: '', description: '', disabled: true },
     ],
 };
 
 // Demo component map for inline preview modal
 const DEMO_TEMPLATES = {
     't1-1': Tier1Template1,
+    't1-2': Tier1Template2,
 
     't2-1': Tier2Template1,
     't3-1': Tier3Template1,

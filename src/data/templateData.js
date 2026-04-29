@@ -35,11 +35,10 @@ export const TEMPLATE_DATA = {
     },
     't1-2': {
         id: 't1-2',
-        name: 'Ordination',
-        description: 'การ์ดงานบวช',
+        name: 'Chat View',
+        description: 'แชทจำลอง',
         preview: '',
-        usage: 'เชิญร่วมงานบุญ งานอุปสมบท เรียบง่ายและศักดิ์สิทธิ์',
-        disabled: true
+        usage: 'หน้าแชทจำลอง โชว์ข้อความสนทนา',
     },
     't1-3': {
         id: 't1-3',
@@ -60,18 +59,18 @@ export const TEMPLATE_DATA = {
     },
     't2-2': {
         id: 't2-2',
-        name: 'Ordination',
-        description: 'การ์ดงานบวช',
+        name: 'Soon',
+        description: '',
         preview: '',
-        usage: 'การ์ดงานบวชแบบทางการ สวยงาม สมเกียรติ',
+        usage: '',
         disabled: true
     },
     't2-3': {
         id: 't2-3',
-        name: 'Wedding',
-        description: 'การ์ดงานแต่ง',
+        name: 'Soon',
+        description: '',
         preview: '',
-        usage: 'รวบรวมรูปถ่ายความทรงจำ (สูงสุด 5 รูป) ใส่เพลงได้',
+        usage: '',
         disabled: true
     },
 
@@ -85,18 +84,18 @@ export const TEMPLATE_DATA = {
     },
     't3-2': {
         id: 't3-2',
-        name: 'Ordination',
-        description: 'การ์ดงานบวช',
+        name: 'Soon',
+        description: '',
         preview: '',
-        usage: 'ธีมคริสตัล สว่างไสว เหมาะกับโอกาสพิเศษมากๆ',
+        usage: '',
         disabled: true
     },
     't3-3': {
         id: 't3-3',
-        name: 'Wedding',
-        description: 'การ์ดงานแต่ง',
+        name: 'Soon',
+        description: '',
         preview: '',
-        usage: 'แจ้งกำหนดการงานแต่งงานแบบไทม์ไลน์ ดูง่าย สวยงาม',
+        usage: '',
         disabled: true
     },
 

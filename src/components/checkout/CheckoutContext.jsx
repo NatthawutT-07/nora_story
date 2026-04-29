@@ -57,6 +57,8 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         targetName: '',
         signOff: '',
         message: '',
+        shortMessage: '',
+        customMessage: '',
         customDomain: '',
         // Tier 3 timeline fields (5 slots)
         timelines: [
@@ -73,10 +75,10 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
 
     // Check template tier type
     const isTier1Template1 = String(tier?.id) === '1' && selectedTemplate === 't1-1';
+    const isChatTemplate = String(tier?.id) === '1' && selectedTemplate === 't1-2';
     const isTier2 = String(tier?.id) === '2';
     const isTier3 = String(tier?.id) === '3';
-    // Tier 1 uses Template1Fields (for t1-1) or no extra details if we removed t1-4.
-    // T2 templates use Template1Fields as well.
+    // Tier 1 uses Template1Fields (for t1-1) or Template2Fields (for t1-2).
     const needsDetailFields = isTier1Template1 || isTier2;
     // Tier 3 uses timeline fields
     const needsTimelineFields = isTier3;
@@ -85,7 +87,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
     const getMaxImages = () => {
         if (!tier) return 0;
         if (String(tier?.id) === '1') {
-            if (selectedTemplate === 't1-2' || selectedTemplate === 't1-3') return 1;
+            if (selectedTemplate === 't1-3') return 1;
             return 0;
         }
         if (String(tier?.id) === '2') return 5;
@@ -152,6 +154,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         setFormData({
             buyerName: '', buyerEmail: '', buyerPhone: '',
             pin: '', targetName: '', signOff: '', message: '',
+            shortMessage: '', customMessage: '',
             customDomain: '',
             timelines: [
                 { label: '', desc: '' },
@@ -216,6 +219,7 @@ export const CheckoutProvider = ({ children, tier, onClose }) => {
         isTier1Template1,
         isTier2,
         isTier3,
+        isChatTemplate,
         needsDetailFields,
         needsTimelineFields,
         getMaxImages,

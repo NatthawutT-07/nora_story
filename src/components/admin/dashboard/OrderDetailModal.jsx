@@ -66,6 +66,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 pin_code: order.pin_code || '',
                 target_name: order.target_name || '',
                 message: order.message || '',
+                short_message: order.short_message || order.shortMessage || '',
+                custom_message: order.custom_message || order.customMessage || '',
                 sign_off: order.sign_off || '',
                 timelines: order.timelines || [
                     { label: '', desc: '' },
@@ -209,13 +211,15 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 pin_code: editContent.pin_code,
                 target_name: editContent.target_name,
                 message: editContent.message,
+                short_message: editContent.short_message,
+                custom_message: editContent.custom_message,
                 sign_off: editContent.sign_off,
                 timelines: editContent.timelines,
                 finale_message: editContent.finale_message,
                 finale_sign_off: editContent.finale_sign_off
             });
             onUpdate({ ...order, ...editContent });
-            alert('บันทึกเรียบร้อยแล้ว ✅');
+            alert('บันทึกเรียบร้อยแล้ว');
         } catch (error) {
             console.error(error);
             alert('เกิดข้อผิดพลาด');
@@ -284,7 +288,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
             }
 
             onUpdate({ ...order, ...updates });
-            alert(`อนุมัติการแก้ไข${editType}เรียบร้อยแล้ว ✅`);
+            alert(`อนุมัติการแก้ไข${editType}เรียบร้อยแล้ว`);
         } catch (error) {
             console.error(error);
             alert('เกิดข้อผิดพลาด');
@@ -299,7 +303,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                 orderId: order.id,
                 editType: type
             });
-            
+
             onUpdate({ ...order, [`${type}_edit_payment_status`]: 'rejected', [`${type}_edit_payment_rejected_at`]: new Date() });
             alert(`ปฏิเสธการชำระเงินแก้ไข${editType}แล้ว`);
         } catch (error) {
@@ -440,6 +444,8 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                 </div>
                             </div>
                             {order.message && (<div className="mt-3 p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><MessageSquare size={12} /> ข้อความ</p><p className="text-sm">{order.message}</p></div>)}
+                            {(order.short_message || order.shortMessage) && (<div className="mt-3 p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><MessageSquare size={12} /> ข้อความแรก (Short Message)</p><p className="text-sm">{order.short_message || order.shortMessage}</p></div>)}
+                            {(order.custom_message || order.customMessage) && (<div className="mt-3 p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><MessageSquare size={12} /> ข้อความส่วนที่ 2 (Custom Message)</p><p className="text-sm">{order.custom_message || order.customMessage}</p></div>)}
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><CreditCard size={18} className="text-[#E8A08A]" /> ข้อมูล Order</h3>
@@ -649,7 +655,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleApproveEditPayment('text')} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold">
-                                        อนุมัติ ✅
+                                        อนุมัติ
                                     </button>
                                     <button onClick={() => handleRejectEditPayment('text')} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">
                                         ปฏิเสธ
@@ -680,7 +686,7 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleApproveEditPayment('image')} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold">
-                                        อนุมัติ ✅
+                                        อนุมัติ
                                     </button>
                                     <button onClick={() => handleRejectEditPayment('image')} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold">
                                         ปฏิเสธ
@@ -721,32 +727,41 @@ const OrderDetailModal = ({ order, onClose, onUpdate }) => {
                             {/* Tier 1 & 2 Specific Fields */}
                             {(String(order.tier_id) === '1' || String(order.tier_id) === '2') && (
                                 <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">รหัส PIN (4 หลัก)</label>
-                                        <input type="text" maxLength={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center tracking-[0.5em] focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.pin_code} onChange={(e) => setEditContent(prev => ({ ...prev, pin_code: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ชื่อคนรับ</span><span className="text-gray-400">{editContent.target_name?.length || 0}/15</span></label>
-                                        <input type="text" maxLength={15} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.target_name} onChange={(e) => setEditContent(prev => ({ ...prev, target_name: e.target.value.slice(0, 15) }))} />
-                                    </div>
-                                    <div>
-                                        {/* Tier 1 & 2: 100 chars */}
-                                        <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1">
-                                            <span>ข้อความ</span>
-                                            <span className="text-gray-400">{editContent.message?.length || 0}/100</span>
-                                        </label>
-                                        <textarea
-                                            rows={4}
-                                            maxLength={100}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#E8A08A]/50 outline-none"
-                                            value={editContent.message}
-                                            onChange={(e) => setEditContent(prev => ({ ...prev, message: e.target.value.slice(0, 100) }))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>คำลงท้าย</span><span className="text-gray-400">{editContent.sign_off?.length || 0}/20</span></label>
-                                        <input type="text" maxLength={20} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.sign_off} onChange={(e) => setEditContent(prev => ({ ...prev, sign_off: e.target.value.slice(0, 20) }))} />
-                                    </div>
+                                    {(order.template_id === 't1-2' || order.selected_template_id === 't1-2') ? (
+                                        <>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ชื่อคู่สนทนา</span><span className="text-gray-400">{editContent.target_name?.length || 0}/15</span></label>
+                                                <input type="text" maxLength={15} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.target_name} onChange={(e) => setEditContent(prev => ({ ...prev, target_name: e.target.value.slice(0, 15) }))} />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ข้อความแรก (ทักทาย)</span><span className="text-gray-400">{editContent.short_message?.length || 0}/50</span></label>
+                                                <input type="text" maxLength={50} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.short_message} onChange={(e) => setEditContent(prev => ({ ...prev, short_message: e.target.value.slice(0, 50) }))} />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ข้อความส่วนที่ 2 (บอกรัก)</span><span className="text-gray-400">{editContent.custom_message?.length || 0}/200</span></label>
+                                                <textarea rows={4} maxLength={200} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.custom_message} onChange={(e) => setEditContent(prev => ({ ...prev, custom_message: e.target.value.slice(0, 200) }))} />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">รหัส PIN (4 หลัก)</label>
+                                                <input type="text" maxLength={4} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center tracking-[0.5em] focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.pin_code} onChange={(e) => setEditContent(prev => ({ ...prev, pin_code: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ชื่อคนรับ</span><span className="text-gray-400">{editContent.target_name?.length || 0}/15</span></label>
+                                                <input type="text" maxLength={15} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.target_name} onChange={(e) => setEditContent(prev => ({ ...prev, target_name: e.target.value.slice(0, 15) }))} />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>ข้อความ</span><span className="text-gray-400">{editContent.message?.length || 0}/100</span></label>
+                                                <textarea rows={4} maxLength={100} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.message} onChange={(e) => setEditContent(prev => ({ ...prev, message: e.target.value.slice(0, 100) }))} />
+                                            </div>
+                                            <div>
+                                                <label className="flex items-center justify-between text-xs font-medium text-gray-600 mb-1"><span>คำลงท้าย</span><span className="text-gray-400">{editContent.sign_off?.length || 0}/20</span></label>
+                                                <input type="text" maxLength={20} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#E8A08A]/50 outline-none" value={editContent.sign_off} onChange={(e) => setEditContent(prev => ({ ...prev, sign_off: e.target.value.slice(0, 20) }))} />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
