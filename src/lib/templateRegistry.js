@@ -75,14 +75,14 @@ export const TEMPLATE_REGISTRY = {
         description: '',
         disabled: true,
     },
-    't2-3': {
-        id: 't2-3',
-        tierId: 2,
-        number: '03',
-        name: 'Soon',
-        description: '',
-        disabled: true,
-    },
+    // 't2-3': {
+    //     id: 't2-3',
+    //     tierId: 2,
+    //     number: '03',
+    //     name: 'Soon',
+    //     description: '',
+    //     disabled: true,
+    // },
 
     // ═══════════════════════════════════
     // TIER 3 — Premium (฿249, 15 วัน)
@@ -109,14 +109,14 @@ export const TEMPLATE_REGISTRY = {
         description: '',
         disabled: true,
     },
-    't3-3': {
-        id: 't3-3',
-        tierId: 3,
-        number: '03',
-        name: 'Soon',
-        description: '',
-        disabled: true,
-    },
+    // 't3-3': {
+    //     id: 't3-3',
+    //     tierId: 3,
+    //     number: '03',
+    //     name: 'Soon',
+    //     description: '',
+    //     disabled: true,
+    // },
 };
 
 // ─── Helper Functions ───

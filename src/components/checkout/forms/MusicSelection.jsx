@@ -8,29 +8,40 @@ const MusicSelection = () => {
     const { formData, updateFormData } = useCheckout();
     const [musicList, setMusicList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
     const [playingId, setPlayingId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
     const audioRef = useRef(null);
 
-    useEffect(() => {
-        const fetchMusic = async () => {
-            setLoading(true);
+    const fetchMusic = async () => {
+        setLoading(true);
+        setFetchError(false);
+        try {
+            const musicRef = collection(db, 'music');
+            let snapshot;
             try {
-                const musicRef = collection(db, 'music');
+                // Try with orderBy first (requires index)
                 const q = query(musicRef, orderBy('number', 'asc'));
-                const snapshot = await getDocs(q);
-                const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setMusicList(list);
-            } catch (error) {
-                console.error("Error fetching music:", error);
-            } finally {
-                setLoading(false);
+                snapshot = await getDocs(q);
+            } catch {
+                // Fallback: fetch without ordering if index is missing
+                snapshot = await getDocs(musicRef);
             }
-        };
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Sort client-side as a safety net
+            list.sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
+            setMusicList(list);
+        } catch (error) {
+            console.error("Error fetching music:", error);
+            setFetchError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchMusic();
-
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
@@ -61,10 +72,10 @@ const MusicSelection = () => {
     // Filter music based on search query
     const filteredMusic = useMemo(() => {
         if (!searchQuery.trim()) return musicList;
-        const query = searchQuery.toLowerCase();
+        const q = searchQuery.toLowerCase();
         return musicList.filter(music => 
-            music.name?.toLowerCase().includes(query) ||
-            String(music.number).includes(query)
+            music.name?.toLowerCase().includes(q) ||
+            String(music.number).includes(q)
         );
     }, [musicList, searchQuery]);
 
@@ -84,8 +95,33 @@ const MusicSelection = () => {
         );
     }
 
-    if (musicList.length === 0) {
-        return null;
+    if (fetchError || musicList.length === 0) {
+        return (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-[#E8A08A]/10 flex items-center justify-center text-[#E8A08A]">
+                        <Music size={14} />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-gray-800">เลือกเพลงประกอบ</h3>
+                    </div>
+                </div>
+                <div className="text-center py-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-400 mb-2">
+                        {fetchError ? 'ไม่สามารถโหลดคลังเพลงได้' : 'ยังไม่มีเพลงในระบบ'}
+                    </p>
+                    {fetchError && (
+                        <button
+                            type="button"
+                            onClick={fetchMusic}
+                            className="text-xs text-[#E8A08A] font-medium hover:underline"
+                        >
+                            ลองโหลดใหม่
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
     }
 
     const selectedMusic = musicList.find(m => m.url === formData.musicUrl);

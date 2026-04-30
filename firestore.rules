@@ -36,8 +36,8 @@ service cloud.firestore {
     match /music/{documentId} {
       // Public read (for demo music selection)
       allow read: if true;
-      // Write only via Cloud Functions (admin SDK)
-      allow write: if false;
+      // Admin can add/edit/delete music
+      allow write: if hasAdminAccess();
     }
 
     // ============================================

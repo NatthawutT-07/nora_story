@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../../firebase';
-import { Music, Upload, Trash2, Edit2, Play, Pause, X, Save, Plus } from 'lucide-react';
+import { Music, Upload, Trash2, Edit2, Play, Pause, X, Save, Plus, Loader2 } from 'lucide-react';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 const MusicManager = () => {
     const [musicList, setMusicList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [compressProgress, setCompressProgress] = useState('');
 
     // New Music State
     const [newFile, setNewFile] = useState(null);
@@ -22,6 +25,7 @@ const MusicManager = () => {
     // Audio Player State
     const [playingId, setPlayingId] = useState(null);
     const audioRef = useRef(null);
+    const ffmpegRef = useRef(null);
 
     const fetchMusic = async () => {
         setLoading(true);
@@ -54,6 +58,60 @@ const MusicManager = () => {
         };
     }, []);
 
+    // Compress audio to 128kbps MP3 using FFmpeg.wasm
+    const compressAudio = async (file) => {
+        try {
+            setCompressProgress('กำลังเตรียมระบบบีบอัด...');
+
+            if (!ffmpegRef.current) {
+                ffmpegRef.current = new FFmpeg();
+            }
+            const ffmpeg = ffmpegRef.current;
+
+            if (!ffmpeg.loaded) {
+                await ffmpeg.load();
+            }
+
+            setCompressProgress('กำลังบีบอัดไฟล์เสียง...');
+
+            const inputName = 'input_audio' + (file.name.match(/\.[^.]+$/)?.[0] || '.mp3');
+            const outputName = 'output.mp3';
+
+            await ffmpeg.writeFile(inputName, await fetchFile(file));
+
+            // Compress to 128kbps mono MP3
+            await ffmpeg.exec([
+                '-i', inputName,
+                '-b:a', '128k',
+                '-ac', '1',
+                '-ar', '44100',
+                '-y',
+                outputName
+            ]);
+
+            const data = await ffmpeg.readFile(outputName);
+            const compressedBlob = new Blob([data.buffer], { type: 'audio/mpeg' });
+
+            // Cleanup virtual filesystem
+            try {
+                await ffmpeg.deleteFile(inputName);
+                await ffmpeg.deleteFile(outputName);
+            } catch { /* ignore cleanup errors */ }
+
+            const originalSize = (file.size / 1024 / 1024).toFixed(2);
+            const compressedSize = (compressedBlob.size / 1024 / 1024).toFixed(2);
+            const savedPercent = ((1 - compressedBlob.size / file.size) * 100).toFixed(0);
+
+            setCompressProgress(`บีบอัดสำเร็จ! ${originalSize}MB → ${compressedSize}MB (ลด ${savedPercent}%)`);
+
+            return new File([compressedBlob], file.name.replace(/\.[^.]+$/, '.mp3'), { type: 'audio/mpeg' });
+        } catch (error) {
+            console.error('Compression error:', error);
+            setCompressProgress('บีบอัดไม่สำเร็จ ใช้ไฟล์ต้นฉบับแทน');
+            return file; // fallback to original file
+        }
+    };
+
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -61,11 +119,8 @@ const MusicManager = () => {
                 alert('กรุณาเลือกไฟล์เสียง (mp3, wav) เท่านั้น');
                 return;
             }
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                alert('ไฟล์เสียงต้องมีขนาดไม่เกิน 10MB');
-                return;
-            }
             setNewFile(file);
+            setCompressProgress('');
             if (!newName) {
                 // Remove extension for default name
                 setNewName(file.name.replace(/\.[^/.]+$/, ""));
@@ -82,14 +137,17 @@ const MusicManager = () => {
 
         setUploading(true);
         try {
-            // 1. Upload to Storage
-            const fileExt = newFile.name.split('.').pop();
-            const fileName = `music_${Date.now()}.${fileExt}`;
+            // 1. Compress audio before uploading
+            const fileToUpload = await compressAudio(newFile);
+
+            // 2. Upload to Storage
+            const fileName = `music_${Date.now()}.mp3`;
             const storageRef = ref(storage, `music/${fileName}`);
-            await uploadBytes(storageRef, newFile);
+            setCompressProgress(prev => prev ? prev + ' → กำลังอัปโหลด...' : 'กำลังอัปโหลด...');
+            await uploadBytes(storageRef, fileToUpload);
             const url = await getDownloadURL(storageRef);
 
-            // 2. Save to Firestore
+            // 3. Save to Firestore
             await addDoc(collection(db, 'music'), {
                 name: newName,
                 number: parseInt(newNumber, 10),
@@ -98,10 +156,11 @@ const MusicManager = () => {
                 created_at: serverTimestamp()
             });
 
-            // 3. Reset and Refresh
+            // 4. Reset and Refresh
             setNewFile(null);
             setNewName('');
             setNewNumber(prev => prev + 1);
+            setCompressProgress('');
             // Reset file input
             const fileInput = document.getElementById('music-upload-input');
             if (fileInput) fileInput.value = '';
@@ -262,11 +321,23 @@ const MusicManager = () => {
                                 }`}
                         >
                             {uploading ? (
-                                <>กำลังอัปโหลด...</>
+                                <><Loader2 size={18} className="animate-spin" /> กำลังบีบอัดและอัปโหลด...</>
                             ) : (
                                 <><Plus size={18} /> เพิ่มเพลง</>
                             )}
                         </button>
+
+                        {/* Compression Progress */}
+                        {compressProgress && (
+                            <div className="text-xs text-center text-[#1A3C40] bg-[#1A3C40]/5 rounded-lg px-3 py-2 font-medium">
+                                {compressProgress}
+                            </div>
+                        )}
+
+                        <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+                            ระบบจะบีบอัดไฟล์เสียงอัตโนมัติเป็น 128kbps MP3<br />
+                            เพื่อให้ไฟล์มีขนาดเล็กและโหลดเร็วขึ้น
+                        </p>
                     </form>
                 </div>
 

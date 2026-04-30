@@ -1,37 +1,7 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // ให้ Admin อ่าน/เขียนได้ทุกอย่าง
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
     
-    // โฟลเดอร์สำหรับเก็บสลิปการโอนเงิน
-    match /slips/{fileName} {
-      // ให้ใครก็ได้อัปโหลดไฟล์ขนาดไม่เกิน 5MB และต้องเป็นรูปภาพ
-      allow create: if request.resource.size < 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*');
-      // ให้ใครก็ได้อ่านไฟล์ได้ (จำเป็นสำหรับ getDownloadURL ในฝั่ง frontend)
-      allow read: if true;
-    }
-
-    // โฟลเดอร์สำหรับเก็บรูปภาพของ story
-    match /uploads/{storyId}/{fileName} {
-      // ให้ใครก็ได้อัปโหลดไฟล์ขนาดไม่เกิน 5MB และต้องเป็นรูปภาพ
-      allow create: if request.resource.size < 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*');
-      // ให้ใครก็ได้อ่านไฟล์ได้
-      allow read: if true; 
-    }
-    
-    // โฟลเดอร์สำหรับเก็บไฟล์รูปภาพ content ชั่วคราวก่อนสร้าง order สำเร็จ (ไฟล์จาก tier 2 ขึ้นไป)
-    match /{fileName} {
-      allow create: if fileName.matches('temp_.*') 
-                    && request.resource.size < 5 * 1024 * 1024
-                    && request.resource.contentType.matches('image/.*');
-      allow read: if fileName.matches('temp_.*');
-    }
-
     // ============================================
     // SECURITY: ใช้ Custom Claims ตรวจสอบ Admin
     // ============================================
@@ -55,9 +25,9 @@ service firebase.storage {
     }
 
     // ============================================
-    // Slips (Payment slips - sensitive)
+    // Slips (Payment slips - supports nested folders)
     // ============================================
-    match /slips/{slipFile} {
+    match /slips/{allPaths=**} {
       // Anyone can upload (for checkout)
       allow create: if isValidImage();
       // Public read is required for the client to get the download URL immediately after upload
@@ -69,7 +39,7 @@ service firebase.storage {
     // ============================================
     // Content Uploads (Story images - public display)
     // ============================================
-    match /uploads/{storyId}/{fileName} {
+    match /uploads/{allPaths=**} {
       // Anyone can upload (for checkout)
       allow create: if isValidImage();
       // Public read (for story display)
@@ -85,9 +55,8 @@ service firebase.storage {
     // ============================================
     // Extension Slips
     // ============================================
-    match /extension_slips/{orderId}/{fileName} {
+    match /extension_slips/{allPaths=**} {
       allow create: if isValidImage();
-      // Public read is required for getDownloadURL()
       allow read: if true;
       allow update, delete: if hasAdminAccess();
     }
@@ -95,9 +64,8 @@ service firebase.storage {
     // ============================================
     // Edit Slips (Payment for additional edits)
     // ============================================
-    match /edit_slips/{orderId}/{fileName} {
+    match /edit_slips/{allPaths=**} {
       allow create: if isValidImage();
-      // Public read is required for getDownloadURL()
       allow read: if true;
       allow update, delete: if hasAdminAccess();
     }
@@ -105,7 +73,7 @@ service firebase.storage {
     // ============================================
     // Edit Images (Replacement content images)
     // ============================================
-    match /edit_images/{orderId}/{fileName} {
+    match /edit_images/{allPaths=**} {
       allow create: if isValidImage();
       allow read: if true;
       allow update, delete: if hasAdminAccess();
@@ -128,10 +96,10 @@ service firebase.storage {
     }
 
     // ============================================
-    // Default: Deny all other paths
+    // Default fallback
     // ============================================
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if hasAdminAccess();
     }
   }
 }
