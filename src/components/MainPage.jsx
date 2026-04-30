@@ -100,11 +100,23 @@ function MainPage() {
     setDemoTemplateId(null);
   };
 
+  // Lock body scroll when overlays are open
+  useEffect(() => {
+    if (showGallery || showDemo || isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showGallery, showDemo, isModalOpen]);
+
   const DemoComponent = getTemplateComponent(demoTemplateId);
 
   return (
     <div className="font-sans antialiased bg-white min-h-screen text-[#1A3C40] selection:bg-[#E8A08A] selection:text-white">
-      <Hero />
+      <Hero onViewGallery={() => handleViewDemos(1)} />
       <InteractiveDemos />
       <DigitalCover />
       <QRCodeDemo />

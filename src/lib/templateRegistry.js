@@ -23,6 +23,7 @@ export const TEMPLATE_REGISTRY = {
         disabled: false,
         maxImages: 0,
         hasMusic: false,
+        tags: ['PIN', 'Card'],
         fields: ['pin', 'targetName', 'message', 'signOff'],
         FormComponent: lazy(() => import('../components/checkout/forms/tier1/T1_1_Fields')),
         PageComponent: lazy(() => import('../components/templates/tier1/Tier1Template1')),
@@ -37,7 +38,8 @@ export const TEMPLATE_REGISTRY = {
         disabled: false,
         maxImages: 0,
         hasMusic: false,
-        fields: ['targetName', 'shortMessage', 'customMessage'],
+        tags: ['Chat', 'Message'],
+        fields: ['message', 'targetName', 'shortMessage', 'customMessage'],
         FormComponent: lazy(() => import('../components/checkout/forms/tier1/T1_2_Fields')),
         PageComponent: lazy(() => import('../components/templates/tier1/Tier1Template2')),
     },
@@ -63,6 +65,7 @@ export const TEMPLATE_REGISTRY = {
         disabled: false,
         maxImages: 5,
         hasMusic: true,
+        tags: ['PIN', '5 Photos', 'Animation'],
         fields: ['pin', 'targetName', 'message', 'signOff'],
         FormComponent: lazy(() => import('../components/checkout/forms/tier2/T2_1_Fields')),
         PageComponent: lazy(() => import('../components/templates/tier2/Tier2Template1')),
@@ -97,6 +100,7 @@ export const TEMPLATE_REGISTRY = {
         disabled: false,
         maxImages: 10,
         hasMusic: true,
+        tags: ['10 Photos', 'Timeline', 'Music'],
         fields: ['timelines', 'finaleMessage', 'finaleSignOff'],
         FormComponent: lazy(() => import('../components/checkout/forms/tier3/T3_1_Fields')),
         PageComponent: lazy(() => import('../components/templates/tier3/Tier3Template1')),
@@ -109,14 +113,6 @@ export const TEMPLATE_REGISTRY = {
         description: '',
         disabled: true,
     },
-    // 't3-3': {
-    //     id: 't3-3',
-    //     tierId: 3,
-    //     number: '03',
-    //     name: 'Soon',
-    //     description: '',
-    //     disabled: true,
-    // },
 };
 
 // ─── Helper Functions ───
